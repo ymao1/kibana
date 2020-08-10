@@ -19,16 +19,77 @@
 import { KibanaRequest } from '../http';
 
 /**
- * Event to audit.
+ * Audit event using ECS format: https://www.elastic.co/guide/en/ecs/current/index.html
  * @public
  *
  * @remarks
  * Not a complete interface.
  */
-export interface AuditableEvent {
+export interface AuditEvent {
   message: string;
-  type: string;
+  event: {
+    action: string;
+    category?: EventCategory | EventCategory[];
+    type?: EventType | EventType[];
+    outcome?: EventOutcome;
+    module?: string;
+    dataset?: string;
+  };
+  user: {
+    name: string;
+    email?: string;
+    full_name?: string;
+    hash?: string;
+  };
+  kibana?: {
+    session_id?: string;
+    user_roles?: string[];
+    saved_objects?: Array<{
+      id?: string;
+      type: string;
+      namespaces?: string[];
+    }>;
+  };
+  error?: {
+    code?: string;
+    message?: string;
+  };
+  http?: {
+    request?: {
+      method?: string;
+      body?: {
+        content: string;
+      };
+    };
+    response?: {
+      status_code?: number;
+    };
+  };
+  url?: {
+    domain?: string;
+    full?: string;
+    path?: string;
+    port?: number;
+    query?: string;
+    scheme?: string;
+  };
+  source?: {
+    address?: string;
+    ip?: string;
+  };
+  trace: {
+    id: string;
+  };
 }
+
+export type EventCategory = 'database' | 'web' | 'iam' | 'authentication' | 'process';
+export type EventType = 'user' | 'group' | 'creation' | 'access' | 'change' | 'deletion';
+export type EventOutcome = 'success' | 'failure';
+
+export type AuditEventDecorator<Args> = (
+  event: Pick<AuditEvent, 'user' | 'trace'>,
+  args: Args
+) => AuditEvent;
 
 /**
  * Provides methods to log user actions and access events.
@@ -50,7 +111,7 @@ export interface Auditor {
    *   context.core.add({ type: 'operation.type', message: 'perform an operation in ... endpoint' });
    * ```
    */
-  add(event: AuditableEvent): void;
+  add<Args>(decorateEvent: AuditEventDecorator<Args>, args: Args): void;
   /**
    * Add a high-level scope name for logged events.
    * It helps to identify the root cause of low-level events.

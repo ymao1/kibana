@@ -7,7 +7,7 @@
 import { Subject } from 'rxjs';
 
 import { AuditTrailClient } from './audit_trail_client';
-import { AuditEvent } from '../types';
+import { AuditEvent } from '../../../../../src/core/server';
 
 import { httpServerMock } from '../../../../../src/core/server/mocks';
 import { securityMock } from '../../../security/server/mocks';

@@ -17,7 +17,7 @@ import {
   PluginInitializerContext,
 } from 'src/core/server';
 
-import { AuditEvent } from './types';
+import { AuditEvent } from 'src/core/server';
 import { AuditTrailClient } from './client/audit_trail_client';
 import { AuditTrailConfigType } from './config';
 

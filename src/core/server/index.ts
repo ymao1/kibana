@@ -65,7 +65,13 @@ import { StatusServiceSetup } from './status';
 import { Auditor, AuditTrailSetup, AuditTrailStart } from './audit_trail';
 import { AppenderConfigType, appendersSchema, LoggingServiceSetup } from './logging';
 
-export { AuditableEvent, Auditor, AuditorFactory, AuditTrailSetup } from './audit_trail';
+export {
+  AuditEvent,
+  AuditEventDecorator,
+  Auditor,
+  AuditorFactory,
+  AuditTrailSetup,
+} from './audit_trail';
 export { bootstrap } from './bootstrap';
 export { Capabilities, CapabilitiesProvider, CapabilitiesSwitcher } from './capabilities';
 export {

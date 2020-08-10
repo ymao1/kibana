@@ -207,6 +207,10 @@ export class Plugin {
       authz,
       savedObjects: core.savedObjects,
       getSpacesService: this.getSpacesService,
+      getAuditorFactory: async () => {
+        const [{ auditTrail }] = await core.getStartServices();
+        return auditTrail;
+      },
     });
 
     defineRoutes({
