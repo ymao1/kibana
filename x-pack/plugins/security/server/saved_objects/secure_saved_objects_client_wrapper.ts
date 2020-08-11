@@ -402,7 +402,7 @@ export class SecureSavedObjectsClientWrapper implements SavedObjectsClientContra
     }
 
     auditor.add(savedObjectUpdateEvent, {
-      action: 'saved_object_delete_from_namespace',
+      action: 'saved_object_delete_from_namespaces',
       objects: [{ type, id, namespaces }],
     });
 
