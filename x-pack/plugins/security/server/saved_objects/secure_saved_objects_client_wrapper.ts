@@ -394,7 +394,7 @@ export class SecureSavedObjectsClientWrapper implements SavedObjectsClientContra
       response = await this.baseClient.deleteFromNamespaces(type, id, namespaces, options);
     } catch (error) {
       auditor.add(savedObjectUpdateEvent, {
-        action: 'saved_object_delete_from_namespace',
+        action: 'saved_object_delete_from_namespaces',
         objects: [{ type, id, namespaces }],
         error,
       });
