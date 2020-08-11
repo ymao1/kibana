@@ -93,7 +93,7 @@ export const savedObjectUpdateEvent: AuditEventDecorator<SavedObjectEventArgs> =
     ...event,
     message: error
       ? `Failed attempt to update ${doc} by user '${event.user.name}'`
-      : `User '${event.user.name}' changed ${doc}`,
+      : `User '${event.user.name}' updated ${doc}`,
     event: {
       action,
       category: 'database',
