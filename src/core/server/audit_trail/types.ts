@@ -19,7 +19,7 @@
 import { KibanaRequest } from '../http';
 
 /**
- * Audit event using ECS format: https://www.elastic.co/guide/en/ecs/current/index.html
+ * Audit event using ECS format: https://www.elastic.co/guide/en/ecs/1.5/index.html
  * @public
  *
  * @remarks
