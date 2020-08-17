@@ -19,19 +19,23 @@
 import { KibanaRequest } from '../http';
 
 /**
- * Audit event using ECS format: https://www.elastic.co/guide/en/ecs/1.5/index.html
+ * Audit event schema using ECS format.
+ * https://www.elastic.co/guide/en/ecs/1.5/index.html
  * @public
- *
- * @remarks
- * Not a complete interface.
  */
 export interface AuditEvent {
+  /**
+   * Human readable message describing the action, outcome and user.
+   *
+   * @example
+   * User 'jdoe' updated saved object 'kpis' of type 'dashboard'
+   */
   message: string;
   event: {
     action: string;
-    category?: EventCategory | EventCategory[];
-    type?: EventType | EventType[];
-    outcome?: EventOutcome;
+    category: EventCategory | readonly EventCategory[];
+    type: EventType | readonly EventType[];
+    outcome: EventOutcome;
     module?: string;
     dataset?: string;
   };
@@ -40,13 +44,25 @@ export interface AuditEvent {
     email?: string;
     full_name?: string;
     hash?: string;
+    roles?: readonly string[];
   };
-  kibana?: {
-    session_id?: string;
-    user_roles?: string[];
-    saved_objects?: Array<{
-      id?: string;
+  session?: {
+    id: string;
+  };
+  kibana: {
+    /**
+     * Current space id of the request.
+     */
+    namespace: string;
+    /**
+     * Array of saved objects created, accessed, updated or deleted as part of the action.
+     */
+    saved_objects?: ReadonlyArray<{
       type: string;
+      id?: string;
+      /**
+       * Array of namespaces added to or removed from the saved object.
+       */
       namespaces?: string[];
     }>;
   };
@@ -78,6 +94,9 @@ export interface AuditEvent {
     ip?: string;
   };
   trace: {
+    /**
+     * Corolation id extracted from request.
+     */
     id: string;
   };
 }
@@ -87,36 +106,33 @@ export type EventType = 'user' | 'group' | 'creation' | 'access' | 'change' | 'd
 export type EventOutcome = 'success' | 'failure';
 
 export type AuditEventDecorator<Args> = (
-  event: Pick<AuditEvent, 'user' | 'trace'>,
+  event: Pick<AuditEvent, 'user' | 'trace' | 'kibana'>,
   args: Args
 ) => AuditEvent;
 
 /**
- * Provides methods to log user actions and access events.
+ * Logs audit events scoped to the current user.
  * @public
  */
 export interface Auditor {
   /**
-   * Add a record to audit log.
-   * Service attaches to a log record:
-   * - metadata about an end-user initiating an operation
-   * - scope name, if presents
+   * Adds an event performed by the user to the audit log.
    *
    * @example
-   * How to add a record in audit log:
    * ```typescript
-   * router.get({ path: '/my_endpoint', validate: false }, async (context, request, response) => {
-   *   context.core.auditor.withAuditScope('my_plugin_operation');
-   *   const value = await context.core.elasticsearch.legacy.client.callAsCurrentUser('...');
-   *   context.core.add({ type: 'operation.type', message: 'perform an operation in ... endpoint' });
+   * context.core.auditor.add((event) => ({
+   *   ...event,
+   *   message: `User '${event.user.name}' updated saved object 'kpis' of type 'dashboard'`,
+   *   event: {
+   *     action: 'saved_object_update',
+   *     category: 'database',
+   *     type: 'change',
+   *     outcome: 'success'
+   *   }
+   * }));
    * ```
    */
   add<Args>(decorateEvent: AuditEventDecorator<Args>, args: Args): void;
-  /**
-   * Add a high-level scope name for logged events.
-   * It helps to identify the root cause of low-level events.
-   */
-  withAuditScope(name: string): void;
 }
 
 /**

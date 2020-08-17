@@ -214,9 +214,7 @@ export class Server {
     this.log.debug('starting server');
     const auditTrailStart = this.auditTrail.start();
 
-    const elasticsearchStart = await this.elasticsearch.start({
-      auditTrail: auditTrailStart,
-    });
+    const elasticsearchStart = await this.elasticsearch.start();
     const savedObjectsStart = await this.savedObjects.start({
       elasticsearch: elasticsearchStart,
       pluginsInitialized: this.#pluginsInitialized,

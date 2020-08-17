@@ -164,7 +164,10 @@ export class SecureSavedObjectsClientWrapper implements SavedObjectsClientContra
       throw error;
     }
 
-    auditor.add(savedObjectCreateEvent, { action: 'saved_object_bulk_create', objects });
+    auditor.add(savedObjectCreateEvent, {
+      action: 'saved_object_bulk_create',
+      objects: response.saved_objects,
+    });
 
     return await this.redactSavedObjectsNamespaces(response);
   }
@@ -236,7 +239,11 @@ export class SecureSavedObjectsClientWrapper implements SavedObjectsClientContra
         ...(status === 'partially_authorized' && { typeToNamespacesMap, type: '', namespaces: [] }), // the repository requires that `type` and `namespaces` must be empty if `typeToNamespacesMap` is defined
       });
     } catch (error) {
-      auditor.add(savedObjectReadEvent, { action: 'saved_object_find', objects: [], error });
+      auditor.add(savedObjectReadEvent, {
+        action: 'saved_object_find',
+        objects: [],
+        error,
+      });
       throw error;
     }
 

@@ -36,30 +36,33 @@ describe('AuditTrailClient', () => {
     event$.complete();
   });
 
-  describe('#withAuditScope', () => {
-    it('registers upper level scope', (done) => {
-      client.withAuditScope('scope_name');
-      event$.subscribe((event) => {
-        expect(event.scope).toBe('scope_name');
-        done();
-      });
-      client.add({ message: 'message', type: 'type' });
-    });
-
-    it('populates requestId', (done) => {
-      client.withAuditScope('scope_name');
-      event$.subscribe((event) => {
-        expect(event.requestId).toBe('request id alpha');
-        done();
-      });
-      client.add({ message: 'message', type: 'type' });
-    });
-
-    it('throws an exception if tries to re-write a scope', () => {
-      client.withAuditScope('scope_name');
-      expect(() => client.withAuditScope('another_scope_name')).toThrowErrorMatchingInlineSnapshot(
-        `"Audit scope is already set to: scope_name"`
-      );
+  it('adds event to audit log with user, tracing and namespace information', () => {
+    const subscriber = jest.fn();
+    event$.subscribe(subscriber);
+    client.add(
+      (event) => ({
+        ...event,
+        message: 'MESSAGE',
+        event: {
+          action: 'ACTION',
+          type: 'access',
+          category: 'database',
+          outcome: 'success',
+        },
+      }),
+      undefined
+    );
+    expect(subscriber).toHaveBeenCalledWith({
+      event: {
+        action: 'ACTION',
+        category: 'database',
+        outcome: 'success',
+        type: 'access',
+      },
+      kibana: { namespace: 'default' },
+      message: 'MESSAGE',
+      trace: { id: 'request id alpha' },
+      user: { name: undefined, roles: undefined },
     });
   });
 });
