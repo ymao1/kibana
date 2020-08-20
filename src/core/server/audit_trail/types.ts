@@ -107,7 +107,7 @@ export type EventOutcome = 'success' | 'failure';
 
 export type AuditEventDecorator<Args> = (
   event: Pick<AuditEvent, 'user' | 'trace' | 'kibana'>,
-  args: Args
+  args?: Args
 ) => AuditEvent;
 
 /**
@@ -132,7 +132,7 @@ export interface Auditor {
    * }));
    * ```
    */
-  add<Args>(decorateEvent: AuditEventDecorator<Args>, args: Args): void;
+  add<Args>(decorateEvent: AuditEventDecorator<Args>, args?: Args): void;
 }
 
 /**

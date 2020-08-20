@@ -21,7 +21,7 @@ export class AuditTrailClient implements Auditor {
     private readonly deps: Deps
   ) {}
 
-  public add<Args>(decorateEvent: AuditEventDecorator<Args>, args: Args) {
+  public add<Args>(decorateEvent: AuditEventDecorator<Args>, args?: Args) {
     const user = this.deps.getCurrentUser(this.request);
     const spaceId = this.deps.getSpaceId?.(this.request);
     const event = decorateEvent(
