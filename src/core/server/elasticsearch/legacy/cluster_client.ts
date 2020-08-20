@@ -20,7 +20,7 @@ import { Client } from 'elasticsearch';
 import { get } from 'lodash';
 
 import { LegacyElasticsearchErrorHelpers } from './errors';
-import { GetAuthHeaders, KibanaRequest, isKibanaRequest, isRealRequest } from '../../http';
+import { GetAuthHeaders, isKibanaRequest, isRealRequest } from '../../http';
 import { filterHeaders, ensureRawRequest } from '../../http/router';
 import { Logger } from '../../logging';
 import { ScopeableRequest } from '../types';

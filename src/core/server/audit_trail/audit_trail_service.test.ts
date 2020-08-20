@@ -75,13 +75,10 @@ describe('AuditTrailService', () => {
         const { asScoped } = auditTrail.start();
         const kibanaRequest = httpServerMock.createKibanaRequest();
         const auditor = asScoped(kibanaRequest);
-        const message = {
-          type: 'foo',
-          message: 'bar',
-        };
-        auditor.add(() => message);
+        const eventDecorator = jest.fn();
+        auditor.add(eventDecorator);
 
-        expect(addEventMock).toHaveBeenLastCalledWith(message);
+        expect(addEventMock).toHaveBeenLastCalledWith(eventDecorator);
       });
 
       describe('return the same auditor instance for the same KibanaRequest', () => {
