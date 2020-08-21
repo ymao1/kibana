@@ -23,7 +23,7 @@ export class AuditTrailTestPlugin implements Plugin {
       { path: '/audit_trail_test/audit_trail_service', validate: false },
       async (context, request, response) => {
         const [coreStart] = await core.getStartServices();
-        const auditor = coreStart.auditTrail.asScoped(request);
+        coreStart.auditTrail.asScoped(request);
 
         return response.noContent();
       }

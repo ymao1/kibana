@@ -76,7 +76,7 @@ describe('AuditTrailService', () => {
         const kibanaRequest = httpServerMock.createKibanaRequest();
         const auditor = asScoped(kibanaRequest);
         const eventDecorator = jest.fn();
-        auditor.add(eventDecorator);
+        auditor.add(eventDecorator, undefined);
 
         expect(addEventMock).toHaveBeenLastCalledWith(eventDecorator);
       });
