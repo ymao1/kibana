@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the Elastic License.
  */
 
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, Subscription } from 'rxjs';
 import { map } from 'rxjs/operators';
 import {
   AppenderConfigType,
@@ -50,7 +50,19 @@ export class AuditTrailPlugin implements Plugin {
       getSpaceId: deps.spaces?.spacesService.getSpaceId,
     };
 
-    this.event$.subscribe(({ message, ...other }) => this.logger.debug(message, other));
+    if (deps.security) {
+      let subscription: Subscription;
+      deps.security.license.features$.subscribe(({ allowAuditLogging }) => {
+        if (subscription && !subscription.closed) {
+          subscription.unsubscribe();
+        }
+        if (allowAuditLogging) {
+          subscription = this.event$
+            .asObservable()
+            .subscribe(({ message, ...other }) => this.logger.debug(message, other));
+        }
+      });
+    }
 
     core.auditTrail.register({
       asScoped: (request: KibanaRequest) => {

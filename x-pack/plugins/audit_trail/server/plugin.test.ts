@@ -4,6 +4,7 @@
  * you may not use this file except in compliance with the Elastic License.
  */
 
+import { BehaviorSubject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { AuditTrailPlugin } from './plugin';
 import { coreMock } from '../../../../src/core/server/mocks';
@@ -26,6 +27,18 @@ describe('AuditTrail plugin', () => {
       pluginInitContextMock = coreMock.createPluginInitializerContext();
       plugin = new AuditTrailPlugin(pluginInitContextMock);
       coreSetup = coreMock.createSetup();
+      deps.security.license.features$ = new BehaviorSubject({
+        showLogin: true,
+        allowLogin: true,
+        showLinks: true,
+        showRoleMappingsManagement: true,
+        allowAccessAgreement: true,
+        allowAuditLogging: true,
+        allowRoleDocumentLevelSecurity: true,
+        allowRoleFieldLevelSecurity: true,
+        allowRbac: true,
+        allowSubFeaturePrivileges: true,
+      });
     });
 
     afterEach(async () => {
@@ -37,6 +50,40 @@ describe('AuditTrail plugin', () => {
       plugin = new AuditTrailPlugin(pluginInitContextMock);
       plugin.setup(coreSetup, deps);
       expect(coreSetup.auditTrail.register).toHaveBeenCalledTimes(1);
+    });
+
+    it('logs to audit trail if license allows', async () => {
+      pluginInitContextMock = coreMock.createPluginInitializerContext();
+      plugin = new AuditTrailPlugin(pluginInitContextMock);
+
+      const subscribeMock = jest.spyOn((plugin as any).event$, 'subscribe');
+
+      plugin.setup(coreSetup, deps);
+
+      expect(subscribeMock).toHaveBeenCalled();
+    });
+
+    it('does not log to audit trail if license does not allow', async () => {
+      pluginInitContextMock = coreMock.createPluginInitializerContext();
+      plugin = new AuditTrailPlugin(pluginInitContextMock);
+
+      const subscribeMock = jest.spyOn((plugin as any).event$, 'subscribe');
+
+      deps.security.license.features$ = new BehaviorSubject({
+        showLogin: true,
+        allowLogin: true,
+        showLinks: true,
+        showRoleMappingsManagement: true,
+        allowAccessAgreement: true,
+        allowAuditLogging: false,
+        allowRoleDocumentLevelSecurity: true,
+        allowRoleFieldLevelSecurity: true,
+        allowRbac: true,
+        allowSubFeaturePrivileges: true,
+      });
+
+      plugin.setup(coreSetup, deps);
+      expect(subscribeMock).not.toHaveBeenCalled();
     });
 
     describe('logger', () => {
