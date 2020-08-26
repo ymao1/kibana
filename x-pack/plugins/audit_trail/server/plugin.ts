@@ -51,15 +51,15 @@ export class AuditTrailPlugin implements Plugin {
     };
 
     if (deps.security) {
-      let subscription: Subscription;
+      let previousSubscription: Subscription;
       deps.security.license.features$.subscribe(({ allowAuditLogging }) => {
-        if (subscription && !subscription.closed) {
-          subscription.unsubscribe();
+        if (previousSubscription && !previousSubscription.closed) {
+          previousSubscription.unsubscribe();
         }
         if (allowAuditLogging) {
-          subscription = this.event$
-            .asObservable()
-            .subscribe(({ message, ...other }) => this.logger.debug(message, other));
+          previousSubscription = this.event$.subscribe(({ message, ...other }) =>
+            this.logger.debug(message, other)
+          );
         }
       });
     }
