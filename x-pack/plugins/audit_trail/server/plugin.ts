@@ -4,8 +4,8 @@
  * you may not use this file except in compliance with the Elastic License.
  */
 
-import { Observable, Subject, Subscription } from 'rxjs';
-import { map } from 'rxjs/operators';
+import { Observable, Subject, combineLatest } from 'rxjs';
+import { map, filter } from 'rxjs/operators';
 import {
   AppenderConfigType,
   CoreSetup,
@@ -50,19 +50,9 @@ export class AuditTrailPlugin implements Plugin {
       getSpaceId: deps.spaces?.spacesService.getSpaceId,
     };
 
-    if (deps.security) {
-      let previousSubscription: Subscription;
-      deps.security.license.features$.subscribe(({ allowAuditLogging }) => {
-        if (previousSubscription && !previousSubscription.closed) {
-          previousSubscription.unsubscribe();
-        }
-        if (allowAuditLogging) {
-          previousSubscription = this.event$.subscribe(({ message, ...other }) =>
-            this.logger.debug(message, other)
-          );
-        }
-      });
-    }
+    combineLatest(this.event$.asObservable(), deps.security.license.features$)
+      .pipe(filter(([, licenseFeatures]) => licenseFeatures.allowAuditLogging))
+      .subscribe(([{ message, ...other }]) => this.logger.debug(message, other));
 
     core.auditTrail.register({
       asScoped: (request: KibanaRequest) => {

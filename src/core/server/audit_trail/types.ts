@@ -111,7 +111,7 @@ export type AuditEventDecorator<Args> = (
 ) => AuditEvent;
 
 /**
- * Logs audit events scoped to the current user.
+ * Logs audit events scoped to the current request.
  * @public
  */
 export interface Auditor {

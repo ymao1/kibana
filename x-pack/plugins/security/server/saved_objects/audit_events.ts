@@ -43,7 +43,7 @@ export const savedObjectCreateEvent: AuditEventDecorator<SavedObjectEventArgs> =
         }
       : undefined,
     kibana: {
-      namespace: event.kibana.namespace,
+      ...event.kibana,
       saved_objects: objects.map(({ type, id }) => ({ type, id })),
     },
   };
@@ -76,7 +76,7 @@ export const savedObjectReadEvent: AuditEventDecorator<SavedObjectEventArgs> = (
         }
       : undefined,
     kibana: {
-      namespace: event.kibana.namespace,
+      ...event.kibana,
       saved_objects: objects.map(({ type, id }) => ({ type, id })),
     },
   };
@@ -109,7 +109,7 @@ export const savedObjectUpdateEvent: AuditEventDecorator<SavedObjectEventArgs> =
         }
       : undefined,
     kibana: {
-      namespace: event.kibana.namespace,
+      ...event.kibana,
       saved_objects: objects.map(({ type, id, namespaces }) => ({ type, id, namespaces })),
     },
   };
@@ -142,7 +142,7 @@ export const savedObjectDeleteEvent: AuditEventDecorator<SavedObjectEventArgs> =
         }
       : undefined,
     kibana: {
-      namespace: event.kibana.namespace,
+      ...event.kibana,
       saved_objects: objects.map(({ type, id, namespaces }) => ({ type, id, namespaces })),
     },
   };

@@ -4,11 +4,12 @@
  * you may not use this file except in compliance with the Elastic License.
  */
 
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 import { first } from 'rxjs/operators';
 import { AuditTrailPlugin } from './plugin';
 import { coreMock } from '../../../../src/core/server/mocks';
 
+import { AuditEvent } from 'src/core/server';
 import { securityMock } from '../../security/server/mocks';
 import { spacesMock } from '../../spaces/server/mocks';
 
@@ -55,20 +56,17 @@ describe('AuditTrail plugin', () => {
     it('logs to audit trail if license allows', async () => {
       pluginInitContextMock = coreMock.createPluginInitializerContext();
       plugin = new AuditTrailPlugin(pluginInitContextMock);
-
-      const subscribeMock = jest.spyOn((plugin as any).event$, 'subscribe');
-
+      const event$: Subject<any> = (plugin as any).event$;
+      const debugLoggerSpy = jest.spyOn((plugin as any).logger, 'debug');
       plugin.setup(coreSetup, deps);
+      event$.next({ message: 'MESSAGE', other: 'OTHER' });
 
-      expect(subscribeMock).toHaveBeenCalled();
+      expect(debugLoggerSpy).toHaveBeenCalledWith('MESSAGE', { other: 'OTHER' });
     });
 
     it('does not log to audit trail if license does not allow', async () => {
       pluginInitContextMock = coreMock.createPluginInitializerContext();
       plugin = new AuditTrailPlugin(pluginInitContextMock);
-
-      const subscribeMock = jest.spyOn((plugin as any).event$, 'subscribe');
-
       deps.security.license.features$ = new BehaviorSubject({
         showLogin: true,
         allowLogin: true,
@@ -81,9 +79,12 @@ describe('AuditTrail plugin', () => {
         allowRbac: true,
         allowSubFeaturePrivileges: true,
       });
-
+      const event$: Subject<any> = (plugin as any).event$;
+      const debugLoggerSpy = jest.spyOn((plugin as any).logger, 'debug');
       plugin.setup(coreSetup, deps);
-      expect(subscribeMock).not.toHaveBeenCalled();
+      event$.next({ message: 'MESSAGE', other: 'OTHER' });
+
+      expect(debugLoggerSpy).not.toHaveBeenCalled();
     });
 
     describe('logger', () => {

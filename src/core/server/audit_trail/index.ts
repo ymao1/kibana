@@ -20,6 +20,9 @@
 export { AuditTrailService } from './audit_trail_service';
 export {
   AuditEvent,
+  EventCategory,
+  EventType,
+  EventOutcome,
   AuditEventDecorator,
   Auditor,
   AuditorFactory,
