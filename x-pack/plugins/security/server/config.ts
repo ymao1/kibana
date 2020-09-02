@@ -7,7 +7,7 @@
 import crypto from 'crypto';
 import { schema, Type, TypeOf } from '@kbn/config-schema';
 import { i18n } from '@kbn/i18n';
-import { Logger } from '../../../../src/core/server';
+import { Logger, config as coreConfig } from '../../../../src/core/server';
 
 export type ConfigType = ReturnType<typeof createConfig>;
 
@@ -200,6 +200,7 @@ export const ConfigSchema = schema.object({
   }),
   audit: schema.object({
     enabled: schema.boolean({ defaultValue: false }),
+    appender: schema.maybe(coreConfig.logging.appenders),
   }),
 });
 

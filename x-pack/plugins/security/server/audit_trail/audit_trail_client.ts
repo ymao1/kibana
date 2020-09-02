@@ -6,7 +6,7 @@
 import { Subject } from 'rxjs';
 import { KibanaRequest, Auditor, AuditEvent, AuditEventDecorator } from 'src/core/server';
 
-import { SecurityPluginSetup } from '../../../security/server';
+import { SecurityPluginSetup } from '../';
 import { SpacesPluginSetup } from '../../../spaces/server';
 
 interface Deps {
