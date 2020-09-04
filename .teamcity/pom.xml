@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<project>
+    <modelVersion>4.0.0</modelVersion>
+    <name>Kibana Teamcity Config DSL</name>
+    <artifactId>kibana-teamcity-dsl</artifactId>
+
+    <repositories>
+        <repository>
+            <id>teamcity</id>
+            <url>https://artifactory.elstc.co/artifactory/teamcity</url>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>teamcity</id>
+            <url>https://artifactory.elstc.co/artifactory/teamcity</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <parent>
+        <groupId>co.elastic.teamcity</groupId>
+        <artifactId>teamcity-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <dependencies>
+        <dependency>
+            <groupId>co.elastic.teamcity</groupId>
+            <artifactId>teamcity-common</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+</project>
