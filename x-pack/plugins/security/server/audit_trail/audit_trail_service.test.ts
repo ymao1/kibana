@@ -6,8 +6,13 @@
 
 import { BehaviorSubject, Subject } from 'rxjs';
 import { first } from 'rxjs/operators';
-import { AuditTrailService } from './audit_trail_service';
-import { coreMock, loggingSystemMock } from 'src/core/server/mocks';
+import { AuditTrailService, httpRequestEvent } from './audit_trail_service';
+import {
+  coreMock,
+  loggingSystemMock,
+  httpServiceMock,
+  httpServerMock,
+} from 'src/core/server/mocks';
 
 describe('AuditTrail plugin', () => {
   let coreSetup: ReturnType<typeof coreMock.createSetup>;
@@ -32,12 +37,13 @@ describe('AuditTrail plugin', () => {
   const getCurrentUser = jest.fn();
   const getSpacesService = jest.fn();
   const logger = loggingSystemMock.createLogger();
-  const debugLoggerSpy = jest.spyOn(logger, 'debug');
+  const http = httpServiceMock.createSetupContract();
 
   beforeEach(() => {
     service = new AuditTrailService(logger);
-    debugLoggerSpy.mockClear();
     coreSetup = coreMock.createSetup();
+    logger.debug.mockClear();
+    http.registerOnPreResponse.mockClear();
   });
 
   afterEach(async () => {
@@ -49,6 +55,7 @@ describe('AuditTrail plugin', () => {
       service.setup({
         license,
         config,
+        http,
         logging: coreSetup.logging,
         auditTrail: coreSetup.auditTrail,
         getCurrentUser,
@@ -57,18 +64,32 @@ describe('AuditTrail plugin', () => {
       expect(coreSetup.auditTrail.register).toHaveBeenCalledTimes(1);
     });
 
+    it('registers pre response hook', async () => {
+      service.setup({
+        license,
+        config,
+        http,
+        logging: coreSetup.logging,
+        auditTrail: coreSetup.auditTrail,
+        getCurrentUser,
+        getSpacesService,
+      });
+      expect(http.registerOnPreResponse).toHaveBeenCalledTimes(1);
+    });
+
     it('logs to audit trail if license allows', async () => {
       const event$: Subject<any> = (service as any).event$;
       service.setup({
         license,
         config,
+        http,
         logging: coreSetup.logging,
         auditTrail: coreSetup.auditTrail,
         getCurrentUser,
         getSpacesService,
       });
       event$.next({ message: 'MESSAGE', other: 'OTHER' });
-      expect(debugLoggerSpy).toHaveBeenCalledWith('MESSAGE', { other: 'OTHER' });
+      expect(logger.debug).toHaveBeenCalledWith('MESSAGE', { other: 'OTHER' });
     });
 
     it('does not log to audit trail if license does not allow', async () => {
@@ -89,13 +110,14 @@ describe('AuditTrail plugin', () => {
           }),
         },
         config,
+        http,
         logging: coreSetup.logging,
         auditTrail: coreSetup.auditTrail,
         getCurrentUser,
         getSpacesService,
       });
       event$.next({ message: 'MESSAGE', other: 'OTHER' });
-      expect(debugLoggerSpy).not.toHaveBeenCalled();
+      expect(logger.debug).not.toHaveBeenCalled();
     });
 
     describe('logger', () => {
@@ -103,6 +125,7 @@ describe('AuditTrail plugin', () => {
         service.setup({
           license,
           config,
+          http,
           logging: coreSetup.logging,
           auditTrail: coreSetup.auditTrail,
           getCurrentUser,
@@ -118,6 +141,7 @@ describe('AuditTrail plugin', () => {
           config: {
             enabled: false,
           },
+          http,
           logging: coreSetup.logging,
           auditTrail: coreSetup.auditTrail,
           getCurrentUser,
@@ -133,6 +157,7 @@ describe('AuditTrail plugin', () => {
         service.setup({
           license,
           config,
+          http,
           logging: coreSetup.logging,
           auditTrail: coreSetup.auditTrail,
           getCurrentUser,
@@ -157,6 +182,7 @@ describe('AuditTrail plugin', () => {
               },
             },
           },
+          http,
           logging: coreSetup.logging,
           auditTrail: coreSetup.auditTrail,
           getCurrentUser,
@@ -182,6 +208,7 @@ describe('AuditTrail plugin', () => {
           config: {
             enabled: true,
           },
+          http,
           logging: coreSetup.logging,
           auditTrail: coreSetup.auditTrail,
           getCurrentUser,
@@ -201,5 +228,58 @@ describe('AuditTrail plugin', () => {
         });
       });
     });
+  });
+});
+
+describe('#httpRequestEvent', () => {
+  const baseEvent = {
+    user: { name: 'USER_NAME' },
+    trace: { id: 'TRACE_ID' },
+    kibana: { namespace: 'SPACE_ID' },
+  };
+
+  test(`creates audit event`, () => {
+    expect(
+      httpRequestEvent(baseEvent, {
+        request: httpServerMock.createKibanaRequest({
+          path: '/path?query=param',
+          kibanaRequestState: { requestId: 'REQUEST_ID' },
+        }),
+        preResponseInfo: { statusCode: 200 },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "event": Object {
+          "action": "http_request",
+          "category": "web",
+          "outcome": "success",
+        },
+        "http": Object {
+          "request": Object {
+            "method": "get",
+          },
+          "response": Object {
+            "status_code": 200,
+          },
+        },
+        "kibana": Object {
+          "namespace": "SPACE_ID",
+        },
+        "message": "HTTP request '/path' by user 'USER_NAME' succeeded",
+        "trace": Object {
+          "id": "TRACE_ID",
+        },
+        "url": Object {
+          "domain": undefined,
+          "path": "/path",
+          "port": undefined,
+          "query": "query=param",
+          "scheme": undefined,
+        },
+        "user": Object {
+          "name": "USER_NAME",
+        },
+      }
+    `);
   });
 });
