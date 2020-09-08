@@ -54,7 +54,7 @@ The plugin integrates with the core system via lifecycle events: `setup`<!-- -->
 |  [AssistanceAPIResponse](./kibana-plugin-core-server.assistanceapiresponse.md) |  |
 |  [AssistantAPIClientParams](./kibana-plugin-core-server.assistantapiclientparams.md) |  |
 |  [AuditEvent](./kibana-plugin-core-server.auditevent.md) | Audit event schema using ECS format. https://www.elastic.co/guide/en/ecs/1.5/index.html |
-|  [Auditor](./kibana-plugin-core-server.auditor.md) | Logs audit events scoped to the current user. |
+|  [Auditor](./kibana-plugin-core-server.auditor.md) | Logs audit events scoped to the current request. |
 |  [AuditorFactory](./kibana-plugin-core-server.auditorfactory.md) | Creates [Auditor](./kibana-plugin-core-server.auditor.md) instance bound to the current user credentials. |
 |  [AuditTrailSetup](./kibana-plugin-core-server.audittrailsetup.md) |  |
 |  [Authenticated](./kibana-plugin-core-server.authenticated.md) |  |

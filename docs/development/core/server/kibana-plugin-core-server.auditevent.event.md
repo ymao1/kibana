@@ -10,7 +10,7 @@
 event: {
         action: string;
         category: EventCategory | readonly EventCategory[];
-        type: EventType | readonly EventType[];
+        type?: EventType | readonly EventType[];
         outcome: EventOutcome;
         module?: string;
         dataset?: string;

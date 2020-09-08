@@ -4,7 +4,7 @@
 
 ## Auditor interface
 
-Logs audit events scoped to the current user.
+Logs audit events scoped to the current request.
 
 <b>Signature:</b>
 
