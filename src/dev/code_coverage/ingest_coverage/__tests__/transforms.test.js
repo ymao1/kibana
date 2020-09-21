@@ -24,6 +24,7 @@ import {
   itemizeVcs,
   prokPrevious,
   teamAssignment,
+  assignTeam,
   last,
 } from '../transforms';
 import { ToolingLog } from '@kbn/dev-utils';
@@ -99,6 +100,16 @@ describe(`Transform fns`, () => {
     const log = new ToolingLog({
       level: 'info',
       writeTo: process.stdout,
+    });
+
+    describe(`assignTeam`, () => {
+      describe(`with a coveredFilePath that does not exist`, () => {
+        it(`should resolve to unknown`, async () => {
+          const actual = await assignTeam(teamAssignmentsPathMOCK, 'does_not_exist.js', log, obj);
+          const { team } = actual;
+          expect(team).to.be('unknown');
+        });
+      });
     });
 
     describe(`with a coveredFilePath of ${coveredFilePath}`, () => {

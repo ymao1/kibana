@@ -22,6 +22,10 @@ import * as Maybe from './maybe';
 import { always, id, noop, pink } from './utils';
 import execa from 'execa';
 import { resolve } from 'path';
+import * as TE from 'fp-ts/lib/TaskEither';
+import { pipe } from 'fp-ts/lib/pipeable';
+import * as R from 'ramda';
+import * as E from 'fp-ts/lib/Either';
 
 const ROOT_DIR = resolve(__dirname, '../../../..');
 
@@ -119,26 +123,29 @@ export const last = (x) => {
 
   return len === 1 ? xs[0] : xs[len - 1];
 };
-async function assignTeam(teamAssignmentsPath, coveredFilePath, log, obj) {
+const logErr = (aPath) => (log) => (e) => {
+  log.error(`\n!!! Unknown Team for path: \n${pink(aPath)}\n!!! Orig Err: \n${pink(e)}`);
+  return e;
+};
+export async function assignTeam(teamAssignmentsPath, coveredFilePath, log, obj) {
   const params = [coveredFilePath, teamAssignmentsPath];
+  const logGrepFail = logErr(coveredFilePath)(log);
 
-  let grepResponse;
+  const xform = await pipe(
+    TE.tryCatch(() => execa('grep', params, { cwd: ROOT_DIR }), pipe(logGrepFail, id)),
+    TE.map(R.prop('stdout')),
+    TE.map(last),
+    TE.map(findTeam),
+    TE.map(pluckTeam)
+  )();
 
-  try {
-    const { stdout } = await execa('grep', params, { cwd: ROOT_DIR });
-    grepResponse = stdout;
-  } catch (e) {
-    log.error(`\n!!! Unknown Team for path: \n\t\t${pink(coveredFilePath)}\n`);
-  }
-
-  return Either.fromNullable(grepResponse)
-    .map(last)
-    .map(findTeam)
-    .map(pluckTeam)
-    .fold(
+  return pipe(
+    xform,
+    E.fold(
       () => ({ team: 'unknown', ...obj }),
       (team) => ({ team, ...obj })
-    );
+    )
+  );
 }
 
 export const ciRunUrl = (obj) =>
