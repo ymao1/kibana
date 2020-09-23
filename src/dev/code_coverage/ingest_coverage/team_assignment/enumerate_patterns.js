@@ -19,34 +19,28 @@
 
 import { readdirSync, statSync } from 'fs';
 import { join } from 'path';
+import { from } from 'rxjs';
+import { map, filter, flatMap } from 'rxjs/operators';
 import {
-  push,
   prokGlob,
   trim,
   isRejectedDir,
   isFileAllowed,
   isDir,
-  tryPath,
   dropEmpty,
   notFound,
+  tryPath,
 } from './enumeration_helpers';
+import { id } from '../utils';
 import { stripLeading } from '../transforms';
 
 export const enumeratePatterns = (rootPath) => (log) => (patterns) => {
-  const res = [];
-  const resPush = push(res);
-  const logNotFound = notFound(log);
+  return from(patterns).pipe(map(creepOrLog(log)), filter(id), flatMap(id));
 
-  for (const entry of patterns) {
-    const [pathPattern, team] = entry;
-    const cleaned = stripLeading(pathPattern);
-    const existsWithOwner = pathExists(team);
-
-    const collect = (x) => existsWithOwner(x).forEach(resPush);
-    tryPath(cleaned).fold(logNotFound, collect);
+  function creepOrLog(log) {
+    return ([pathPattern, team]) =>
+      tryPath(stripLeading(pathPattern)).fold(notFound(log), pathExists(team));
   }
-
-  return res;
 
   function pathExists(owner) {
     const creeper = (x) => creepFsSync(x, [], rootPath, owner);

@@ -26,16 +26,18 @@ const encoding = 'utf8';
 const appendUtf8 = { flag: 'a', encoding };
 
 export const flush = (dest) => (log) => (assignments) => {
-  log.verbose(`\n### Flushing assignments to: \n\t${dest}`);
+  log.verbose(`\n### Flushing assignments to: \n\t${dest}.`);
 
   const writeToFile = writeFileSync.bind(null, dest);
 
   writeToFile('', { encoding });
 
-  for (const xs of assignments) xs.forEach((x) => writeToFile(`${x}\n`, appendUtf8));
+  const flushLine = (x) => writeToFile(`${x}\n`, appendUtf8);
+  const flushAll = (xs) => xs.forEach(flushLine);
+  assignments.subscribe(flushAll);
 
   tryCatch(() => maybeShowSize(dest)).fold(id, (x) => {
-    log.verbose(`\n### Flushed [${x}] lines`);
+    log.verbose(`\n### Flushed [${x}] lines.`);
   });
 };
 function maybeShowSize(x) {

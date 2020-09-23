@@ -131,16 +131,16 @@ export async function assignTeam(teamAssignmentsPath, coveredFilePath, log, obj)
   const params = [coveredFilePath, teamAssignmentsPath];
   const logGrepFail = logErr(coveredFilePath)(log);
 
-  const xform = await pipe(
+  const grepAndXform = pipe(
     TE.tryCatch(() => execa('grep', params, { cwd: ROOT_DIR }), pipe(logGrepFail, id)),
     TE.map(R.prop('stdout')),
     TE.map(last),
     TE.map(findTeam),
     TE.map(pluckTeam)
-  )();
+  );
 
   return pipe(
-    xform,
+    await grepAndXform(),
     E.fold(
       () => ({ team: 'unknown', ...obj }),
       (team) => ({ team, ...obj })

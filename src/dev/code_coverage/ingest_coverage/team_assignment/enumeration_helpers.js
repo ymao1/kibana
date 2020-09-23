@@ -22,7 +22,6 @@ import isGlob from 'is-glob';
 import glob from 'glob';
 import { left, right, tryCatch } from '../either';
 
-export const push = (xs) => (x) => xs.push(x);
 export const pathExists = (x) => tryCatch(() => statSync(x)).fold(left, right);
 export const isDir = (x) => statSync(x).isDirectory();
 export const prokGlob = (x) => glob.sync(x, { nonull: true });
