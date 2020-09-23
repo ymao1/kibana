@@ -48,8 +48,13 @@ export class AuditTrailService {
     getCurrentUser,
     getSpacesService,
   }: SetupParams) {
-    combineLatest(this.event$.asObservable(), license.features$)
-      .pipe(filter(([, licenseFeatures]) => licenseFeatures.allowAuditLogging))
+    combineLatest([this.event$.asObservable(), license.features$])
+      .pipe(
+        filter(
+          ([event, licenseFeatures]) =>
+            licenseFeatures.allowAuditLogging && filterEvent(event, config.ignore_filters)
+        )
+      )
       .subscribe(([{ message, ...other }]) => this.logger.debug(message, other));
 
     const depsApi = {
@@ -63,7 +68,6 @@ export class AuditTrailService {
     };
     auditTrail.register(auditorFactory);
 
-    // TODO: Probably not the right hook since response can still change
     http.registerOnPreResponse((request, preResponseInfo, t) => {
       auditorFactory.asScoped(request).add(httpRequestEvent, { request, preResponseInfo });
       return t.next();
@@ -94,6 +98,23 @@ export class AuditTrailService {
   public stop() {
     this.event$.complete();
   }
+}
+
+export function filterEvent(
+  event: AuditEvent,
+  ignoreFilters: ConfigType['audit']['ignore_filters']
+) {
+  if (ignoreFilters) {
+    return !ignoreFilters.some(
+      (rule) =>
+        (!rule.actions || rule.actions.includes(event.event.action)) &&
+        (!rule.categories || rule.categories.includes(event.event.category)) &&
+        (!rule.types || rule.types.includes(event.event.type!)) &&
+        (!rule.outcomes || rule.outcomes.includes(event.event.outcome)) &&
+        (!rule.namespaces || rule.namespaces.includes(event.kibana.namespace))
+    );
+  }
+  return true;
 }
 
 export interface HttpRequestEventArgs {

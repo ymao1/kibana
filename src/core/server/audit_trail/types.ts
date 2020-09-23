@@ -33,8 +33,8 @@ export interface AuditEvent {
   message: string;
   event: {
     action: string;
-    category: EventCategory | readonly EventCategory[];
-    type?: EventType | readonly EventType[];
+    category: EventCategory;
+    type?: EventType;
     outcome: EventOutcome;
     module?: string;
     dataset?: string;

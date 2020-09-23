@@ -201,6 +201,17 @@ export const ConfigSchema = schema.object({
   audit: schema.object({
     enabled: schema.boolean({ defaultValue: false }),
     appender: schema.maybe(coreConfig.logging.appenders),
+    ignore_filters: schema.maybe(
+      schema.arrayOf(
+        schema.object({
+          actions: schema.maybe(schema.arrayOf(schema.string())),
+          categories: schema.maybe(schema.arrayOf(schema.string())),
+          types: schema.maybe(schema.arrayOf(schema.string())),
+          outcomes: schema.maybe(schema.arrayOf(schema.string())),
+          namespaces: schema.maybe(schema.arrayOf(schema.string())),
+        })
+      )
+    ),
   }),
 });
 

@@ -6,13 +6,14 @@
 
 import { BehaviorSubject, Subject } from 'rxjs';
 import { first } from 'rxjs/operators';
-import { AuditTrailService, httpRequestEvent } from './audit_trail_service';
+import { AuditTrailService, httpRequestEvent, filterEvent } from './audit_trail_service';
 import {
   coreMock,
   loggingSystemMock,
   httpServiceMock,
   httpServerMock,
 } from 'src/core/server/mocks';
+import { AuditEvent } from 'src/core/server';
 
 describe('AuditTrail plugin', () => {
   let coreSetup: ReturnType<typeof coreMock.createSetup>;
@@ -117,6 +118,24 @@ describe('AuditTrail plugin', () => {
         getSpacesService,
       });
       event$.next({ message: 'MESSAGE', other: 'OTHER' });
+      expect(logger.debug).not.toHaveBeenCalled();
+    });
+
+    it('does not log to audit trail if event matches ignore filter', async () => {
+      const event$: Subject<any> = (service as any).event$;
+      service.setup({
+        license,
+        config: {
+          enabled: true,
+          ignore_filters: [{ actions: ['ACTION'] }],
+        },
+        http,
+        logging: coreSetup.logging,
+        auditTrail: coreSetup.auditTrail,
+        getCurrentUser,
+        getSpacesService,
+      });
+      event$.next({ message: 'MESSAGE', event: { action: 'ACTION' } });
       expect(logger.debug).not.toHaveBeenCalled();
     });
 
@@ -243,7 +262,7 @@ describe('#httpRequestEvent', () => {
       httpRequestEvent(baseEvent, {
         request: httpServerMock.createKibanaRequest({
           path: '/path?query=param',
-          kibanaRequestState: { requestId: 'REQUEST_ID' },
+          kibanaRequestState: { requestId: 'REQUEST_ID', requestUuid: 'REQUEST_UUID' },
         }),
         preResponseInfo: { statusCode: 200 },
       })
@@ -281,5 +300,98 @@ describe('#httpRequestEvent', () => {
         },
       }
     `);
+  });
+});
+
+describe('#filterEvent', () => {
+  const event: AuditEvent = {
+    message: "HTTP request '/path' by user 'jdoe' succeeded",
+    event: {
+      action: 'http_request',
+      category: 'web',
+      type: 'access',
+      outcome: 'success',
+    },
+    user: {
+      name: 'jdoe',
+    },
+    kibana: {
+      namespace: 'default',
+    },
+    trace: {
+      id: 'TRACE_ID',
+    },
+  };
+
+  test(`filters events correctly when a single match is found per criteria`, () => {
+    expect(filterEvent(event, [{ actions: ['NO_MATCH'] }])).toBeTruthy();
+    expect(filterEvent(event, [{ actions: ['NO_MATCH', 'http_request'] }])).toBeFalsy();
+    expect(filterEvent(event, [{ categories: ['NO_MATCH', 'web'] }])).toBeFalsy();
+    expect(filterEvent(event, [{ types: ['NO_MATCH', 'access'] }])).toBeFalsy();
+    expect(filterEvent(event, [{ outcomes: ['NO_MATCH', 'success'] }])).toBeFalsy();
+    expect(filterEvent(event, [{ namespaces: ['NO_MATCH', 'default'] }])).toBeFalsy();
+  });
+
+  test(`keeps events when one criteria per rule does not match`, () => {
+    expect(
+      filterEvent(event, [
+        {
+          actions: ['NO_MATCH'],
+          categories: ['web'],
+          types: ['access'],
+          outcomes: ['success'],
+          namespaces: ['default'],
+        },
+        {
+          actions: ['http_request'],
+          categories: ['NO_MATCH'],
+          types: ['access'],
+          outcomes: ['success'],
+          namespaces: ['default'],
+        },
+        {
+          actions: ['http_request'],
+          categories: ['web'],
+          types: ['NO_MATCH'],
+          outcomes: ['success'],
+          namespaces: ['default'],
+        },
+        {
+          actions: ['http_request'],
+          categories: ['web'],
+          types: ['access'],
+          outcomes: ['NO_MATCH'],
+          namespaces: ['default'],
+        },
+        {
+          actions: ['http_request'],
+          categories: ['web'],
+          types: ['access'],
+          outcomes: ['success'],
+          namespaces: ['NO_MATCH'],
+        },
+      ])
+    ).toBeTruthy();
+  });
+
+  test(`filters out event when all criteria in a single rule match`, () => {
+    expect(
+      filterEvent(event, [
+        {
+          actions: ['NO_MATCH'],
+          categories: ['NO_MATCH'],
+          types: ['NO_MATCH'],
+          outcomes: ['NO_MATCH'],
+          namespaces: ['NO_MATCH'],
+        },
+        {
+          actions: ['http_request'],
+          categories: ['web'],
+          types: ['access'],
+          outcomes: ['success'],
+          namespaces: ['default'],
+        },
+      ])
+    ).toBeFalsy();
   });
 });
