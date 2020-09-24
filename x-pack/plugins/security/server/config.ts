@@ -208,7 +208,7 @@ export const ConfigSchema = schema.object({
           categories: schema.maybe(schema.arrayOf(schema.string())),
           types: schema.maybe(schema.arrayOf(schema.string())),
           outcomes: schema.maybe(schema.arrayOf(schema.string())),
-          namespaces: schema.maybe(schema.arrayOf(schema.string())),
+          spaces: schema.maybe(schema.arrayOf(schema.string())),
         })
       )
     ),

@@ -31,7 +31,7 @@ export class AuditTrailClient implements Auditor {
           roles: user?.roles,
         },
         kibana: {
-          namespace: spaceId!,
+          space_id: spaceId!,
         },
         trace: {
           id: this.request.id,

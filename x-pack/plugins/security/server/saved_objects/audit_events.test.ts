@@ -10,11 +10,12 @@ import {
   savedObjectReadEvent,
   savedObjectUpdateEvent,
 } from './audit_events';
+import { AuditEvent } from '../../../../../src/core/server';
 
-const baseEvent = {
+const baseEvent: Pick<AuditEvent, 'user' | 'trace' | 'kibana'> = {
   user: { name: 'USER_NAME' },
   trace: { id: 'TRACE_ID' },
-  kibana: { namespace: 'SPACE_ID' },
+  kibana: { space_id: 'SPACE_ID' },
 };
 
 describe('#savedObjectCreateEvent', () => {
@@ -22,74 +23,72 @@ describe('#savedObjectCreateEvent', () => {
     expect(
       savedObjectCreateEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
       })
     ).toMatchInlineSnapshot(`
-        Object {
-          "error": undefined,
-          "event": Object {
-            "action": "ACTION",
-            "category": "database",
-            "outcome": "success",
-            "type": "creation",
-          },
-          "kibana": Object {
-            "namespace": "SPACE_ID",
-            "saved_objects": Array [
-              Object {
-                "id": "SAVED_OBJECT_ID",
-                "type": "SAVED_OBJECT_TYPE",
-              },
-            ],
-          },
-          "message": "User 'USER_NAME' created saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
-          "trace": Object {
-            "id": "TRACE_ID",
-          },
-          "user": Object {
-            "name": "USER_NAME",
-          },
-        }
-      `);
+      Object {
+        "error": undefined,
+        "event": Object {
+          "action": "ACTION",
+          "category": "database",
+          "outcome": "unknown",
+          "type": "creation",
+        },
+        "kibana": Object {
+          "space_id": "SPACE_ID",
+        },
+        "message": "User 'USER_NAME' is creating saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
+        "trace": Object {
+          "id": "TRACE_ID",
+        },
+        "user": Object {
+          "name": "USER_NAME",
+        },
+      }
+    `);
   });
 
   test(`creates audit event with error message`, () => {
     expect(
       savedObjectCreateEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
         error: new Error('ERROR_MESSAGE'),
       })
     ).toMatchInlineSnapshot(`
-        Object {
-          "error": Object {
-            "code": "Error",
-            "message": "ERROR_MESSAGE",
-          },
-          "event": Object {
-            "action": "ACTION",
-            "category": "database",
-            "outcome": "failure",
-            "type": "creation",
-          },
-          "kibana": Object {
-            "namespace": "SPACE_ID",
-            "saved_objects": Array [
-              Object {
-                "id": "SAVED_OBJECT_ID",
-                "type": "SAVED_OBJECT_TYPE",
-              },
-            ],
-          },
-          "message": "Failed attempt to create saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE' by user 'USER_NAME'",
-          "trace": Object {
-            "id": "TRACE_ID",
-          },
-          "user": Object {
-            "name": "USER_NAME",
-          },
-        }
-      `);
+      Object {
+        "error": Object {
+          "code": "Error",
+          "message": "ERROR_MESSAGE",
+        },
+        "event": Object {
+          "action": "ACTION",
+          "category": "database",
+          "outcome": "failure",
+          "type": "creation",
+        },
+        "kibana": Object {
+          "space_id": "SPACE_ID",
+        },
+        "message": "Failed attempt to create saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE' by user 'USER_NAME'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
+        "trace": Object {
+          "id": "TRACE_ID",
+        },
+        "user": Object {
+          "name": "USER_NAME",
+        },
+      }
+    `);
   });
 });
 
@@ -98,7 +97,7 @@ describe('#savedObjectDeleteEvent', () => {
     expect(
       savedObjectDeleteEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
       })
     ).toMatchInlineSnapshot(`
       Object {
@@ -106,20 +105,18 @@ describe('#savedObjectDeleteEvent', () => {
         "event": Object {
           "action": "ACTION",
           "category": "database",
-          "outcome": "success",
+          "outcome": "unknown",
           "type": "deletion",
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
-          "saved_objects": Array [
-            Object {
-              "id": "SAVED_OBJECT_ID",
-              "namespaces": undefined,
-              "type": "SAVED_OBJECT_TYPE",
-            },
-          ],
+          "space_id": "SPACE_ID",
         },
-        "message": "User 'USER_NAME' deleted saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
+        "message": "User 'USER_NAME' is deleting saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
         "trace": Object {
           "id": "TRACE_ID",
         },
@@ -134,7 +131,7 @@ describe('#savedObjectDeleteEvent', () => {
     expect(
       savedObjectDeleteEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
         error: new Error('ERROR_MESSAGE'),
       })
     ).toMatchInlineSnapshot(`
@@ -150,16 +147,14 @@ describe('#savedObjectDeleteEvent', () => {
           "type": "deletion",
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
-          "saved_objects": Array [
-            Object {
-              "id": "SAVED_OBJECT_ID",
-              "namespaces": undefined,
-              "type": "SAVED_OBJECT_TYPE",
-            },
-          ],
+          "space_id": "SPACE_ID",
         },
         "message": "Failed attempt to delete saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE' by user 'USER_NAME'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
         "trace": Object {
           "id": "TRACE_ID",
         },
@@ -176,7 +171,7 @@ describe('#savedObjectReadEvent', () => {
     expect(
       savedObjectReadEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
       })
     ).toMatchInlineSnapshot(`
       Object {
@@ -188,15 +183,14 @@ describe('#savedObjectReadEvent', () => {
           "type": "access",
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
-          "saved_objects": Array [
-            Object {
-              "id": "SAVED_OBJECT_ID",
-              "type": "SAVED_OBJECT_TYPE",
-            },
-          ],
+          "space_id": "SPACE_ID",
         },
         "message": "User 'USER_NAME' accessed saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
         "trace": Object {
           "id": "TRACE_ID",
         },
@@ -211,7 +205,7 @@ describe('#savedObjectReadEvent', () => {
     expect(
       savedObjectReadEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
         error: new Error('ERROR_MESSAGE'),
       })
     ).toMatchInlineSnapshot(`
@@ -227,15 +221,14 @@ describe('#savedObjectReadEvent', () => {
           "type": "access",
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
-          "saved_objects": Array [
-            Object {
-              "id": "SAVED_OBJECT_ID",
-              "type": "SAVED_OBJECT_TYPE",
-            },
-          ],
+          "space_id": "SPACE_ID",
         },
         "message": "Failed attempt to access saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE' by user 'USER_NAME'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
         "trace": Object {
           "id": "TRACE_ID",
         },
@@ -252,7 +245,7 @@ describe('#savedObjectUpdateEvent', () => {
     expect(
       savedObjectUpdateEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
       })
     ).toMatchInlineSnapshot(`
       Object {
@@ -260,20 +253,18 @@ describe('#savedObjectUpdateEvent', () => {
         "event": Object {
           "action": "ACTION",
           "category": "database",
-          "outcome": "success",
+          "outcome": "unknown",
           "type": "change",
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
-          "saved_objects": Array [
-            Object {
-              "id": "SAVED_OBJECT_ID",
-              "namespaces": undefined,
-              "type": "SAVED_OBJECT_TYPE",
-            },
-          ],
+          "space_id": "SPACE_ID",
         },
-        "message": "User 'USER_NAME' updated saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
+        "message": "User 'USER_NAME' is updating saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
         "trace": Object {
           "id": "TRACE_ID",
         },
@@ -288,7 +279,7 @@ describe('#savedObjectUpdateEvent', () => {
     expect(
       savedObjectUpdateEvent(baseEvent, {
         action: 'ACTION',
-        objects: [{ type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' }],
+        object: { type: 'SAVED_OBJECT_TYPE', id: 'SAVED_OBJECT_ID' },
         error: new Error('ERROR_MESSAGE'),
       })
     ).toMatchInlineSnapshot(`
@@ -304,16 +295,14 @@ describe('#savedObjectUpdateEvent', () => {
           "type": "change",
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
-          "saved_objects": Array [
-            Object {
-              "id": "SAVED_OBJECT_ID",
-              "namespaces": undefined,
-              "type": "SAVED_OBJECT_TYPE",
-            },
-          ],
+          "space_id": "SPACE_ID",
         },
         "message": "Failed attempt to update saved object 'SAVED_OBJECT_ID' of type 'SAVED_OBJECT_TYPE' by user 'USER_NAME'",
+        "object": Object {
+          "additional_details": undefined,
+          "id": "SAVED_OBJECT_ID",
+          "type": "SAVED_OBJECT_TYPE",
+        },
         "trace": Object {
           "id": "TRACE_ID",
         },

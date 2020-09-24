@@ -53,18 +53,21 @@ export interface AuditEvent {
     /**
      * Current space id of the request.
      */
-    namespace: string;
-    /**
-     * Array of saved objects created, accessed, updated or deleted as part of the action.
-     */
-    saved_objects?: ReadonlyArray<{
-      type: string;
-      id?: string;
+    space_id: string;
+  };
+  object?: {
+    type?: string;
+    id?: string;
+    additional_details?: {
       /**
-       * Array of namespaces added to or removed from the saved object.
+       * Array of namespaces added to the saved object.
        */
-      namespaces?: string[];
-    }>;
+      add_to_spaces?: string[];
+      /**
+       * Array of namespaces removed from the saved object.
+       */
+      delete_from_spaces?: string[];
+    };
   };
   error?: {
     code?: string;
@@ -103,7 +106,7 @@ export interface AuditEvent {
 
 export type EventCategory = 'database' | 'web' | 'iam' | 'authentication' | 'process';
 export type EventType = 'user' | 'group' | 'creation' | 'access' | 'change' | 'deletion';
-export type EventOutcome = 'success' | 'failure';
+export type EventOutcome = 'success' | 'failure' | 'unknown';
 
 export type AuditEventDecorator<Args> = (
   event: Pick<AuditEvent, 'user' | 'trace' | 'kibana'>,

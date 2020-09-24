@@ -31,7 +31,7 @@ interface SetupParams {
   getSpacesService(): Pick<SpacesPluginSetup['spacesService'], 'getSpaceId'> | undefined;
   logging: Pick<LoggingServiceSetup, 'configure'>;
   auditTrail: Pick<AuditTrailSetup, 'register'>;
-  http: Pick<HttpServiceSetup, 'registerOnPreResponse'>;
+  http: Pick<HttpServiceSetup, 'registerOnPostAuth' | 'registerOnPreResponse'>;
 }
 
 export class AuditTrailService {
@@ -68,8 +68,16 @@ export class AuditTrailService {
     };
     auditTrail.register(auditorFactory);
 
+    http.registerOnPostAuth((request, response, t) => {
+      if (request.auth.isAuthenticated) {
+        auditorFactory.asScoped(request).add(httpRequestEvent, { request });
+      }
+      return t.next();
+    });
     http.registerOnPreResponse((request, preResponseInfo, t) => {
-      auditorFactory.asScoped(request).add(httpRequestEvent, { request, preResponseInfo });
+      if (request.auth.isAuthenticated) {
+        auditorFactory.asScoped(request).add(httpRequestEvent, { request, preResponseInfo });
+      }
       return t.next();
     });
 
@@ -87,7 +95,7 @@ export class AuditTrailService {
         loggers: [
           {
             context: 'audit_trail',
-            level: config.enabled ? 'debug' : 'off',
+            level: config.enabled ? 'info' : 'off',
             appenders: ['auditTrailAppender'],
           },
         ],
@@ -111,7 +119,7 @@ export function filterEvent(
         (!rule.categories || rule.categories.includes(event.event.category)) &&
         (!rule.types || rule.types.includes(event.event.type!)) &&
         (!rule.outcomes || rule.outcomes.includes(event.event.outcome)) &&
-        (!rule.namespaces || rule.namespaces.includes(event.kibana.namespace))
+        (!rule.spaces || rule.spaces.includes(event.kibana.space_id))
     );
   }
   return true;
@@ -119,7 +127,7 @@ export function filterEvent(
 
 export interface HttpRequestEventArgs {
   request: KibanaRequest;
-  preResponseInfo: OnPreResponseInfo;
+  preResponseInfo?: OnPreResponseInfo;
 }
 
 export const httpRequestEvent: AuditEventDecorator<HttpRequestEventArgs> = (
@@ -130,22 +138,25 @@ export const httpRequestEvent: AuditEventDecorator<HttpRequestEventArgs> = (
 
   return {
     ...event,
-    message: `HTTP request '${path}' by user '${event.user.name}' ${
-      preResponseInfo.statusCode >= 400 ? 'failed' : 'succeeded'
-    }`,
+    message: preResponseInfo
+      ? `HTTP request '${path}' by user '${event.user.name}' ${
+          preResponseInfo.statusCode >= 400 ? 'failed' : 'succeeded'
+        }`
+      : `Incoming HTTP request '${path}' by user '${event.user.name}'`,
     event: {
       action: 'http_request',
       category: 'web',
-      outcome: preResponseInfo.statusCode >= 400 ? 'failure' : 'success',
+      outcome: preResponseInfo
+        ? preResponseInfo.statusCode >= 400
+          ? 'failure'
+          : 'success'
+        : 'unknown',
     },
     http: {
       request: {
         method: request.route.method,
-        // body: {
-        //   content: request.body // TODO: validation rules are required to read this out - can we relax these restrictions for request interceptors?
-        // }
       },
-      response: {
+      response: preResponseInfo && {
         status_code: preResponseInfo.statusCode,
       },
     },

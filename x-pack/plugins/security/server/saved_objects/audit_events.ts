@@ -4,37 +4,34 @@
  * you may not use this file except in compliance with the Elastic License.
  */
 
-import { AuditEventDecorator } from '../../../../../src/core/server';
+import { AuditEventDecorator, AuditEvent } from '../../../../../src/core/server';
 
 export interface SavedObjectEventArgs {
   action: string;
-  objects: ReadonlyArray<{
-    type: string;
-    id?: string;
-    namespaces?: string[];
-  }>;
+  object?: AuditEvent['object'];
   error?: Error;
 }
 
 export const savedObjectCreateEvent: AuditEventDecorator<SavedObjectEventArgs> = (
   event,
-  { action, objects, error }
+  { action, object, error }
 ) => {
-  const doc =
-    objects.length === 1
-      ? `saved object '${objects[0].id}' of type '${objects[0].type}'`
-      : `${objects.length} saved objects`;
+  const doc = object ? `saved object '${object.id}' of type '${object.type}'` : `saved objects`;
 
   return {
-    ...event,
     message: error
       ? `Failed attempt to create ${doc} by user '${event.user.name}'`
-      : `User '${event.user.name}' created ${doc}`,
+      : `User '${event.user.name}' is creating ${doc}`,
     event: {
       action,
       category: 'database',
       type: 'creation',
-      outcome: error ? 'failure' : 'success',
+      outcome: error ? 'failure' : 'unknown',
+    },
+    object: object && {
+      type: object.type,
+      id: object.id,
+      additional_details: object.additional_details,
     },
     error: error
       ? {
@@ -42,24 +39,17 @@ export const savedObjectCreateEvent: AuditEventDecorator<SavedObjectEventArgs> =
           message: error.message,
         }
       : undefined,
-    kibana: {
-      ...event.kibana,
-      saved_objects: objects.map(({ type, id }) => ({ type, id })),
-    },
+    ...event,
   };
 };
 
 export const savedObjectReadEvent: AuditEventDecorator<SavedObjectEventArgs> = (
   event,
-  { action, objects, error }
+  { action, object, error }
 ) => {
-  const doc =
-    objects.length === 1
-      ? `saved object '${objects[0].id}' of type '${objects[0].type}'`
-      : `${objects.length} saved objects`;
+  const doc = object ? `saved object '${object.id}' of type '${object.type}'` : `saved objects`;
 
   return {
-    ...event,
     message: error
       ? `Failed attempt to access ${doc} by user '${event.user.name}'`
       : `User '${event.user.name}' accessed ${doc}`,
@@ -69,38 +59,41 @@ export const savedObjectReadEvent: AuditEventDecorator<SavedObjectEventArgs> = (
       type: 'access',
       outcome: error ? 'failure' : 'success',
     },
+    object: object && {
+      type: object.type,
+      id: object.id,
+      additional_details: object.additional_details,
+    },
     error: error
       ? {
           code: error.name,
           message: error.message,
         }
       : undefined,
-    kibana: {
-      ...event.kibana,
-      saved_objects: objects.map(({ type, id }) => ({ type, id })),
-    },
+    ...event,
   };
 };
 
 export const savedObjectUpdateEvent: AuditEventDecorator<SavedObjectEventArgs> = (
   event,
-  { action, objects, error }
+  { action, object, error }
 ) => {
-  const doc =
-    objects.length === 1
-      ? `saved object '${objects[0].id}' of type '${objects[0].type}'`
-      : `${objects.length} saved objects`;
+  const doc = object ? `saved object '${object.id}' of type '${object.type}'` : `saved objects`;
 
   return {
-    ...event,
     message: error
       ? `Failed attempt to update ${doc} by user '${event.user.name}'`
-      : `User '${event.user.name}' updated ${doc}`,
+      : `User '${event.user.name}' is updating ${doc}`,
     event: {
       action,
       category: 'database',
       type: 'change',
-      outcome: error ? 'failure' : 'success',
+      outcome: error ? 'failure' : 'unknown',
+    },
+    object: object && {
+      type: object.type,
+      id: object.id,
+      additional_details: object.additional_details,
     },
     error: error
       ? {
@@ -108,32 +101,30 @@ export const savedObjectUpdateEvent: AuditEventDecorator<SavedObjectEventArgs> =
           message: error.message,
         }
       : undefined,
-    kibana: {
-      ...event.kibana,
-      saved_objects: objects.map(({ type, id, namespaces }) => ({ type, id, namespaces })),
-    },
+    ...event,
   };
 };
 
 export const savedObjectDeleteEvent: AuditEventDecorator<SavedObjectEventArgs> = (
   event,
-  { action, objects, error }
+  { action, object, error }
 ) => {
-  const doc =
-    objects.length === 1
-      ? `saved object '${objects[0].id}' of type '${objects[0].type}'`
-      : `${objects.length} saved objects`;
+  const doc = object ? `saved object '${object.id}' of type '${object.type}'` : `saved objects`;
 
   return {
-    ...event,
     message: error
       ? `Failed attempt to delete ${doc} by user '${event.user.name}'`
-      : `User '${event.user.name}' deleted ${doc}`,
+      : `User '${event.user.name}' is deleting ${doc}`,
     event: {
       action,
       category: 'database',
       type: 'deletion',
-      outcome: error ? 'failure' : 'success',
+      outcome: error ? 'failure' : 'unknown',
+    },
+    object: object && {
+      type: object.type,
+      id: object.id,
+      additional_details: object.additional_details,
     },
     error: error
       ? {
@@ -141,9 +132,6 @@ export const savedObjectDeleteEvent: AuditEventDecorator<SavedObjectEventArgs> =
           message: error.message,
         }
       : undefined,
-    kibana: {
-      ...event.kibana,
-      saved_objects: objects.map(({ type, id, namespaces }) => ({ type, id, namespaces })),
-    },
+    ...event,
   };
 };

@@ -59,7 +59,7 @@ describe('AuditTrailClient', () => {
         outcome: 'success',
         type: 'access',
       },
-      kibana: { namespace: 'default' },
+      kibana: { space_id: 'default' },
       message: 'MESSAGE',
       trace: { id: 'request id alpha' },
       user: { name: undefined, roles: undefined },

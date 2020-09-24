@@ -185,7 +185,7 @@ describe('AuditTrail plugin', () => {
 
         const args = coreSetup.logging.configure.mock.calls[0][0];
         const value = await args.pipe(first()).toPromise();
-        expect(value.loggers?.every((l) => l.level === 'debug')).toBe(true);
+        expect(value.loggers?.every((l) => l.level === 'info')).toBe(true);
       });
 
       it('uses appender adjusted via config', async () => {
@@ -251,13 +251,13 @@ describe('AuditTrail plugin', () => {
 });
 
 describe('#httpRequestEvent', () => {
-  const baseEvent = {
+  const baseEvent: Pick<AuditEvent, 'user' | 'trace' | 'kibana'> = {
     user: { name: 'USER_NAME' },
     trace: { id: 'TRACE_ID' },
-    kibana: { namespace: 'SPACE_ID' },
+    kibana: { space_id: 'SPACE_ID' },
   };
 
-  test(`creates audit event`, () => {
+  test(`creates audit event with successful outcome`, () => {
     expect(
       httpRequestEvent(baseEvent, {
         request: httpServerMock.createKibanaRequest({
@@ -282,9 +282,96 @@ describe('#httpRequestEvent', () => {
           },
         },
         "kibana": Object {
-          "namespace": "SPACE_ID",
+          "space_id": "SPACE_ID",
         },
         "message": "HTTP request '/path' by user 'USER_NAME' succeeded",
+        "trace": Object {
+          "id": "TRACE_ID",
+        },
+        "url": Object {
+          "domain": undefined,
+          "path": "/path",
+          "port": undefined,
+          "query": "query=param",
+          "scheme": undefined,
+        },
+        "user": Object {
+          "name": "USER_NAME",
+        },
+      }
+    `);
+  });
+
+  test(`creates audit event with failure outcome`, () => {
+    expect(
+      httpRequestEvent(baseEvent, {
+        request: httpServerMock.createKibanaRequest({
+          path: '/path?query=param',
+          kibanaRequestState: { requestId: 'REQUEST_ID', requestUuid: 'REQUEST_UUID' },
+        }),
+        preResponseInfo: { statusCode: 400 },
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "event": Object {
+          "action": "http_request",
+          "category": "web",
+          "outcome": "failure",
+        },
+        "http": Object {
+          "request": Object {
+            "method": "get",
+          },
+          "response": Object {
+            "status_code": 400,
+          },
+        },
+        "kibana": Object {
+          "space_id": "SPACE_ID",
+        },
+        "message": "HTTP request '/path' by user 'USER_NAME' failed",
+        "trace": Object {
+          "id": "TRACE_ID",
+        },
+        "url": Object {
+          "domain": undefined,
+          "path": "/path",
+          "port": undefined,
+          "query": "query=param",
+          "scheme": undefined,
+        },
+        "user": Object {
+          "name": "USER_NAME",
+        },
+      }
+    `);
+  });
+
+  test(`creates audit event with unknown outcome`, () => {
+    expect(
+      httpRequestEvent(baseEvent, {
+        request: httpServerMock.createKibanaRequest({
+          path: '/path?query=param',
+          kibanaRequestState: { requestId: 'REQUEST_ID', requestUuid: 'REQUEST_UUID' },
+        }),
+      })
+    ).toMatchInlineSnapshot(`
+      Object {
+        "event": Object {
+          "action": "http_request",
+          "category": "web",
+          "outcome": "unknown",
+        },
+        "http": Object {
+          "request": Object {
+            "method": "get",
+          },
+          "response": undefined,
+        },
+        "kibana": Object {
+          "space_id": "SPACE_ID",
+        },
+        "message": "Incoming HTTP request '/path' by user 'USER_NAME'",
         "trace": Object {
           "id": "TRACE_ID",
         },
@@ -316,7 +403,7 @@ describe('#filterEvent', () => {
       name: 'jdoe',
     },
     kibana: {
-      namespace: 'default',
+      space_id: 'default',
     },
     trace: {
       id: 'TRACE_ID',
@@ -329,7 +416,7 @@ describe('#filterEvent', () => {
     expect(filterEvent(event, [{ categories: ['NO_MATCH', 'web'] }])).toBeFalsy();
     expect(filterEvent(event, [{ types: ['NO_MATCH', 'access'] }])).toBeFalsy();
     expect(filterEvent(event, [{ outcomes: ['NO_MATCH', 'success'] }])).toBeFalsy();
-    expect(filterEvent(event, [{ namespaces: ['NO_MATCH', 'default'] }])).toBeFalsy();
+    expect(filterEvent(event, [{ spaces: ['NO_MATCH', 'default'] }])).toBeFalsy();
   });
 
   test(`keeps events when one criteria per rule does not match`, () => {
@@ -340,35 +427,35 @@ describe('#filterEvent', () => {
           categories: ['web'],
           types: ['access'],
           outcomes: ['success'],
-          namespaces: ['default'],
+          spaces: ['default'],
         },
         {
           actions: ['http_request'],
           categories: ['NO_MATCH'],
           types: ['access'],
           outcomes: ['success'],
-          namespaces: ['default'],
+          spaces: ['default'],
         },
         {
           actions: ['http_request'],
           categories: ['web'],
           types: ['NO_MATCH'],
           outcomes: ['success'],
-          namespaces: ['default'],
+          spaces: ['default'],
         },
         {
           actions: ['http_request'],
           categories: ['web'],
           types: ['access'],
           outcomes: ['NO_MATCH'],
-          namespaces: ['default'],
+          spaces: ['default'],
         },
         {
           actions: ['http_request'],
           categories: ['web'],
           types: ['access'],
           outcomes: ['success'],
-          namespaces: ['NO_MATCH'],
+          spaces: ['NO_MATCH'],
         },
       ])
     ).toBeTruthy();
@@ -382,14 +469,14 @@ describe('#filterEvent', () => {
           categories: ['NO_MATCH'],
           types: ['NO_MATCH'],
           outcomes: ['NO_MATCH'],
-          namespaces: ['NO_MATCH'],
+          spaces: ['NO_MATCH'],
         },
         {
           actions: ['http_request'],
           categories: ['web'],
           types: ['access'],
           outcomes: ['success'],
-          namespaces: ['default'],
+          spaces: ['default'],
         },
       ])
     ).toBeFalsy();
