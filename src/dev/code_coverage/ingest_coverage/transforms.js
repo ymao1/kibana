@@ -111,11 +111,11 @@ const findTeam = (x) => x.match(/.+\s{1,3}(.+)$/, 'gm');
 export const pluckIndex = (idx) => (xs) => xs[idx];
 const pluckTeam = pluckIndex(1);
 
-export const teamAssignment = (teamAssignmentsPath) => (log) => async (obj) => {
+export const teamAssignment = (teamAssignmentsPath) => (log) => (obj) => {
   const { coveredFilePath } = obj;
   const isTotal = Either.fromNullable(obj.isTotal);
 
-  return isTotal.isRight() ? obj : await assignTeam(teamAssignmentsPath, coveredFilePath, log, obj);
+  return isTotal.isRight() ? obj : assignTeam(teamAssignmentsPath, coveredFilePath, log, obj);
 };
 export const last = (x) => {
   const xs = x.split('\n');
@@ -127,25 +127,23 @@ const logErr = (aPath) => (log) => (e) => {
   log.error(`\n!!! Unknown Team for path: \n${pink(aPath)}\n!!! Orig Err: \n${pink(e)}`);
   return e;
 };
-export async function assignTeam(teamAssignmentsPath, coveredFilePath, log, obj) {
+const xform = (grepResponse) =>
+  pipe(grepResponse, E.map(R.prop('stdout')), E.map(last), E.map(findTeam), E.map(pluckTeam));
+const grep = (logFailF) => (xs) =>
+  TE.tryCatch(() => execa('grep', xs, { cwd: ROOT_DIR }), pipe(logFailF, id));
+export function assignTeam(teamAssignmentsPath, coveredFilePath, log, obj) {
   const params = [coveredFilePath, teamAssignmentsPath];
   const logGrepFail = logErr(coveredFilePath)(log);
+  const lazyGrep = grep(logGrepFail)(params);
 
-  const grepAndXform = pipe(
-    TE.tryCatch(() => execa('grep', params, { cwd: ROOT_DIR }), pipe(logGrepFail, id)),
-    TE.map(R.prop('stdout')),
-    TE.map(last),
-    TE.map(findTeam),
-    TE.map(pluckTeam)
-  );
-
-  return pipe(
-    await grepAndXform(),
-    E.fold(
-      () => ({ team: 'unknown', ...obj }),
-      (team) => ({ team, ...obj })
-    )
-  );
+  return lazyGrep()
+    .then(xform)
+    .then(
+      E.fold(
+        () => ({ team: 'unknown', ...obj }),
+        (team) => ({ team, ...obj })
+      )
+    );
 }
 
 export const ciRunUrl = (obj) =>
