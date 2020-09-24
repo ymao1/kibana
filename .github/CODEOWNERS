@@ -27,7 +27,7 @@
 /src/plugins/vis_type_vega/ @elastic/kibana-app
 /src/plugins/vis_type_vislib/ @elastic/kibana-app
 /src/plugins/vis_type_xy/ @elastic/kibana-app
-/src/plugins/visualize/ @elastic/kibana-app
+/src/plugins/visualizations/ @elastic/kibana-app
 #CC# /src/legacy/core_plugins/kibana/public/local_application_service/ @elastic/kibana-app
 #CC# /src/plugins/vis_type @elastic/kibana-app
 #CC# /src/legacy/core_plugins/kibana/ @elastic/kibana-app
@@ -81,7 +81,6 @@
 /src/plugins/navigation/ @elastic/kibana-app-arch
 /src/plugins/share/ @elastic/kibana-app-arch
 /src/plugins/ui_actions/ @elastic/kibana-app-arch
-/src/plugins/visualizations/ @elastic/kibana-app-arch
 /x-pack/examples/ui_actions_enhanced_examples/ @elastic/kibana-app-arch
 /x-pack/plugins/data_enhanced/ @elastic/kibana-app-arch
 /x-pack/plugins/embeddable_enhanced/ @elastic/kibana-app-arch
@@ -355,12 +354,15 @@ x-pack/plugins/telemetry_collection_xpack/schema/xpack_plugins.json @elastic/kib
 /x-pack/plugins/upgrade_assistant/  @elastic/es-ui
 /x-pack/plugins/watcher/  @elastic/es-ui
 /x-pack/plugins/ingest_pipelines/  @elastic/es-ui
+/packages/kbn-ace/ @elastic/es-ui
+/packages/kbn-monaco/ @elastic/es-ui
 #CC# /x-pack/legacy/plugins/rollup/ @elastic/es-ui
 #CC# /x-pack/legacy/server/lib/create_router/ @elastic/es-ui
 #CC# /x-pack/legacy/server/lib/check_license/ @elastic/es-ui
 #CC# /x-pack/plugins/console_extensions/ @elastic/es-ui
 #CC# /x-pack/plugins/cross_cluster_replication/ @elastic/es-ui
 #CC# /x-pack/plugins/es_ui_shared/ @elastic/es-ui
+
 
 # Endpoint
 /x-pack/plugins/endpoint/ @elastic/endpoint-app-team @elastic/siem
