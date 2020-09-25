@@ -8,11 +8,6 @@
 
 ```typescript
 kibana: {
-        namespace: string;
-        saved_objects?: ReadonlyArray<{
-            type: string;
-            id?: string;
-            namespaces?: string[];
-        }>;
+        space_id: string;
     };
 ```

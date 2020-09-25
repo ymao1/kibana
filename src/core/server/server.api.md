@@ -208,8 +208,8 @@ export interface AuditEvent {
     // (undocumented)
     event: {
         action: string;
-        category: EventCategory | readonly EventCategory[];
-        type?: EventType | readonly EventType[];
+        category: EventCategory;
+        type?: EventType;
         outcome: EventOutcome;
         module?: string;
         dataset?: string;
@@ -228,14 +228,18 @@ export interface AuditEvent {
     };
     // (undocumented)
     kibana: {
-        namespace: string;
-        saved_objects?: ReadonlyArray<{
-            type: string;
-            id?: string;
-            namespaces?: string[];
-        }>;
+        space_id: string;
     };
     message: string;
+    // (undocumented)
+    object?: {
+        type?: string;
+        id?: string;
+        additional_details?: {
+            add_to_spaces?: string[];
+            delete_from_spaces?: string[];
+        };
+    };
     // (undocumented)
     session?: {
         id: string;
