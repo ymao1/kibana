@@ -36,6 +36,8 @@ for x in jest functional; do
   echo "### Ingesting coverage for ${x}"
 
   COVERAGE_SUMMARY_FILE=target/kibana-coverage/${x}-combined/coverage-summary.json
+  ls -la ${COVERAGE_SUMMARY_FILE}
+  wc -l ${COVERAGE_SUMMARY_FILE}
 
   node scripts/ingest_coverage.js --verbose --path ${COVERAGE_SUMMARY_FILE} --vcsInfoPath ./VCS_INFO.txt --teamAssignmentsPath $TEAM_ASSIGN_PATH
 done
