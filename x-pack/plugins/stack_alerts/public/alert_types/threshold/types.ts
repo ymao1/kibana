@@ -39,4 +39,5 @@ export interface IndexThresholdAlertParams extends AlertTypeParams {
   threshold: number[];
   timeWindowSize: number;
   timeWindowUnit: string;
+  testSavedObjectId: string;
 }

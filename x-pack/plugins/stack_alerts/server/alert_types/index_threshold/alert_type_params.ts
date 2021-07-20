@@ -16,6 +16,7 @@ import {
 // alert type parameters
 
 export type Params = TypeOf<typeof ParamsSchema>;
+export type ExtractedParams = Omit<Params, 'testSavedObjectId'> & { testSavedObjectRef: string };
 
 export const ParamsSchema = schema.object(
   {
@@ -25,6 +26,7 @@ export const ParamsSchema = schema.object(
     // the values to use as the threshold; `between` and `notBetween` require
     // two values, the others require one.
     threshold: schema.arrayOf(schema.number(), { minSize: 1, maxSize: 2 }),
+    testSavedObjectId: schema.string(),
   },
   {
     validate: validateParams,
