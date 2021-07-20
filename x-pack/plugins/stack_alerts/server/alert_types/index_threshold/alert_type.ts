@@ -6,9 +6,14 @@
  */
 
 import { i18n } from '@kbn/i18n';
-import { Logger } from 'src/core/server';
-import { AlertType, AlertExecutorOptions, StackAlertsStartDeps } from '../../types';
-import { Params, ParamsSchema } from './alert_type_params';
+import { Logger, SavedObjectAttributes, SavedObjectReference } from 'src/core/server';
+import {
+  AlertType,
+  AlertExecutorOptions,
+  StackAlertsStartDeps,
+  RuleParamsAndRefs,
+} from '../../types';
+import { Params, ExtractedParams, ParamsSchema } from './alert_type_params';
 import { ActionContext, BaseActionContext, addMessages } from './action_context';
 import { STACK_ALERTS_FEATURE_ID } from '../../../common';
 import {
@@ -23,7 +28,7 @@ const ActionGroupId = 'threshold met';
 export function getAlertType(
   logger: Logger,
   data: Promise<StackAlertsStartDeps['triggersActionsUi']['data']>
-): AlertType<Params, never, {}, {}, ActionContext, typeof ActionGroupId> {
+): AlertType<Params, ExtractedParams, {}, {}, ActionContext, typeof ActionGroupId> {
   const alertTypeName = i18n.translate('xpack.stackAlerts.indexThreshold.alertTypeTitle', {
     defaultMessage: 'Index threshold',
   });
@@ -128,6 +133,29 @@ export function getAlertType(
     isExportable: true,
     executor,
     producer: STACK_ALERTS_FEATURE_ID,
+    useSavedObjectReferences: {
+      extractReferences: (params: Params): RuleParamsAndRefs<ExtractedParams> => {
+        const { testSavedObjectId, ...otherParams } = params;
+
+        const testSavedObjectRef = 'testRef_0';
+        const references = [
+          {
+            name: `testRef_0`,
+            id: testSavedObjectId,
+            type: 'index-pattern',
+          },
+        ];
+        return { params: { ...otherParams, testSavedObjectRef }, references };
+      },
+      injectReferences: (params: SavedObjectAttributes, references: SavedObjectReference[]) => {
+        const { testSavedObjectRef, ...otherParams } = params;
+        const reference = references.find((ref) => ref.name === testSavedObjectRef);
+        if (!reference) {
+          throw new Error(`Test reference "${testSavedObjectRef}"`);
+        }
+        return { ...otherParams, testSavedObjectId: reference.id } as Params;
+      },
+    },
   };
 
   async function executor(

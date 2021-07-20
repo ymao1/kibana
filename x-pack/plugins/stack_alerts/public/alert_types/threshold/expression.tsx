@@ -111,6 +111,7 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<
     }
   );
 
+  console.log('HI');
   const setDefaultExpressionValues = async () => {
     setAlertProperty('params', {
       ...alertParams,
@@ -121,6 +122,7 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<
       timeWindowUnit: timeWindowUnit ?? DEFAULT_VALUES.TIME_WINDOW_UNIT,
       groupBy: groupBy ?? DEFAULT_VALUES.GROUP_BY,
       threshold: threshold ?? DEFAULT_VALUES.THRESHOLD,
+      testSavedObjectId: 'e6d93c36-a8e4-4444-884c-f03b842bce7a',
     });
 
     if (indexArray.length > 0) {
