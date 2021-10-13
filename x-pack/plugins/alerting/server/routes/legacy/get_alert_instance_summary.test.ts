@@ -43,11 +43,9 @@ describe('getAlertInstanceSummaryRoute', () => {
     status: 'OK',
     errorMessages: [],
     instances: {},
-    executionDuration: {
-      average: 0,
-      min: 0,
-      max: 0,
-      values: [],
+    executions: {
+      avgDuration: 0,
+      durationAndOutcome: [],
     },
   };
 

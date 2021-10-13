@@ -39,7 +39,7 @@ const rewriteBodyRes: RewriteResponseCase<AlertInstanceSummary> = ({
   errorMessages,
   lastRun,
   instances: alerts,
-  executionDuration,
+  executions,
   ...rest
 }) => ({
   ...rest,
@@ -50,7 +50,10 @@ const rewriteBodyRes: RewriteResponseCase<AlertInstanceSummary> = ({
   status_end_date: statusEndDate,
   error_messages: errorMessages,
   last_run: lastRun,
-  execution_duration: executionDuration,
+  executions: {
+    avg_duration: executions?.avgDuration,
+    duration_and_outcome: executions?.durationAndOutcome,
+  },
 });
 
 export const getRuleAlertSummaryRoute = (
