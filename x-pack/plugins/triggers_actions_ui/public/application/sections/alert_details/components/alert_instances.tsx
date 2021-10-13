@@ -201,13 +201,29 @@ export function AlertInstances({
     ? parseDuration(ruleTypeTimeout)
     : undefined;
   const showDurationWarning: boolean = ruleTypeTimeoutMillis
-    ? alertInstanceSummary.executionDuration.average > ruleTypeTimeoutMillis
+    ? alertInstanceSummary.executions.avgDuration > ruleTypeTimeoutMillis
     : false;
 
-  const paddedExecutionDurations = assign(
-    fill(new Array(50), 0),
-    alertInstanceSummary.executionDuration.values
+  const numExecutions = alertInstanceSummary.executions.durationAndOutcome.length;
+  const numErrors = alertInstanceSummary.executions.durationAndOutcome.filter(
+    (dao) => dao.outcome === 'failure'
+  ).length;
+
+  const formattedExecutionsAndOutcomes = alertInstanceSummary.executions.durationAndOutcome.map(
+    (dao, ndx) => ({
+      key: ndx,
+      value: dao.duration,
+      type: dao.outcome ?? 'success',
+    })
   );
+
+  while (formattedExecutionsAndOutcomes.length < 50) {
+    formattedExecutionsAndOutcomes.push({
+      key: formattedExecutionsAndOutcomes.length,
+      value: 0,
+      type: '',
+    });
+  }
 
   return (
     <>
@@ -216,69 +232,45 @@ export function AlertInstances({
         <EuiFlexItem>
           <EuiPanel hasBorder={true}>
             <EuiFlexGroup>
-              <EuiFlexItem grow={8}>
-                <EuiFlexGroup>
-                  <EuiFlexItem>
-                    <EuiStat
-                      title={
-                        <EuiFlexGroup gutterSize="xs">
-                          {showDurationWarning && (
-                            <EuiFlexItem grow={false}>
-                              <EuiIconTip
-                                data-test-subj="ruleDurationWarning"
-                                anchorClassName="ruleDurationWarningIcon"
-                                type="alert"
-                                color="danger"
-                                content={i18n.translate(
-                                  'xpack.triggersActionsUI.sections.alertDetails.alertInstances.ruleTypeExcessDurationMessage',
-                                  {
-                                    defaultMessage: `Duration exceeds the rule's expected run time.`,
-                                  }
-                                )}
-                                position="top"
-                              />
-                            </EuiFlexItem>
-                          )}
-                          <EuiFlexItem grow={false}>
-                            {formatExecutionDuration(
-                              alertInstanceSummary.executionDuration.average
-                            )}
-                          </EuiFlexItem>
-                        </EuiFlexGroup>
-                      }
-                      description="Average duration"
-                      titleColor={`${showDurationWarning ? 'danger' : 'text'}`}
-                    />
-                  </EuiFlexItem>
-                  <EuiFlexItem>
-                    <EuiStat
-                      title={formatExecutionDuration(alertInstanceSummary.executionDuration.max)}
-                      description="Max duration"
-                    />
-                  </EuiFlexItem>
-                  <EuiFlexItem>
-                    <EuiStat
-                      title={formatExecutionDuration(alertInstanceSummary.executionDuration.min)}
-                      description="Min duration"
-                    />
-                  </EuiFlexItem>
-                </EuiFlexGroup>
+              <EuiFlexItem>
+                <EuiStat title={numExecutions} description="# Executions" />
               </EuiFlexItem>
               <EuiFlexItem>
-                <EuiText textAlign="right">
-                  <p>
-                    <FormattedMessage
-                      id="xpack.triggersActionsUI.sections.alertDetails.alertInstances.executionDurationNum"
-                      defaultMessage="Last 50 executions"
-                    />
-                  </p>
-                </EuiText>
+                <EuiStat title={numErrors} description="# Errors" />
+              </EuiFlexItem>
+              <EuiFlexItem>
+                <EuiStat
+                  title={
+                    <EuiFlexGroup gutterSize="xs">
+                      {showDurationWarning && (
+                        <EuiFlexItem grow={false}>
+                          <EuiIconTip
+                            data-test-subj="ruleDurationWarning"
+                            anchorClassName="ruleDurationWarningIcon"
+                            type="alert"
+                            color="danger"
+                            content={i18n.translate(
+                              'xpack.triggersActionsUI.sections.alertDetails.alertInstances.ruleTypeExcessDurationMessage',
+                              {
+                                defaultMessage: `Duration exceeds the rule's expected run time.`,
+                              }
+                            )}
+                            position="top"
+                          />
+                        </EuiFlexItem>
+                      )}
+                      <EuiFlexItem grow={false}>
+                        {formatExecutionDuration(alertInstanceSummary.executions.avgDuration)}
+                      </EuiFlexItem>
+                    </EuiFlexGroup>
+                  }
+                  description="Average duration"
+                  titleColor={`${showDurationWarning ? 'danger' : 'text'}`}
+                />
               </EuiFlexItem>
             </EuiFlexGroup>
-
             <EuiHorizontalRule />
-            {alertInstanceSummary.executionDuration.values &&
-            alertInstanceSummary.executionDuration.values.length > 0 ? (
+            {numExecutions > 0 ? (
               <>
                 <Chart size={{ height: 200 }}>
                   <Settings
@@ -293,9 +285,12 @@ export function AlertInstances({
                     id="executionDuration"
                     xScaleType="linear"
                     yScaleType="linear"
-                    xAccessor={0}
-                    yAccessors={[1]}
-                    data={paddedExecutionDurations.map((val, ndx) => [ndx, val])}
+                    xAccessor="key"
+                    yAccessors={['value']}
+                    splitSeriesAccessors={['type']}
+                    stackAccessors={['type']}
+                    color={['#54B399', 'red']}
+                    data={formattedExecutionsAndOutcomes}
                   />
                   <LineSeries
                     id="rule_duration_avg"
@@ -303,14 +298,14 @@ export function AlertInstances({
                     yScaleType="linear"
                     xAccessor={0}
                     yAccessors={[1]}
-                    data={paddedExecutionDurations.map((val, ndx) => [
+                    data={alertInstanceSummary.executions.durationAndOutcome.map((val, ndx) => [
                       ndx,
-                      alertInstanceSummary.executionDuration.average,
+                      alertInstanceSummary.executions.avgDuration,
                     ])}
                     curve={CurveType.CURVE_NATURAL}
                   />
-                  <Axis id="bottom-axis" position="bottom" />
-                  <Axis id="left-axis" position="left" tickFormat={(d) => d} />
+                  {/* <Axis id="bottom-axis" position="bottom" /> */}
+                  {/* <Axis id="left-axis" position="left" tickFormat={(d) => d} /> */}
                 </Chart>
               </>
             ) : (
