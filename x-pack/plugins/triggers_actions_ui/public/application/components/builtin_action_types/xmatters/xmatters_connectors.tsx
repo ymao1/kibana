@@ -21,6 +21,7 @@ import {
 import { i18n } from '@kbn/i18n';
 import { ActionConnectorFieldsProps } from '../../../../types';
 import { XmattersActionConnector, XmattersAuthenticationType } from '../types';
+import { getEncryptedFieldNotifyLabel } from '../../get_encrypted_field_notify_label';
 
 const XmattersActionConnectorFields: React.FunctionComponent<
   ActionConnectorFieldsProps<XmattersActionConnector>
@@ -96,16 +97,17 @@ const XmattersActionConnectorFields: React.FunctionComponent<
       <EuiSpacer size="m" />
       {selectedAuth === XmattersAuthenticationType.URL ? (
         <>
-          <EuiFormRow fullWidth>
-            <p>
-              <FormattedMessage
-                data-test-subj="urlReenterDescription"
-                id="xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.urlReenterDescription"
-                defaultMessage="You must reenter this value each time you edit the connector."
-              />
-            </p>
-          </EuiFormRow>
-          <EuiSpacer size="m" />
+          {getEncryptedFieldNotifyLabel(
+            !action.id,
+            1,
+            action.isMissingSecrets ?? false,
+            i18n.translate(
+              'xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.reenterUrlAuthValuesLabel',
+              {
+                defaultMessage: 'URL is encrypted. Please reenter values for this field.',
+              }
+            )
+          )}
         </>
       ) : null}
       <EuiFlexGroup justifyContent="spaceBetween">
@@ -159,14 +161,17 @@ const XmattersActionConnectorFields: React.FunctionComponent<
             </h4>
           </EuiTitle>
           <EuiSpacer size="xs" />
-          <EuiFormRow fullWidth>
-            <p>
-              <FormattedMessage
-                id="xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.userCredsDescription"
-                defaultMessage="You will need to reenter these credentials each time you edit the connector."
-              />
-            </p>
-          </EuiFormRow>
+          {getEncryptedFieldNotifyLabel(
+            !action.id,
+            2,
+            action.isMissingSecrets ?? false,
+            i18n.translate(
+              'xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.reenterBasicAuthValuesLabel',
+              {
+                defaultMessage: 'User and password are encrypted. Please reenter values for these fields.',
+              }
+            )
+          )}
           <EuiSpacer size="m" />
           <EuiFlexGroup justifyContent="spaceBetween">
             <EuiFlexItem>
