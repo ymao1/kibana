@@ -63,7 +63,7 @@ describe('secrets validation', () => {
     expect(() => {
       validateSecrets(actionType, { user: 'bob' });
     }).toThrowErrorMatchingInlineSnapshot(
-      `"error validating action type secrets: Username is required when password is used."`
+      `"error validating action type secrets: Both user and password must be specified"`
     );
   });
 
@@ -75,16 +75,37 @@ describe('secrets validation', () => {
     const secrets: Record<string, string> = {
       user: '',
       password: '',
-      urlSecrets: 'http://mylisteningserver:9200/endpoint?apiKey=someKey',
+      secretsUrl: 'http://mylisteningserver:9200/endpoint?apiKey=someKey',
     };
     expect(validateSecrets(actionType, secrets)).toEqual(secrets);
+  });
+
+  test('fails when user, password, and secretsUrl are omitted', () => {
+    expect(() => {
+      validateSecrets(actionType, {});
+    }).toThrowErrorMatchingInlineSnapshot(
+      `"error validating action type secrets: Either user and password or URL authentication must be specified"`
+    );
+  });
+
+  test('fails when user, password, and secretsUrl are provided', () => {
+    const secrets: Record<string, string> = {
+      user: 'bob',
+      password: 'supersecret',
+      secretsUrl: 'https://someUrl.com',
+    };
+    expect(() => {
+      validateSecrets(actionType, secrets);
+    }).toThrowErrorMatchingInlineSnapshot(
+      `"error validating action type secrets: Either user and password or URL authentication must be specified"`
+    );
   });
 });
 
 describe('config validation', () => {
   test('config validation passes when only required fields are provided', () => {
     const config: Record<string, string | boolean> = {
-      urlConfig: 'http://mylisteningserver:9200/endpoint',
+      configUrl: 'http://mylisteningserver:9200/endpoint',
       usesBasic: true,
     };
     expect(validateConfig(actionType, config)).toEqual({
@@ -94,7 +115,7 @@ describe('config validation', () => {
 
   test('config validation passes when a url is specified', () => {
     const config: Record<string, string | boolean> = {
-      urlConfig: 'http://mylisteningserver:9200/endpoint',
+      configUrl: 'http://mylisteningserver:9200/endpoint',
       usesBasic: true,
     };
     expect(validateConfig(actionType, config)).toEqual({
@@ -104,7 +125,7 @@ describe('config validation', () => {
 
   test('config validation failed when a url is invalid', () => {
     const config: Record<string, string | boolean> = {
-      urlConfig: 'example.com/do-something',
+      configUrl: 'example.com/do-something',
       usesBasic: true,
     };
     expect(() => {
@@ -118,7 +139,7 @@ describe('config validation', () => {
     // any for testing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const config: Record<string, any> = {
-      urlConfig: 'http://mylisteningserver.com:9200/endpoint',
+      configUrl: 'http://mylisteningserver.com:9200/endpoint',
       usesBasic: true,
     };
 
@@ -141,7 +162,7 @@ describe('config validation', () => {
     // any for testing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const config: Record<string, any> = {
-      urlConfig: 'http://mylisteningserver.com:9200/endpoint',
+      configUrl: 'http://mylisteningserver.com:9200/endpoint',
       usesBasic: true,
     };
 
@@ -210,7 +231,7 @@ describe('execute()', () => {
 
   test('execute with username/password sends request with basic auth', async () => {
     const config: ActionTypeConfigType = {
-      urlConfig: 'https://abc.def/my-xmatters',
+      configUrl: 'https://abc.def/my-xmatters',
       usesBasic: true,
     };
     await actionType.executor({
@@ -232,7 +253,10 @@ describe('execute()', () => {
     const { url, data, auth } = postxMattersMock.mock.calls[0][0];
     expect({ url, data, auth }).toMatchInlineSnapshot(`
       Object {
-        "auth": undefined,
+        "auth": {
+          "user": "abc",
+          "password": "123,
+        },
         "data": Object {
           "alertActionGroupName": "Small t-shirt",
           "date": "2022-01-18T19:01:08.818Z",
@@ -249,7 +273,7 @@ describe('execute()', () => {
 
   test('execute with exception maxContentLength size exceeded should log the proper error', async () => {
     const config: ActionTypeConfigType = {
-      urlConfig: 'https://abc.def/my-xmatters',
+      configUrl: 'https://abc.def/my-xmatters',
       usesBasic: true,
     };
     postxMattersMock.mockReset();
@@ -284,7 +308,7 @@ describe('execute()', () => {
     const secrets: ActionTypeSecretsType = {
       user: null,
       password: null,
-      urlSecrets: 'https://abc.def/my-xmatters?apiKey=someKey',
+      secretsUrl: 'https://abc.def/my-xmatters?apiKey=someKey',
     };
     await actionType.executor({
       actionId: 'some-id',

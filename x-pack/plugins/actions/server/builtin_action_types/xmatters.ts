@@ -26,7 +26,7 @@ export type XmattersActionTypeExecutorOptions = ActionTypeExecutorOptions<
 >;
 
 const configSchemaProps = {
-  urlConfig: schema.maybe(schema.string()),
+  configUrl: schema.maybe(schema.string()),
   usesBasic: schema.boolean({ defaultValue: true }),
 };
 const ConfigSchema = schema.object(configSchemaProps);
@@ -37,15 +37,21 @@ export type ActionTypeSecretsType = TypeOf<typeof SecretsSchema>;
 const secretSchemaProps = {
   user: schema.nullable(schema.string()),
   password: schema.nullable(schema.string()),
-  urlSecrets: schema.maybe(schema.string()),
+  secretsUrl: schema.maybe(schema.string()),
 };
 const SecretsSchema = schema.object(secretSchemaProps, {
   validate: (secrets) => {
     // user and password must be set together (or not at all)
-    if (!secrets.password && !secrets.user) return;
-    if (secrets.password && secrets.user) return;
-    return i18n.translate('xpack.actions.builtin.xmatters.invalidUsernamePassword', {
-      defaultMessage: 'Both user and password must be specified',
+    // if user/password provided, then no secretsUrl should be present
+    if ((!secrets.password && secrets.user) || (secrets.password && !secrets.user)) {
+      return i18n.translate('xpack.actions.builtin.xmatters.invalidUsernamePassword', {
+        defaultMessage: 'Both user and password must be specified',
+      });
+    }
+    if (secrets.password && secrets.user && !secrets.secretsUrl) return;
+    if (!secrets.password && !secrets.user && secrets.secretsUrl) return;
+    return i18n.translate('xpack.actions.builtin.xmatters.invalidSecrets', {
+      defaultMessage: 'Either user and password or URL authentication must be specified',
     });
   },
 });
@@ -85,6 +91,7 @@ export function getActionType({
         validate: curry(validateActionTypeSecrets)(configurationUtilities),
       }),
       params: ParamsSchema,
+      connector: validateConnector,
     },
     executor: curry(executor)({ logger, configurationUtilities }),
   };
@@ -94,7 +101,9 @@ function validateActionTypeConfig(
   configurationUtilities: ActionsConfigurationUtilities,
   configObject: ActionTypeConfigType
 ): string | undefined {
-  const configuredUrl = configObject.urlConfig;
+  const configuredUrl = configObject.configUrl;
+  const usesBasic = configObject.usesBasic;
+  if (!usesBasic) return;
   try {
     if (configuredUrl) {
       new URL(configuredUrl);
@@ -122,11 +131,44 @@ function validateActionTypeConfig(
   }
 }
 
+function validateConnector(
+  config: ActionTypeConfigType,
+  secrets: ActionTypeSecretsType
+): string | null {
+  const { user, password, secretsUrl } = secrets;
+  const { usesBasic, configUrl } = config;
+
+  if (usesBasic) {
+    if (user === null) {
+      return i18n.translate('xpack.actions.builtin.xmatters.missingUser', {
+        defaultMessage: 'Username must be provided',
+      });
+    }
+    if (password === null) {
+      return i18n.translate('xpack.actions.builtin.xmatters.missingPassword', {
+        defaultMessage: 'Password must be provided',
+      });
+    }
+    if (configUrl === null) {
+      return i18n.translate('xpack.actions.builtin.xmatters.missingConfigUrl', {
+        defaultMessage: 'Url must be provided',
+      });
+    }
+  } else {
+    if (secretsUrl === null) {
+      return i18n.translate('xpack.actions.builtin.xmatters.missingSecretsUrl', {
+        defaultMessage: 'Url with API Key must be provided',
+      });
+    }
+  }
+  return null;
+}
+
 function validateActionTypeSecrets(
   configurationUtilities: ActionsConfigurationUtilities,
   secretsObject: ActionTypeSecretsType
 ): string | undefined {
-  const secretsUrl = secretsObject.urlSecrets;
+  const secretsUrl = secretsObject.secretsUrl;
   try {
     if (secretsUrl) {
       new URL(secretsUrl);
@@ -163,7 +205,7 @@ export async function executor(
   execOptions: XmattersActionTypeExecutorOptions
 ): Promise<ActionTypeExecutorResult<unknown>> {
   const actionId = execOptions.actionId;
-  const { urlConfig, usesBasic } = execOptions.config;
+  const { configUrl, usesBasic } = execOptions.config;
   const data = getPayloadForRequest(execOptions.params);
 
   const secrets: ActionTypeSecretsType = execOptions.secrets;
@@ -171,7 +213,7 @@ export async function executor(
     usesBasic && isString(secrets.user) && isString(secrets.password)
       ? { auth: { username: secrets.user, password: secrets.password } }
       : undefined;
-  const url = usesBasic ? urlConfig : secrets.urlSecrets;
+  const url = usesBasic ? configUrl : secrets.secretsUrl;
 
   let result;
   try {
@@ -230,6 +272,7 @@ interface XmattersPayload {
 }
 
 function getPayloadForRequest(params: ActionParamsType): XmattersPayload {
+  // xMatters will assume the request is a test when the signalId adn alertActionGroupName are not defined
   const data: XmattersPayload = {
     alertActionGroupName: params.alertActionGroupName,
     signalId: params.signalId,

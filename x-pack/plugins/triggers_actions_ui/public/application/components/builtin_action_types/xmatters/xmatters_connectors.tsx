@@ -26,8 +26,8 @@ import { getEncryptedFieldNotifyLabel } from '../../get_encrypted_field_notify_l
 const XmattersActionConnectorFields: React.FunctionComponent<
   ActionConnectorFieldsProps<XmattersActionConnector>
 > = ({ action, editActionConfig, editActionSecrets, errors, readOnly }) => {
-  const { user, password, urlSecrets } = action.secrets;
-  const { urlConfig, usesBasic } = action.config;
+  const { user, password, secretsUrl } = action.secrets;
+  const { configUrl, usesBasic } = action.config;
 
   useEffect(() => {
     if (!action.id) {
@@ -37,23 +37,50 @@ const XmattersActionConnectorFields: React.FunctionComponent<
   }, []);
 
   const isUrlInvalid: boolean =
-    errors.urlSecrets !== undefined &&
-    errors.urlSecrets.length > 0 &&
-    urlSecrets !== undefined &&
-    errors.urlConfig !== undefined &&
-    errors.urlConfig.length > 0 &&
-    urlConfig !== undefined;
+    errors.secretsUrl !== undefined &&
+    errors.secretsUrl.length > 0 &&
+    secretsUrl !== undefined &&
+    errors.configUrl !== undefined &&
+    errors.configUrl.length > 0 &&
+    configUrl !== undefined;
   const isPasswordInvalid: boolean =
     password !== undefined && errors.password !== undefined && errors.password.length > 0;
   const isUserInvalid: boolean =
     user !== undefined && errors.user !== undefined && errors.user.length > 0;
 
   const authenticationButtons = [
-    { id: XmattersAuthenticationType.Basic, label: 'Basic Authentication' },
-    { id: XmattersAuthenticationType.URL, label: 'URL Authentication' },
+    {
+      id: XmattersAuthenticationType.Basic,
+      label: i18n.translate(
+        'xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.basicAuthLabel',
+        {
+          defaultMessage: 'Basic Authentication',
+        }
+      ),
+    },
+    {
+      id: XmattersAuthenticationType.URL,
+      label: i18n.translate(
+        'xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.urlAuthLabel',
+        {
+          defaultMessage: 'URL Authentication',
+        }
+      ),
+    },
   ];
 
-  const [selectedAuth, setSelectedAuth] = useState(XmattersAuthenticationType.Basic);
+  let initialState;
+  if (typeof usesBasic === 'undefined') {
+    initialState = XmattersAuthenticationType.Basic;
+  } else {
+    initialState = usesBasic ? XmattersAuthenticationType.Basic : XmattersAuthenticationType.URL;
+    if (usesBasic) {
+      editActionSecrets('secretsUrl', '');
+    } else {
+      editActionConfig('configUrl', '');
+    }
+  }
+  const [selectedAuth, setSelectedAuth] = useState(initialState);
 
   return (
     <>
@@ -86,11 +113,13 @@ const XmattersActionConnectorFields: React.FunctionComponent<
           if (id === XmattersAuthenticationType.Basic) {
             setSelectedAuth(XmattersAuthenticationType.Basic);
             editActionConfig('usesBasic', true);
-            editActionSecrets('urlSecrets', '');
+            editActionSecrets('secretsUrl', '');
           } else {
             setSelectedAuth(XmattersAuthenticationType.URL);
             editActionConfig('usesBasic', false);
-            editActionConfig('urlConfig', '');
+            editActionConfig('configUrl', '');
+            editActionSecrets('user', '');
+            editActionSecrets('password', '');
           }
         }}
       />
@@ -115,7 +144,7 @@ const XmattersActionConnectorFields: React.FunctionComponent<
           <EuiFormRow
             id="url"
             fullWidth
-            error={usesBasic ? errors.urlConfig : errors.urlSecrets}
+            error={usesBasic ? errors.configUrl : errors.secretsUrl}
             isInvalid={isUrlInvalid}
             label={i18n.translate(
               'xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.connectorSettingsFieldLabel',
@@ -135,13 +164,13 @@ const XmattersActionConnectorFields: React.FunctionComponent<
               isInvalid={isUrlInvalid}
               fullWidth
               readOnly={readOnly}
-              value={usesBasic ? urlConfig : urlSecrets}
+              value={usesBasic ? configUrl : secretsUrl}
               data-test-subj="xmattersUrlText"
               onChange={(e) => {
                 if (selectedAuth === XmattersAuthenticationType.Basic) {
-                  editActionConfig('urlConfig', e.target.value);
+                  editActionConfig('configUrl', e.target.value);
                 } else {
-                  editActionSecrets('urlSecrets', e.target.value);
+                  editActionSecrets('secretsUrl', e.target.value);
                 }
               }}
             />
@@ -168,7 +197,8 @@ const XmattersActionConnectorFields: React.FunctionComponent<
             i18n.translate(
               'xpack.triggersActionsUI.components.builtinActionTypes.xmattersAction.reenterBasicAuthValuesLabel',
               {
-                defaultMessage: 'User and password are encrypted. Please reenter values for these fields.',
+                defaultMessage:
+                  'User and password are encrypted. Please reenter values for these fields.',
               }
             )
           )}
