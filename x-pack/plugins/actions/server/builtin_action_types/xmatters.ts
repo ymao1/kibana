@@ -35,9 +35,9 @@ export type ActionTypeConfigType = TypeOf<typeof ConfigSchema>;
 // secrets definition
 export type ActionTypeSecretsType = TypeOf<typeof SecretsSchema>;
 const secretSchemaProps = {
-  user: schema.maybe(schema.string()),
-  password: schema.maybe(schema.string()),
-  secretsUrl: schema.maybe(schema.string()),
+  user: schema.nullable(schema.string()),
+  password: schema.nullable(schema.string()),
+  secretsUrl: schema.nullable(schema.string()),
 };
 const SecretsSchema = schema.object(secretSchemaProps);
 

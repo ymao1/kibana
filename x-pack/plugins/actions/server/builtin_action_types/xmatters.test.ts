@@ -63,14 +63,21 @@ describe('secrets validation', () => {
       user: 'bob',
       password: 'supersecret',
     };
-    expect(validateSecrets(actionType, secrets)).toEqual(secrets);
+    expect(validateSecrets(actionType, secrets)).toEqual({
+      ...secrets,
+      secretsUrl: null,
+    });
   });
 
   test('succeeds when secrets is valid with url auth', () => {
     const secrets: Record<string, string> = {
       secretsUrl: 'http://mylisteningserver:9200/endpoint?apiKey=someKey',
     };
-    expect(validateSecrets(actionType, secrets)).toEqual(secrets);
+    expect(validateSecrets(actionType, secrets)).toEqual({
+      ...secrets,
+      user: null,
+      password: null,
+    });
   });
 
   test('fails when url auth is provided with user', () => {
@@ -266,7 +273,7 @@ describe('execute()', () => {
       actionId: 'some-id',
       services,
       config,
-      secrets: { user: 'abc', password: '123' },
+      secrets: { secretsUrl: null, user: 'abc', password: '123' },
       params: {
         alertActionGroupName: 'Small t-shirt',
         signalId: 'c9437cab-6a5b-45e8-bc8a-f4a8af440e97:abcd-1234',
@@ -313,7 +320,7 @@ describe('execute()', () => {
       actionId: 'some-id',
       services,
       config,
-      secrets: { user: 'abc', password: '123' },
+      secrets: { secretsUrl: null, user: 'abc', password: '123' },
       params: {
         alertActionGroupName: 'Small t-shirt',
         signalId: 'c9437cab-6a5b-45e8-bc8a-f4a8af440e97:abcd-1234',
@@ -334,6 +341,8 @@ describe('execute()', () => {
       usesBasic: false,
     };
     const secrets: ActionTypeSecretsType = {
+      user: null,
+      password: null,
       secretsUrl: 'https://abc.def/my-xmatters?apiKey=someKey',
     };
     await actionType.executor({
