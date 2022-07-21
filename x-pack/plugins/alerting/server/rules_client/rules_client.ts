@@ -845,8 +845,8 @@ export class RulesClient {
         {
           start: parsedDateStart.toISOString(),
           end: parsedDateEnd.toISOString(),
-          filter,
           aggs: getExecutionLogAggregation({
+            filter,
             page,
             perPage,
             sort,
