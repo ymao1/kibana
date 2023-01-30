@@ -125,6 +125,7 @@ export interface PluginSetupContract {
   ): void;
   getSecurityHealth: () => Promise<SecurityHealth>;
   getConfig: () => AlertingRulesConfig;
+  getFrameworkAlertsEnabled: () => boolean;
 }
 
 export interface PluginStartContract {
@@ -384,6 +385,7 @@ export class AlertingPlugin {
           isUsingSecurity: this.licenseState ? !!this.licenseState.getIsSecurityEnabled() : false,
         };
       },
+      getFrameworkAlertsEnabled: () => this.config.enableFrameworkAlerts,
     };
   }
 

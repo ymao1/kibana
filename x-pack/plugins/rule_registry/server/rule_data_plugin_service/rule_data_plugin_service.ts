@@ -90,6 +90,7 @@ interface ConstructorOptions {
   kibanaVersion: string;
   isWriteEnabled: boolean;
   isWriterCacheEnabled: boolean;
+  areFrameworkAlertsEnabled: boolean;
   disabledRegistrationContexts: string[];
   pluginStop$: Observable<void>;
 }
@@ -111,6 +112,7 @@ export class RuleDataService implements IRuleDataService {
       getClusterClient: options.getClusterClient,
       logger: options.logger,
       disabledRegistrationContexts: options.disabledRegistrationContexts,
+      areFrameworkAlertsEnabled: options.areFrameworkAlertsEnabled,
       isWriteEnabled: options.isWriteEnabled,
       pluginStop$: options.pluginStop$,
     });

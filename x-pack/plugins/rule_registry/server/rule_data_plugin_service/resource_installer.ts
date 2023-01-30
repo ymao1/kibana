@@ -30,6 +30,7 @@ interface ConstructorOptions {
   getClusterClient: () => Promise<ElasticsearchClient>;
   logger: Logger;
   isWriteEnabled: boolean;
+  areFrameworkAlertsEnabled: boolean;
   disabledRegistrationContexts: string[];
   pluginStop$: Observable<void>;
 }
@@ -95,26 +96,33 @@ export class ResourceInstaller {
    */
   public async installCommonResources(): Promise<void> {
     await this.installWithTimeout('common resources shared between all indices', async () => {
-      const { getResourceName, logger } = this.options;
+      const { getResourceName, logger, areFrameworkAlertsEnabled } = this.options;
 
-      try {
-        // We can install them in parallel
-        await Promise.all([
+      const commonResourcesToInstall = [
+        this.createOrUpdateComponentTemplate({
+          name: getResourceName(TECHNICAL_COMPONENT_TEMPLATE_NAME),
+          body: technicalComponentTemplate,
+        }),
+
+        this.createOrUpdateComponentTemplate({
+          name: getResourceName(ECS_COMPONENT_TEMPLATE_NAME),
+          body: ecsComponentTemplate,
+        }),
+      ];
+
+      // Install ILM policy if framework alerts are not enabled
+      // If framework alerts are enabled, the alerting framework will install this ILM policy
+      if (!areFrameworkAlertsEnabled) {
+        commonResourcesToInstall.push(
           this.createOrUpdateLifecyclePolicy({
             name: getResourceName(DEFAULT_ILM_POLICY_ID),
             body: defaultLifecyclePolicy,
-          }),
-
-          this.createOrUpdateComponentTemplate({
-            name: getResourceName(TECHNICAL_COMPONENT_TEMPLATE_NAME),
-            body: technicalComponentTemplate,
-          }),
-
-          this.createOrUpdateComponentTemplate({
-            name: getResourceName(ECS_COMPONENT_TEMPLATE_NAME),
-            body: ecsComponentTemplate,
-          }),
-        ]);
+          })
+        );
+      }
+      try {
+        // We can install them in parallel
+        await Promise.all(commonResourcesToInstall);
       } catch (err) {
         logger.error(
           `Error installing common resources in RuleRegistry ResourceInstaller - ${err.message}`
