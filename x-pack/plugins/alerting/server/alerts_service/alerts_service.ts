@@ -14,7 +14,7 @@ import { get, isEmpty, isEqual } from 'lodash';
 import { Logger, ElasticsearchClient } from '@kbn/core/server';
 import { firstValueFrom, Observable } from 'rxjs';
 import { FieldMap } from '../../common/alert_schema/field_maps/types';
-import { alertFieldMap } from '../../common/alert_schema';
+import { alertFieldMap, ecsFieldMap } from '../../common/alert_schema';
 import {
   DEFAULT_ALERTS_ILM_POLICY_NAME,
   DEFAULT_ALERTS_ILM_POLICY,
@@ -34,7 +34,7 @@ import {
 
 const TOTAL_FIELDS_LIMIT = 2500;
 const INSTALLATION_TIMEOUT = 20 * 60 * 1000; // 20 minutes
-
+const ECS_COMPONENT_TEMPLATE_CONTEXT = `ecs`;
 interface AlertsServiceParams {
   logger: Logger;
   pluginStop$: Observable<void>;
@@ -107,6 +107,11 @@ export class AlertsService implements IAlertsService {
         const initFns = [
           () => this.createOrUpdateIlmPolicy(esClient),
           () => this.createOrUpdateComponentTemplate(esClient, getComponentTemplate(alertFieldMap)),
+          () =>
+            this.createOrUpdateComponentTemplate(
+              esClient,
+              getComponentTemplate(ecsFieldMap, ECS_COMPONENT_TEMPLATE_CONTEXT)
+            ),
         ];
 
         for (const fn of initFns) {

@@ -112,15 +112,14 @@ export class ResourceInstaller {
                   name: DEFAULT_ALERTS_ILM_POLICY_NAME,
                   body: DEFAULT_ALERTS_ILM_POLICY,
                 }),
+                this.createOrUpdateComponentTemplate({
+                  name: getResourceName(ECS_COMPONENT_TEMPLATE_NAME),
+                  body: ecsComponentTemplate,
+                }),
               ]),
           this.createOrUpdateComponentTemplate({
             name: getResourceName(TECHNICAL_COMPONENT_TEMPLATE_NAME),
             body: technicalComponentTemplate,
-          }),
-
-          this.createOrUpdateComponentTemplate({
-            name: getResourceName(ECS_COMPONENT_TEMPLATE_NAME),
-            body: ecsComponentTemplate,
           }),
         ]);
       } catch (err) {

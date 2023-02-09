@@ -6,4 +6,5 @@
  */
 
 export { alertFieldMap } from './field_maps/alert_field_map';
+export { ecsFieldMap } from './field_maps/ecs_field_map';
 export { getComponentTemplateFromFieldMap } from './field_maps/component_template_from_field_map';
