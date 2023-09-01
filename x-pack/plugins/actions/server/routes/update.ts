@@ -7,7 +7,8 @@
 
 import { schema } from '@kbn/config-schema';
 import { IRouter } from '@kbn/core/server';
-import { ILicenseState, validateEmptyStrings } from '../lib';
+import { validateEmptyStrings } from '../../common/routes/connector/validation';
+import { ILicenseState } from '../lib';
 import { BASE_ACTION_API_PATH, RewriteResponseCase } from '../../common';
 import { ActionResult, ActionsRequestHandlerContext } from '../types';
 import { verifyAccessAndContext } from './verify_access_and_context';

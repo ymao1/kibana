@@ -6,12 +6,17 @@
  */
 
 import { TypeOf } from '@kbn/config-schema';
-import { connectorResponseSchemaV1, connectorTypesResponseSchemaV1 } from '..';
+import {
+  connectorResponseSchemaV1,
+  connectorTypesResponseSchemaV1,
+  connectorConfigSchemaV1,
+  connectorSecretsSchemaV1,
+} from '..';
 
 export type ActionTypeConfig = Record<string, unknown>;
 type ConnectorResponseSchemaType = TypeOf<typeof connectorResponseSchemaV1>;
 
-export interface ConnectorResponse<Config extends ActionTypeConfig = ActionTypeConfig> {
+export interface ConnectorResponse<Config extends ActionTypeConfig = never> {
   id: ConnectorResponseSchemaType['id'];
   name: ConnectorResponseSchemaType['name'];
   config?: Config;
@@ -20,7 +25,7 @@ export interface ConnectorResponse<Config extends ActionTypeConfig = ActionTypeC
   is_preconfigured: ConnectorResponseSchemaType['is_preconfigured'];
   is_deprecated: ConnectorResponseSchemaType['is_deprecated'];
   is_system_action: ConnectorResponseSchemaType['is_system_action'];
-  referenced_by_count: ConnectorResponseSchemaType['referenced_by_count'];
+  referenced_by_count?: ConnectorResponseSchemaType['referenced_by_count'];
 }
 
 type ConnectorTypesResponseSchemaType = TypeOf<typeof connectorTypesResponseSchemaV1>;
@@ -34,3 +39,6 @@ export interface ConnectorTypesResponse {
   supported_feature_ids: ConnectorTypesResponseSchemaType['supported_feature_ids'];
   is_system_action_type: ConnectorTypesResponseSchemaType['is_system_action_type'];
 }
+
+export type ConnectorConfig = TypeOf<typeof connectorConfigSchemaV1>;
+export type ConnectorSecrets = TypeOf<typeof connectorSecretsSchemaV1>;

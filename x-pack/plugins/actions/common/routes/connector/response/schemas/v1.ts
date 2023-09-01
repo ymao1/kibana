@@ -16,7 +16,7 @@ export const connectorResponseSchema = schema.object({
   is_preconfigured: schema.boolean(),
   is_deprecated: schema.boolean(),
   is_system_action: schema.boolean(),
-  referenced_by_count: schema.number(),
+  referenced_by_count: schema.maybe(schema.number()),
 });
 
 export const connectorTypesResponseSchema = schema.object({
@@ -36,3 +36,6 @@ export const connectorTypesResponseSchema = schema.object({
   supported_feature_ids: schema.arrayOf(schema.string()),
   is_system_action_type: schema.boolean(),
 });
+
+export const connectorConfigSchema = schema.recordOf(schema.string(), schema.maybe(schema.any()));
+export const connectorSecretsSchema = schema.recordOf(schema.string(), schema.maybe(schema.any()));

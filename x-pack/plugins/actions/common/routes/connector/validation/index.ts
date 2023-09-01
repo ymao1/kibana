@@ -5,4 +5,4 @@
  * 2.0.
  */
 
-export * from './v1';
+export { validateEmptyStrings } from './validate_empty_strings';

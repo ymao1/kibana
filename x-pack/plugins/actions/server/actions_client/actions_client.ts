@@ -17,7 +17,6 @@ import {
   SavedObjectsClientContract,
   SavedObjectAttributes,
   KibanaRequest,
-  SavedObjectsUtils,
   Logger,
 } from '@kbn/core/server';
 import { AuditLogger } from '@kbn/security-plugin/server';
@@ -28,6 +27,7 @@ import { FindConnectorResult } from '../application/connector/types';
 import { ConnectorType } from '../application/connector/types';
 import { getAll } from '../application/connector/methods/get_all';
 import { listTypes } from '../application/connector/methods/list_types';
+import { create } from '../application/connector/methods/create';
 import {
   GetGlobalExecutionKPIParams,
   GetGlobalExecutionLogParams,
@@ -48,6 +48,8 @@ import {
   InMemoryConnector,
   ActionTypeExecutorResult,
   ConnectorTokenClientContract,
+  ActionTypeParams,
+  ActionTypeSecrets,
 } from '../types';
 import { PreconfiguredActionDisabledModificationError } from '../lib/errors/preconfigured_action_disabled_modification';
 import { ExecuteOptions } from '../lib/action_executor';
@@ -185,103 +187,11 @@ export class ActionsClient {
     };
   }
 
-  /**
-   * Create an action
-   */
-  public async create({
-    action: { actionTypeId, name, config, secrets },
-    options,
-  }: CreateOptions): Promise<ActionResult> {
-    const id = options?.id || SavedObjectsUtils.generateId();
-
-    try {
-      await this.context.authorization.ensureAuthorized({
-        operation: 'create',
-        actionTypeId,
-      });
-    } catch (error) {
-      this.context.auditLogger?.log(
-        connectorAuditEvent({
-          action: ConnectorAuditAction.CREATE,
-          savedObject: { type: 'action', id },
-          error,
-        })
-      );
-      throw error;
-    }
-
-    const foundInMemoryConnector = this.context.inMemoryConnectors.find(
-      (connector) => connector.id === id
-    );
-
-    if (
-      this.context.actionTypeRegistry.isSystemActionType(actionTypeId) ||
-      foundInMemoryConnector?.isSystemAction
-    ) {
-      throw Boom.badRequest(
-        i18n.translate('xpack.actions.serverSideErrors.systemActionCreationForbidden', {
-          defaultMessage: 'System action creation is forbidden. Action type: {actionTypeId}.',
-          values: {
-            actionTypeId,
-          },
-        })
-      );
-    }
-
-    if (foundInMemoryConnector?.isPreconfigured) {
-      throw Boom.badRequest(
-        i18n.translate('xpack.actions.serverSideErrors.predefinedIdConnectorAlreadyExists', {
-          defaultMessage: 'This {id} already exists in a preconfigured action.',
-          values: {
-            id,
-          },
-        })
-      );
-    }
-
-    const actionType = this.context.actionTypeRegistry.get(actionTypeId);
-    const configurationUtilities = this.context.actionTypeRegistry.getUtils();
-    const validatedActionTypeConfig = validateConfig(actionType, config, {
-      configurationUtilities,
-    });
-    const validatedActionTypeSecrets = validateSecrets(actionType, secrets, {
-      configurationUtilities,
-    });
-    if (actionType.validate?.connector) {
-      validateConnector(actionType, { config, secrets });
-    }
-    this.context.actionTypeRegistry.ensureActionTypeEnabled(actionTypeId);
-
-    this.context.auditLogger?.log(
-      connectorAuditEvent({
-        action: ConnectorAuditAction.CREATE,
-        savedObject: { type: 'action', id },
-        outcome: 'unknown',
-      })
-    );
-
-    const result = await this.context.unsecuredSavedObjectsClient.create(
-      'action',
-      {
-        actionTypeId,
-        name,
-        isMissingSecrets: false,
-        config: validatedActionTypeConfig as SavedObjectAttributes,
-        secrets: validatedActionTypeSecrets as SavedObjectAttributes,
-      },
-      { id }
-    );
-
-    return {
-      id: result.id,
-      actionTypeId: result.attributes.actionTypeId,
-      isMissingSecrets: result.attributes.isMissingSecrets,
-      name: result.attributes.name,
-      config: result.attributes.config,
-      isPreconfigured: false,
-      isSystemAction: false,
-      isDeprecated: isConnectorDeprecated(result.attributes),
-    };
+  public async create<
+    Config extends ActionTypeParams = never,
+    Secrets extends ActionTypeSecrets = never
+  >(params: CreateRuleParams<Config, Secrets>): Promise<ActionResult> {
+    return create(this.context, params);
   }
 
   /**

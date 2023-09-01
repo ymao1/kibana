@@ -5,4 +5,9 @@
  * 2.0.
  */
 
-export * from './v1';
+import { schema } from '@kbn/config-schema';
+
+export const listTypesParamsSchema = schema.object({
+  featureId: schema.maybe(schema.string()),
+  includeSystemActionTypes: schema.maybe(schema.boolean()),
+});

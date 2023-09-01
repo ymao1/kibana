@@ -11,7 +11,7 @@ import { getAllConnectorsRoute } from './connector/get_all';
 import { listTypesRoute } from './connector/list_types';
 import { ILicenseState } from '../lib';
 import { ActionsRequestHandlerContext } from '../types';
-import { createActionRoute } from './create';
+import { createConnectorRoute } from './connector/create';
 import { deleteActionRoute } from './delete';
 import { executeActionRoute } from './execute';
 import { getActionRoute } from './get';
@@ -34,7 +34,7 @@ export function defineRoutes(opts: RouteOptions) {
 
   defineLegacyRoutes(router, licenseState, usageCounter);
 
-  createActionRoute(router, licenseState);
+  createConnectorRoute(router, licenseState);
   deleteActionRoute(router, licenseState);
   getActionRoute(router, licenseState);
   getAllConnectorsRoute(router, licenseState);
