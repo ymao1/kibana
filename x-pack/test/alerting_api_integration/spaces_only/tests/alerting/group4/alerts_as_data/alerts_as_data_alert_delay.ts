@@ -79,6 +79,7 @@ export default function createAlertsAsDataAlertDelayInstallResourcesTest({
         index: [alertsAsDataIndex, alwaysFiringAlertsAsDataIndex],
         query: { match_all: {} },
         conflicts: 'proceed',
+        ignore_unavailable: true,
       });
     });
     afterEach(async () => {
@@ -87,6 +88,7 @@ export default function createAlertsAsDataAlertDelayInstallResourcesTest({
         index: [alertsAsDataIndex, alwaysFiringAlertsAsDataIndex],
         query: { match_all: {} },
         conflicts: 'proceed',
+        ignore_unavailable: true,
       });
     });
     after(async () => {
