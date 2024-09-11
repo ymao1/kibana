@@ -883,6 +883,57 @@ function getCancellableRuleType() {
   return result;
 }
 
+function getAlwaysFiringAlertAsDataRuleType() {
+  const paramsSchema = schema.object({
+    index: schema.string(),
+    reference: schema.string(),
+  });
+  type ParamsType = TypeOf<typeof paramsSchema>;
+
+  const result: RuleType<ParamsType, never, {}, {}, {}, 'default'> = {
+    id: 'test.always-firing-alert-as-data',
+    name: 'Test: Always Firing Alert As Data',
+    actionGroups: [{ id: 'default', name: 'Default' }],
+    validate: {
+      params: paramsSchema,
+    },
+    category: 'management',
+    producer: 'alertsFixture',
+    defaultActionGroupId: 'default',
+    minimumLicenseRequired: 'basic',
+    isExportable: true,
+    async executor(ruleExecutorOptions) {
+      const { services, params, state, spaceId, namespace, rule } = ruleExecutorOptions;
+      const ruleInfo = { spaceId, namespace, ...rule };
+
+      services.alertsClient?.report({ id: '1', actionGroup: 'default' });
+      services.alertsClient?.report({ id: '2', actionGroup: 'default' });
+
+      await services.scopedClusterClient.asCurrentUser.index({
+        index: params.index,
+        refresh: 'wait_for',
+        body: {
+          state,
+          params,
+          reference: params.reference,
+          source: 'rule:test.always-firing-alert-as-data',
+          ruleInfo,
+        },
+      });
+
+      return { state: {} };
+    },
+    alerts: {
+      context: 'observability.test.alerts',
+      mappings: {
+        fieldMap: {},
+      },
+      useLegacyAlerts: true,
+    },
+  };
+  return result;
+}
+
 function getWaitingRuleType(logger: Logger) {
   const ParamsType = schema.object({
     source: schema.string(),
@@ -1312,6 +1363,7 @@ export function defineRuleTypes(
   alerting.registerType(getCancellableRuleType());
   alerting.registerType(getPatternSuccessOrFailureRuleType());
   alerting.registerType(getExceedsAlertLimitRuleType());
+  alerting.registerType(getAlwaysFiringAlertAsDataRuleType());
   alerting.registerType(getPatternFiringAutoRecoverFalseRuleType());
   alerting.registerType(getPatternFiringAlertsAsDataRuleType());
   alerting.registerType(getWaitingRuleType(logger));
