@@ -929,6 +929,7 @@ function getAlwaysFiringAlertAsDataRuleType() {
         fieldMap: {},
       },
       useLegacyAlerts: true,
+      shouldWrite: true,
     },
   };
   return result;
