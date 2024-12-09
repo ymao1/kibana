@@ -77,6 +77,12 @@ export function telemetryTaskRunner(
   const inMemoryConnectors = getInMemoryConnectors();
 
   return ({ taskInstance }: RunContext) => {
+    const now = new Date();
+    logger.info(
+      `Running action telemetry task at ${now.toISOString()}, scheduled at ${taskInstance.runAt.toISOString()}, a difference of ${
+        now.getTime() - taskInstance.runAt.getTime()
+      }ms`
+    );
     const state = taskInstance.state as LatestTaskStateSchema;
     const getEsClient = () =>
       core.getStartServices().then(

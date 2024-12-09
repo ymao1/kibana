@@ -84,6 +84,12 @@ export function telemetryTaskRunner(
   taskManagerIndex: string
 ) {
   return ({ taskInstance }: RunContext) => {
+    const now = new Date();
+    logger.info(
+      `Running alerting telemetry task at ${now.toISOString()}, scheduled at ${taskInstance.runAt.toISOString()}, a difference of ${
+        now.getTime() - taskInstance.runAt.getTime()
+      }ms`
+    );
     const state = taskInstance.state as LatestTaskStateSchema;
     const getEsClient = () =>
       core.getStartServices().then(
