@@ -9,7 +9,8 @@
 
 import { HttpSetup } from '@kbn/core/public';
 import type { AsApiContract } from '@kbn/actions-types';
-import type { RulesSettingsAlertsDeletion } from '@kbn/alerting-types';
+import type { RulesSettingsAlertDeletion } from '@kbn/alerting-types';
+import { INTERNAL_BASE_ALERTING_API_PATH } from '../../constants';
 
 const transformAlertsDeletionSettingsResponse = ({
   active_alerts_deletion_threshold: activeAlertsDeletionThreshold,
@@ -20,7 +21,7 @@ const transformAlertsDeletionSettingsResponse = ({
   created_by: createdBy,
   updated_at: updatedAt,
   updated_by: updatedBy,
-}: AsApiContract<RulesSettingsAlertsDeletion>): RulesSettingsAlertsDeletion => ({
+}: AsApiContract<RulesSettingsAlertDeletion>): RulesSettingsAlertDeletion => ({
   activeAlertsDeletionThreshold,
   isActiveAlertsDeletionEnabled,
   inactiveAlertsDeletionThreshold,
@@ -31,19 +32,10 @@ const transformAlertsDeletionSettingsResponse = ({
   updatedBy,
 });
 
-export const fetchAlertsDeletionSettings = async ({ http }: { http: HttpSetup }) => {
-  // TODO: https://github.com/elastic/kibana/issues/209258
-
-  const res = {
-    is_active_alerts_deletion_enabled: false,
-    is_inactive_alerts_deletion_enabled: false,
-    active_alerts_deletion_threshold: 0,
-    inactive_alerts_deletion_threshold: 90,
-    created_at: String(new Date().valueOf),
-    updated_at: String(new Date().valueOf),
-    created_by: null,
-    updated_by: null,
-  };
+export const fetchAlertDeletionSettings = async ({ http }: { http: HttpSetup }) => {
+  const res = await http.get<AsApiContract<RulesSettingsAlertDeletion>>(
+    `${INTERNAL_BASE_ALERTING_API_PATH}/rules/settings/_alert_deletion`
+  );
 
   return transformAlertsDeletionSettingsResponse(res);
 };
