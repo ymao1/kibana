@@ -13,13 +13,13 @@ import type { TaskPriority } from '@kbn/task-manager-plugin/server';
 import type { IAlertsClient } from '../../alerts_client/types';
 import type { Alert } from '../../alert';
 import type {
-  AlertInstanceContext,
-  AlertInstanceState,
+  AlertInstanceContext as Context,
+  AlertInstanceState as State,
   RuleTypeParams,
   SanitizedRule,
   RuleTypeState,
   RuleAction,
-  RuleAlertData,
+  RuleAlertData as AlertData,
   RuleSystemAction,
   ThrottledActions,
 } from '../../../common';
@@ -31,58 +31,46 @@ import type {
   AlertingEventLogger,
 } from '../../lib/alerting_event_logger/alerting_event_logger';
 import type { RuleTaskInstance, TaskRunnerContext } from '../types';
+import type { AlertsResult } from '../../alerts_client/mappers/types';
 
 export type ActionSchedulerRule<Params extends RuleTypeParams> = Omit<
   SanitizedRule<Params>,
   'executionStatus'
 >;
 export interface ActionSchedulerOptions<
-  Params extends RuleTypeParams,
-  ExtractedParams extends RuleTypeParams,
-  RuleState extends RuleTypeState,
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string,
-  AlertData extends RuleAlertData
+  P extends RuleTypeParams,
+  E extends RuleTypeParams,
+  T extends RuleTypeState,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string,
+  A extends AlertData
 > {
-  ruleType: NormalizedRuleType<
-    Params,
-    ExtractedParams,
-    RuleState,
-    State,
-    Context,
-    ActionGroupIds,
-    RecoveryActionGroupId,
-    AlertData
-  >;
-  logger: Logger;
-  alertingEventLogger: PublicMethodsOf<AlertingEventLogger>;
-  rule: ActionSchedulerRule<Params>;
-  taskRunnerContext: TaskRunnerContext;
-  taskInstance: RuleTaskInstance;
-  ruleRunMetricsStore: RuleRunMetricsStore;
-  apiKeyId?: string;
-  apiKey: RawRule['apiKey'];
-  ruleConsumer: string;
-  executionId: string;
-  ruleLabel: string;
-  previousStartedAt: Date | null;
   actionsClient: PublicMethodsOf<ActionsClient>;
-  alertsClient: IAlertsClient<AlertData, State, Context, ActionGroupIds, RecoveryActionGroupId>;
+  alertingEventLogger: PublicMethodsOf<AlertingEventLogger>;
+  alerts: AlertsResult<S, C, G>;
+  alertsClient: IAlertsClient<A, S, C, G, R>;
+  apiKey: RawRule['apiKey'];
+  executionId: string;
+  logger: Logger;
+  previousStartedAt: Date | null;
   priority?: TaskPriority;
+  rule: ActionSchedulerRule<P>;
+  ruleConsumer: string;
+  ruleLabel: string;
+  ruleRunMetricsStore: RuleRunMetricsStore;
+  ruleType: NormalizedRuleType<P, E, T, S, C, G, R, A>;
+  taskInstance: RuleTaskInstance;
+  taskRunnerContext: TaskRunnerContext;
+  throttledSummaryActions?: ThrottledActions;
 }
 
-export type Executable<
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string
-> = {
+export type Executable<S extends State, C extends Context, G extends string, R extends string> = {
   action: RuleAction | RuleSystemAction;
 } & (
   | {
-      alert: Alert<State, Context, ActionGroupIds | RecoveryActionGroupId>;
+      alert: Alert<S, C, G | R>;
       summarizedAlerts?: never;
     }
   | {
@@ -91,34 +79,10 @@ export type Executable<
     }
 );
 
-export interface GetActionsToScheduleOpts<
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string
-> {
-  activeAlerts?: Record<string, Alert<State, Context, ActionGroupIds>>;
-  recoveredAlerts?: Record<string, Alert<State, Context, RecoveryActionGroupId>>;
-  throttledSummaryActions?: ThrottledActions;
-}
-
 export interface ActionsToSchedule {
   actionToEnqueue: EnqueueExecutionOptions;
   actionToLog: ActionOpts;
 }
-
-export interface IActionScheduler<
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string
-> {
-  get priority(): number;
-  getActionsToSchedule(
-    opts: GetActionsToScheduleOpts<State, Context, ActionGroupIds, RecoveryActionGroupId>
-  ): Promise<ActionsToSchedule[]>;
-}
-
 export interface RuleUrl {
   absoluteUrl?: string;
   kibanaBaseUrl?: string;
@@ -127,22 +91,19 @@ export interface RuleUrl {
   relativePath?: string;
 }
 
-export interface IsExecutableAlertOpts<
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string
-> {
-  alert: Alert<AlertInstanceState, AlertInstanceContext, ActionGroupIds | RecoveryActionGroupId>;
+export interface IsExecutableAlertOpts<G extends string, R extends string> {
+  alert: Alert<State, Context, G | R>;
   action: RuleAction;
   summarizedAlerts: CombinedSummarizedAlerts | null;
 }
 
 export interface IsExecutableActiveAlertOpts<ActionGroupIds extends string> {
-  alert: Alert<AlertInstanceState, AlertInstanceContext, ActionGroupIds>;
+  alert: Alert<State, Context, ActionGroupIds>;
   action: RuleAction;
 }
 
 export interface HelperOpts<ActionGroupIds extends string, RecoveryActionGroupId extends string> {
-  alert: Alert<AlertInstanceState, AlertInstanceContext, ActionGroupIds | RecoveryActionGroupId>;
+  alert: Alert<State, Context, ActionGroupIds | RecoveryActionGroupId>;
   action: RuleAction;
 }
 
@@ -150,6 +111,58 @@ export interface AddSummarizedAlertsOpts<
   ActionGroupIds extends string,
   RecoveryActionGroupId extends string
 > {
-  alert: Alert<AlertInstanceState, AlertInstanceContext, ActionGroupIds | RecoveryActionGroupId>;
+  alert: Alert<State, Context, ActionGroupIds | RecoveryActionGroupId>;
   summarizedAlerts: CombinedSummarizedAlerts | null;
 }
+
+export type RuleActionWithSummary = RuleAction & {
+  summarizedAlerts?: CombinedSummarizedAlerts;
+};
+
+export interface ActionReducerContext<
+  A extends AlertData,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string
+> {
+  alertsClient: IAlertsClient<A, S, C, G, R>;
+  canGetSummarizedAlerts: boolean;
+  executionUuid: string;
+  logger: Logger;
+  mutedAlertIds: string[];
+  numAlerts: number;
+  ruleId: string;
+  ruleType: string;
+  spaceId: string;
+  throttledSummaryActions?: ThrottledActions;
+}
+export interface ReducerOpts<
+  Action,
+  A extends AlertData,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string
+> {
+  actions: Action[];
+  context: ActionReducerContext<A, S, C, G, R>;
+}
+
+export type ActionReducerFn<Action> = <
+  A extends AlertData,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string
+>(
+  opts: ReducerOpts<Action, A, S, C, G, R>
+) => Promise<Action[]>;
+
+export interface AlertReducerContext<
+  A extends AlertData,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string
+> {}

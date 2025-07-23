@@ -385,20 +385,21 @@ export class TaskRunner<
     }
 
     const actionScheduler = new ActionScheduler({
-      rule,
-      ruleType: this.ruleType,
-      logger: this.logger,
-      taskRunnerContext: this.context,
-      taskInstance: this.taskInstance,
-      ruleRunMetricsStore,
-      apiKey,
-      ruleConsumer: this.ruleConsumer!,
-      executionId: this.executionId,
-      ruleLabel,
-      previousStartedAt: previousStartedAt ? new Date(previousStartedAt) : null,
-      alertingEventLogger: this.alertingEventLogger,
       actionsClient,
+      alertingEventLogger: this.alertingEventLogger,
+      alerts: alertsClient.getMappedAlerts(),
       alertsClient,
+      apiKey,
+      executionId: this.executionId,
+      logger: this.logger,
+      previousStartedAt: previousStartedAt ? new Date(previousStartedAt) : null,
+      rule,
+      ruleConsumer: this.ruleConsumer!,
+      ruleLabel,
+      ruleRunMetricsStore,
+      ruleType: this.ruleType,
+      taskInstance: this.taskInstance,
+      taskRunnerContext: this.context,
     });
 
     let actionSchedulerResult: RunResult = { throttledSummaryActions: {} };
@@ -414,10 +415,7 @@ export class TaskRunner<
           );
           this.countUsageOfActionExecutionAfterRuleCancellation();
         } else {
-          actionSchedulerResult = await actionScheduler.run({
-            activeAlerts: alertsClient.getProcessedAlerts('active'),
-            recoveredAlerts: alertsClient.getProcessedAlerts('recovered'),
-          });
+          actionSchedulerResult = await actionScheduler.run();
         }
       },
       'alerting:schedule-actions'

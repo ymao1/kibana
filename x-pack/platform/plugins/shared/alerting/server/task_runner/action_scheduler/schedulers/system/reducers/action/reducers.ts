@@ -5,6 +5,6 @@
  * 2.0.
  */
 
-export { SystemActionScheduler } from './system/action_scheduler';
-export { SummaryActionScheduler } from './summary/action_scheduler';
-export { PerAlertActionScheduler } from './per_alert/action_scheduler';
+import { filterSystemActions } from './system';
+
+export const reducers = [filterSystemActions] as const;

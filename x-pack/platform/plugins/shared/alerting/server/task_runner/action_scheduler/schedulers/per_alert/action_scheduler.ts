@@ -5,38 +5,37 @@
  * 2.0.
  */
 
-import type { AlertInstanceState, AlertInstanceContext } from '@kbn/alerting-state-types';
+import type {
+  AlertInstanceState as State,
+  AlertInstanceContext as Context,
+} from '@kbn/alerting-state-types';
 import type { RuleAction, RuleTypeParams } from '@kbn/alerting-types';
 import { RuleNotifyWhen } from '@kbn/alerting-types';
-import { compact } from 'lodash';
-import type { RuleTypeState, RuleAlertData } from '../../../../common';
-import { parseDuration } from '../../../../common';
-import type { GetSummarizedAlertsParams } from '../../../alerts_client/types';
-import type { AlertHit } from '../../../types';
-import type { Alert } from '../../../alert';
+import type { RuleTypeState, RuleAlertData as AlertData } from '../../../../common';
+import type { AlertHit } from '../../../../types';
+import type { Alert } from '../../../../alert';
 import {
   buildRuleUrl,
   formatActionToEnqueue,
   generateActionHash,
-  getSummarizedAlerts,
   isActionOnInterval,
-  isSummaryAction,
-  logNumberOfFilteredAlerts,
   shouldScheduleAction,
-} from '../lib';
+} from '../../lib';
 import type {
   ActionSchedulerOptions,
   ActionsToSchedule,
   AddSummarizedAlertsOpts,
   GetActionsToScheduleOpts,
   HelperOpts,
-  IActionScheduler,
   IsExecutableActiveAlertOpts,
   IsExecutableAlertOpts,
-} from '../types';
-import type { TransformActionParamsOptions } from '../../transform_action_params';
-import { transformActionParams } from '../../transform_action_params';
-import { injectActionParams } from '../../inject_action_params';
+  RuleActionWithSummary,
+} from '../../types';
+import type { TransformActionParamsOptions } from '../../../transform_action_params';
+import { transformActionParams } from '../../../transform_action_params';
+import { injectActionParams } from '../../../inject_action_params';
+import { Scheduler } from '../scheduler';
+import { reducers } from './reducers/action/reducers';
 
 enum Reasons {
   MUTED = 'muted',
@@ -45,110 +44,48 @@ enum Reasons {
 }
 
 export class PerAlertActionScheduler<
-  Params extends RuleTypeParams,
-  ExtractedParams extends RuleTypeParams,
-  RuleState extends RuleTypeState,
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string,
-  AlertData extends RuleAlertData
-> implements IActionScheduler<State, Context, ActionGroupIds, RecoveryActionGroupId>
-{
-  private actions: RuleAction[] = [];
+  P extends RuleTypeParams,
+  E extends RuleTypeParams,
+  T extends RuleTypeState,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string,
+  A extends AlertData
+> extends Scheduler<P, E, T, S, C, G, R, A> {
   private mutedAlertIdsSet: Set<string> = new Set();
-  private ruleTypeActionGroups?: Map<ActionGroupIds | RecoveryActionGroupId, string>;
+  private ruleTypeActionGroups?: Map<G | R, string>;
   private skippedAlerts: { [key: string]: { reason: string } } = {};
 
-  constructor(
-    private readonly context: ActionSchedulerOptions<
-      Params,
-      ExtractedParams,
-      RuleState,
-      State,
-      Context,
-      ActionGroupIds,
-      RecoveryActionGroupId,
-      AlertData
-    >
-  ) {
+  constructor(protected readonly context: ActionSchedulerOptions<P, E, T, S, C, G, R, A>) {
+    super(context);
     this.ruleTypeActionGroups = new Map(
       context.ruleType.actionGroups.map((actionGroup) => [actionGroup.id, actionGroup.name])
     );
     this.mutedAlertIdsSet = new Set(context.rule.mutedInstanceIds);
-
-    const canGetSummarizedAlerts =
-      !!context.ruleType.alerts && !!context.alertsClient.getSummarizedAlerts;
-
-    // filter for per-alert actions; if the action has an alertsFilter, check that
-    // rule type supports summarized alerts and filter out if not
-    this.actions = compact(
-      (context.rule.actions ?? [])
-        .filter((action) => !isSummaryAction(action))
-        .map((action) => {
-          if (!canGetSummarizedAlerts && action.alertsFilter) {
-            this.context.logger.error(
-              `Skipping action "${action.id}" for rule "${this.context.rule.id}" because the rule type "${this.context.ruleType.name}" does not support alert-as-data.`
-            );
-            return null;
-          }
-
-          return action;
-        })
-    );
   }
 
   public get priority(): number {
     return 2;
   }
 
-  public async getActionsToSchedule({
-    activeAlerts,
-    recoveredAlerts,
-  }: GetActionsToScheduleOpts<State, Context, ActionGroupIds, RecoveryActionGroupId>): Promise<
-    ActionsToSchedule[]
-  > {
+  public async getActionsToSchedule(): Promise<ActionsToSchedule[]> {
+    const actions = await super.reduceActions<RuleActionWithSummary>(
+      this.context.rule.actions,
+      reducers
+    );
+
     const executables: Array<{
       action: RuleAction;
-      alert: Alert<State, Context, ActionGroupIds | RecoveryActionGroupId>;
+      alert: Alert<S, C, G | R>;
     }> = [];
     const results: ActionsToSchedule[] = [];
 
     const activeAlertsArray = Object.values(activeAlerts || {});
     const recoveredAlertsArray = Object.values(recoveredAlerts || {});
 
-    for (const action of this.actions) {
-      let summarizedAlerts = null;
-
-      if (action.useAlertDataForTemplate || action.alertsFilter) {
-        const optionsBase = {
-          spaceId: this.context.taskInstance.params.spaceId,
-          ruleId: this.context.rule.id,
-          excludedAlertInstanceIds: this.context.rule.mutedInstanceIds,
-          alertsFilter: action.alertsFilter,
-        };
-
-        let options: GetSummarizedAlertsParams;
-        if (isActionOnInterval(action)) {
-          const throttleMills = parseDuration(action.frequency!.throttle!);
-          const start = new Date(Date.now() - throttleMills);
-          options = { ...optionsBase, start, end: new Date() };
-        } else {
-          options = { ...optionsBase, executionUuid: this.context.executionId };
-        }
-        summarizedAlerts = await getSummarizedAlerts({
-          queryOptions: options,
-          alertsClient: this.context.alertsClient,
-        });
-
-        logNumberOfFilteredAlerts({
-          logger: this.context.logger,
-          numberOfAlerts: activeAlertsArray.length + recoveredAlertsArray.length,
-          numberOfSummarizedAlerts: summarizedAlerts.all.count,
-          action,
-        });
-      }
-
+    for (const action of actions) {
+      // reduce alerts for this specific action
       for (const alert of activeAlertsArray) {
         if (
           this.isExecutableAlert({ alert, action, summarizedAlerts }) &&
@@ -243,7 +180,6 @@ export class PerAlertActionScheduler<
         actionToEnqueue: formatActionToEnqueue({
           action: actionToRun,
           apiKey: this.context.apiKey,
-          apiKeyId: this.context.apiKeyId,
           executionId: this.context.executionId,
           priority: this.context.priority,
           ruleConsumer: this.context.ruleConsumer,
@@ -292,7 +228,7 @@ export class PerAlertActionScheduler<
     );
   }
 
-  private isExecutableActiveAlert({ alert, action }: IsExecutableActiveAlertOpts<ActionGroupIds>) {
+  private isExecutableActiveAlert({ alert, action }: IsExecutableActiveAlertOpts<G>) {
     if (!alert.hasScheduledActions()) {
       return false;
     }
@@ -377,7 +313,7 @@ export class PerAlertActionScheduler<
     return false;
   }
 
-  private isValidActionGroup(actionGroup: ActionGroupIds | RecoveryActionGroupId) {
+  private isValidActionGroup(actionGroup: G | R) {
     if (!this.ruleTypeActionGroups!.has(actionGroup)) {
       this.context.logger.error(
         `Invalid action group "${actionGroup}" for rule "${this.context.ruleType.id}".`

@@ -37,6 +37,7 @@ import type { RuleRunMetricsStore } from '../lib/rule_run_metrics_store';
 import type { RulesSettingsFlappingProperties } from '../../common/rules_settings';
 import type { PublicAlertFactory } from '../alert/create_alert_factory';
 import type { MaintenanceWindow } from '../application/maintenance_window/types';
+import type { AlertsResult } from './mappers/types';
 
 export interface AlertRuleData {
   consumer: string;
@@ -74,7 +75,17 @@ export interface IAlertsClient<
   initializeExecution(opts: InitializeExecutionOpts): Promise<void>;
   hasReachedAlertLimit(): boolean;
   checkLimitUsage(): void;
+<<<<<<< Updated upstream
   processAlerts(shouldLogAlerts: boolean): void;
+=======
+<<<<<<< Updated upstream
+  processAlerts(): void;
+  logAlerts(opts: LogAlertsOpts): void;
+=======
+  processAlerts(shouldLogAlerts: boolean): void;
+  getMappedAlerts(): AlertsResult<S, C, G>;
+>>>>>>> Stashed changes
+>>>>>>> Stashed changes
   getProcessedAlerts(
     type: 'new' | 'active' | 'trackedActiveAlerts'
   ): Record<string, LegacyAlert<S, C, G>> | {};

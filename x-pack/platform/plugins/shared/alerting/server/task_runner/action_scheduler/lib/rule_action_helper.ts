@@ -8,8 +8,9 @@
 import type { Logger } from '@kbn/logging';
 import type { IntervalSchedule, RuleAction, ThrottledActions } from '../../../../common';
 import { parseDuration, RuleNotifyWhenTypeValues } from '../../../../common';
+import type { RuleActionWithSummary } from '../types';
 
-export const isSummaryAction = (action?: RuleAction) => {
+export const isSummaryAction = (action?: RuleActionWithSummary) => {
   return action?.frequency?.summary ?? false;
 };
 

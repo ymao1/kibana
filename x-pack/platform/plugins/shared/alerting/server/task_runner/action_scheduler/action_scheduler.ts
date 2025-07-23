@@ -11,18 +11,20 @@ import { ExecutionResponseType } from '@kbn/actions-plugin/server/create_execute
 import { ActionsCompletion } from '@kbn/alerting-state-types';
 import { chunk } from 'lodash';
 import type { ThrottledActions } from '../../types';
-import type { ActionSchedulerOptions, ActionsToSchedule, IActionScheduler } from './types';
-import type { Alert } from '../../alert';
+import type { ActionSchedulerOptions, ActionsToSchedule } from './types';
 import type {
-  AlertInstanceContext,
-  AlertInstanceState,
+  AlertInstanceContext as Context,
+  AlertInstanceState as State,
   RuleTypeParams,
   RuleTypeState,
-  RuleAlertData,
+  RuleAlertData as AlertData,
 } from '../../../common';
 import { getSummaryActionsFromTaskState } from './lib';
 import { withAlertingSpan } from '../lib';
 import * as schedulers from './schedulers';
+import type { AlertsResult } from '../../alerts_client/mappers/types';
+import { reduceAlerts } from './reducers';
+import type { Scheduler } from './schedulers/scheduler';
 
 const BULK_SCHEDULE_CHUNK_SIZE = 1000;
 
@@ -31,50 +33,37 @@ export interface RunResult {
 }
 
 export class ActionScheduler<
-  Params extends RuleTypeParams,
-  ExtractedParams extends RuleTypeParams,
-  RuleState extends RuleTypeState,
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string,
-  AlertData extends RuleAlertData
+  P extends RuleTypeParams,
+  E extends RuleTypeParams,
+  T extends RuleTypeState,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string,
+  A extends AlertData
 > {
-  private readonly schedulers: Array<
-    IActionScheduler<State, Context, ActionGroupIds, RecoveryActionGroupId>
-  > = [];
+  private readonly schedulers: Array<Scheduler<P, E, T, S, C, G, R, A>> = [];
 
-  constructor(
-    private readonly context: ActionSchedulerOptions<
-      Params,
-      ExtractedParams,
-      RuleState,
-      State,
-      Context,
-      ActionGroupIds,
-      RecoveryActionGroupId,
-      AlertData
-    >
-  ) {
+  constructor(private readonly context: ActionSchedulerOptions<P, E, T, S, C, G, R, A>) {
+    const throttledSummaryActions = getSummaryActionsFromTaskState({
+      actions: this.context.rule.actions,
+      summaryActions: this.context.taskInstance.state?.summaryActions,
+    });
+
     for (const [_, scheduler] of Object.entries(schedulers)) {
-      this.schedulers.push(new scheduler(context));
+      this.schedulers.push(new scheduler({ ...context, throttledSummaryActions }));
     }
 
     // sort schedulers by priority
     this.schedulers.sort((a, b) => a.priority - b.priority);
   }
 
-  public async run({
-    activeAlerts,
-    recoveredAlerts,
-  }: {
-    activeAlerts?: Record<string, Alert<State, Context, ActionGroupIds>>;
-    recoveredAlerts?: Record<string, Alert<State, Context, RecoveryActionGroupId>>;
-  }): Promise<RunResult> {
-    const throttledSummaryActions: ThrottledActions = getSummaryActionsFromTaskState({
-      actions: this.context.rule.actions,
-      summaryActions: this.context.taskInstance.state?.summaryActions,
-    });
+  public async run(): Promise<RunResult> {
+    // reduce alert using reducers that are action independent
+    // is rule snoozed
+    // is alert in active maintenance window
+    // is alert muted
+    // const reducedAlerts = await reduceAlerts(alerts, reducerContext);
 
     const allActionsToScheduleResult: ActionsToSchedule[] = [];
     for (const scheduler of this.schedulers) {

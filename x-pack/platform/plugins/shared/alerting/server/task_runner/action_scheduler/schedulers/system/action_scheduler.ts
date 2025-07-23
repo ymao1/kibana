@@ -5,70 +5,54 @@
  * 2.0.
  */
 
-import type { AlertInstanceState, AlertInstanceContext } from '@kbn/alerting-state-types';
+import type {
+  AlertInstanceState as State,
+  AlertInstanceContext as Context,
+} from '@kbn/alerting-state-types';
 import type { RuleSystemAction, RuleTypeParams } from '@kbn/alerting-types';
-import type { CombinedSummarizedAlerts } from '../../../types';
-import type { RuleTypeState, RuleAlertData } from '../../../../common';
-import type { GetSummarizedAlertsParams } from '../../../alerts_client/types';
+import type { CombinedSummarizedAlerts } from '../../../../types';
+import type { RuleTypeState, RuleAlertData as AlertData } from '../../../../../common';
+import type { GetSummarizedAlertsParams } from '../../../../alerts_client/types';
 import {
   buildRuleUrl,
   formatActionToEnqueue,
   getSummarizedAlerts,
   shouldScheduleAction,
-} from '../lib';
-import type {
-  ActionSchedulerOptions,
-  ActionsToSchedule,
-  GetActionsToScheduleOpts,
-  IActionScheduler,
-} from '../types';
+} from '../../lib';
+import type { ActionSchedulerOptions, ActionsToSchedule } from '../../types';
+import { Scheduler } from '../scheduler';
+import { reducers } from './reducers/action/reducers';
 
 export class SystemActionScheduler<
-  Params extends RuleTypeParams,
-  ExtractedParams extends RuleTypeParams,
-  RuleState extends RuleTypeState,
-  State extends AlertInstanceState,
-  Context extends AlertInstanceContext,
-  ActionGroupIds extends string,
-  RecoveryActionGroupId extends string,
-  AlertData extends RuleAlertData
-> implements IActionScheduler<State, Context, ActionGroupIds, RecoveryActionGroupId>
-{
-  private actions: RuleSystemAction[] = [];
-
-  constructor(
-    private readonly context: ActionSchedulerOptions<
-      Params,
-      ExtractedParams,
-      RuleState,
-      State,
-      Context,
-      ActionGroupIds,
-      RecoveryActionGroupId,
-      AlertData
-    >
-  ) {
-    const canGetSummarizedAlerts =
-      !!context.ruleType.alerts && !!context.alertsClient.getSummarizedAlerts;
-
-    // only process system actions when rule type supports summarized alerts
-    this.actions = canGetSummarizedAlerts ? context.rule.systemActions ?? [] : [];
+  P extends RuleTypeParams,
+  E extends RuleTypeParams,
+  T extends RuleTypeState,
+  S extends State,
+  C extends Context,
+  G extends string,
+  R extends string,
+  A extends AlertData
+> extends Scheduler<P, E, T, S, C, G, R, A> {
+  constructor(protected readonly context: ActionSchedulerOptions<P, E, T, S, C, G, R, A>) {
+    super(context);
   }
 
   public get priority(): number {
     return 1;
   }
 
-  public async getActionsToSchedule(
-    _: GetActionsToScheduleOpts<State, Context, ActionGroupIds, RecoveryActionGroupId>
-  ): Promise<ActionsToSchedule[]> {
+  public async getActionsToSchedule(): Promise<ActionsToSchedule[]> {
+    const actions = await super.reduceActions<RuleSystemAction>(
+      this.context.rule.systemActions ?? [],
+      reducers
+    );
     const executables: Array<{
       action: RuleSystemAction;
       summarizedAlerts: CombinedSummarizedAlerts;
     }> = [];
     const results: ActionsToSchedule[] = [];
 
-    for (const action of this.actions) {
+    for (const action of actions) {
       const options: GetSummarizedAlertsParams = {
         spaceId: this.context.taskInstance.params.spaceId,
         ruleId: this.context.rule.id,

@@ -25,7 +25,7 @@ import type { UntypedNormalizedRuleType } from '../rule_type_registry';
 import type { MaintenanceWindowsService } from '../task_runner/maintenance_windows';
 import type { AlertingEventLogger } from '../lib/alerting_event_logger/alerting_event_logger';
 import { categorizeAlerts } from '../lib/categorize_alerts';
-import type { CategorizedAlert } from './mappers/types';
+import type { AlertsResult, CategorizedAlert } from './mappers/types';
 import { AlertCategory, filterFor } from './mappers/types';
 
 export interface LegacyAlertsClientParams {
@@ -68,6 +68,7 @@ export class LegacyAlertsClient<
   };
 
   private alertFactory?: AlertFactory<S, C, WithoutReservedActionGroups<G, R>>;
+  private mappedAlerts: AlertsResult<S, C, G> = [];
 
   constructor(private readonly options: LegacyAlertsClientParams) {
     this.processedAlerts = {
@@ -144,12 +145,12 @@ export class LegacyAlertsClient<
       startedAt: currentTime,
     };
 
-    const processedAlerts = await mapAlerts(categorizedAlerts, mapperContext);
+    this.mappedAlerts = await mapAlerts(categorizedAlerts, mapperContext);
 
-    const newAlerts = filterFor(processedAlerts, AlertCategory.New);
-    const ongoingAlerts = filterFor(processedAlerts, AlertCategory.Ongoing);
-    const recoveredAlerts = filterFor(processedAlerts, AlertCategory.Recovered);
-    const ongoingRecoveredAlerts = filterFor(processedAlerts, AlertCategory.OngoingRecovered);
+    const newAlerts = filterFor(this.mappedAlerts, AlertCategory.New);
+    const ongoingAlerts = filterFor(this.mappedAlerts, AlertCategory.Ongoing);
+    const recoveredAlerts = filterFor(this.mappedAlerts, AlertCategory.Recovered);
+    const ongoingRecoveredAlerts = filterFor(this.mappedAlerts, AlertCategory.OngoingRecovered);
 
     const convertToMap = (alerts: Array<CategorizedAlert<S, C, G>>) =>
       alerts.reduce((map, { alert }) => {
@@ -172,6 +173,13 @@ export class LegacyAlertsClient<
 
     // TODO - apm.currentTransaction.addLabels();
     // TODO - ruleRunMetricsStore
+  }
+
+  public getMappedAlerts(): AlertsResult<S, C, G> {
+    const newAlerts = filterFor(this.mappedAlerts, AlertCategory.New);
+    const ongoingAlerts = filterFor(this.mappedAlerts, AlertCategory.Ongoing);
+    const recoveredAlerts = filterFor(this.mappedAlerts, AlertCategory.Recovered);
+    return [...newAlerts, ...ongoingAlerts, ...recoveredAlerts];
   }
 
   public getProcessedAlerts(

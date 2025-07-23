@@ -75,6 +75,7 @@ import {
 import { ErrorWithType } from '../lib/error_with_type';
 import { DEFAULT_MAX_ALERTS } from '../config';
 import { RUNTIME_MAINTENANCE_WINDOW_ID_FIELD } from './lib/get_summarized_alerts_query';
+import type { AlertsResult } from './mappers/types';
 
 export interface AlertsClientParams extends CreateAlertsClientParams {
   elasticsearchClientPromise: Promise<ElasticsearchClient>;
@@ -382,6 +383,10 @@ export class AlertsClient<
 
   public async processAlerts(shouldLogAlerts: boolean) {
     await this.legacyAlertsClient.processAlerts(shouldLogAlerts);
+  }
+
+  public getMappedAlerts(): AlertsResult<LegacyState, LegacyContext, ActionGroupIds> {
+    return this.legacyAlertsClient.getMappedAlerts();
   }
 
   public getProcessedAlerts(
