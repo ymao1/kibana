@@ -8,15 +8,12 @@
 import type { ActionsConfigurationUtilities } from '@kbn/actions-plugin/server/actions_config';
 import type { ValidatorServices } from '@kbn/actions-plugin/server/types';
 import { isEmpty } from 'lodash';
-import { AuthType } from '../../../common/auth/constants';
+import { AuthType } from '@kbn/connector-schemas/common/auth';
+import type { Config, Secrets } from '@kbn/connector-schemas/cases_webhook';
 import * as i18n from './translations';
-import type {
-  CasesWebhookPublicConfigurationType,
-  CasesWebhookSecretConfigurationType,
-} from './types';
 
 export const validateCasesWebhookConfig = (
-  configObject: CasesWebhookPublicConfigurationType,
+  configObject: Config,
   validatorServices: ValidatorServices
 ) => {
   const { configurationUtilities } = validatorServices;
@@ -56,10 +53,7 @@ export const validateCasesWebhookConfig = (
   }
 };
 
-export const validateConnector = (
-  configObject: CasesWebhookPublicConfigurationType,
-  secrets: CasesWebhookSecretConfigurationType
-): string | null => {
+export const validateConnector = (configObject: Config, secrets: Secrets): string | null => {
   if (configObject.hasAuth && isEmpty(secrets)) return i18n.INVALID_AUTH;
   return null;
 };

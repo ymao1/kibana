@@ -7,7 +7,7 @@
 
 import type { Logger } from '@kbn/core/server';
 import { externalServiceMock, apiParams } from './mock';
-import type { ExternalService } from './types';
+import type { ExternalService } from '@kbn/connector-schemas/cases_webhook';
 import { api } from './api';
 let mockedLogger: jest.Mocked<Logger>;
 

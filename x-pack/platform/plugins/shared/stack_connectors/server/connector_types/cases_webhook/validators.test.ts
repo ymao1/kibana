@@ -6,20 +6,20 @@
  */
 
 import { validateCasesWebhookConfig } from './validators';
-import { AuthType } from '../../../common/auth/constants';
-import type { CasesWebhookPublicConfigurationType } from './types';
+import { AuthType } from '@kbn/connector-schemas/common/auth';
+import type { Config } from '@kbn/connector-schemas/cases_webhook';
 import type { ValidatorServices } from '@kbn/actions-plugin/server/types';
 
 describe('validateCasesWebhookConfig', () => {
   it('throws an error for unsupported auth type', () => {
-    const configObject: CasesWebhookPublicConfigurationType = {
+    const configObject: Config = {
       createCommentUrl: 'https://example.com/create-comment',
       createIncidentUrl: 'https://example.com/create-incident',
       viewIncidentUrl: 'https://example.com/view-incident',
       getIncidentUrl: 'https://example.com/get-incident',
       updateIncidentUrl: 'https://example.com/update-incident',
       authType: AuthType.OAuth2ClientCredentials,
-    } as unknown as CasesWebhookPublicConfigurationType;
+    } as unknown as Config;
 
     expect(() =>
       validateCasesWebhookConfig(configObject, {} as ValidatorServices)

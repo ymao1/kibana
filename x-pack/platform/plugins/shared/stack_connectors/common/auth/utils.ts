@@ -4,6 +4,7 @@
  * 2.0; you may not use this file except in compliance with the Elastic License
  * 2.0.
  */
+
 import { isString, isEmpty } from 'lodash';
 
 import type { SSLSettings } from '@kbn/actions-plugin/server/types';
@@ -13,9 +14,9 @@ import type {
   HasAuth,
   SecretsConfigurationType,
   VerificationModeType,
-} from './types';
+} from '@kbn/connector-schemas/common/auth';
 
-import { AuthType } from './constants';
+import { AuthType } from '@kbn/connector-schemas/common/auth';
 
 // For backwards compatibility with connectors created before authType was added, interpret a
 // hasAuth: true and undefined authType as basic auth

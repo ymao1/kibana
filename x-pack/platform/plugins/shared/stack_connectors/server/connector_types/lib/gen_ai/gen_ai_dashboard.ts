@@ -7,8 +7,11 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { SavedObject } from '@kbn/core-saved-objects-common/src/server_types';
+import {
+  CONNECTOR_NAME as BEDROCK_TITLE,
+  CONNECTOR_ID as BEDROCK_CONNECTOR_ID,
+} from '@kbn/connector-schemas/bedrock';
 import { OPENAI_TITLE, OPENAI_CONNECTOR_ID } from '../../../../common/openai/constants';
-import { BEDROCK_TITLE, BEDROCK_CONNECTOR_ID } from '../../../../common/bedrock/constants';
 import { GEMINI_TITLE, GEMINI_CONNECTOR_ID } from '../../../../common/gemini/constants';
 import {
   INFERENCE_CONNECTOR_TITLE,

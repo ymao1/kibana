@@ -12,48 +12,47 @@ import type {
 } from '@kbn/actions-plugin/server/types';
 import { CasesConnectorFeatureId } from '@kbn/actions-plugin/common';
 import type {
-  CasesWebhookActionParamsType,
   CasesWebhookExecutorResultData,
-  CasesWebhookPublicConfigurationType,
-  CasesWebhookSecretConfigurationType,
-  ExecutorParams,
-  ExecutorSubActionPushParams,
-} from './types';
-import { createExternalService } from './service';
+  Config,
+  Secrets,
+  Params,
+  PushActionParams,
+} from '@kbn/connector-schemas/cases_webhook';
 import {
-  ExecutorParamsSchema,
-  ExternalIncidentServiceConfigurationSchema,
-  ExternalIncidentServiceSecretConfigurationSchema,
-} from './schema';
+  CONNECTOR_ID,
+  CONNECTOR_NAME,
+  ParamsSchema,
+  ConfigSchema,
+  SecretsSchema,
+} from '@kbn/connector-schemas/cases_webhook';
+import { createExternalService } from './service';
 import { api } from './api';
 import { validateCasesWebhookConfig, validateConnector } from './validators';
-import * as i18n from './translations';
 
 const supportedSubActions: string[] = ['pushToService'];
-export type ActionParamsType = CasesWebhookActionParamsType;
-export const ConnectorTypeId = '.cases-webhook';
+export type ActionParamsType = Params;
 
 // connector type definition
 export function getConnectorType(): ConnectorType<
-  CasesWebhookPublicConfigurationType,
-  CasesWebhookSecretConfigurationType,
-  ExecutorParams,
+  Config,
+  Secrets,
+  Params,
   CasesWebhookExecutorResultData
 > {
   return {
-    id: ConnectorTypeId,
+    id: CONNECTOR_ID,
     minimumLicenseRequired: 'gold',
-    name: i18n.NAME,
+    name: CONNECTOR_NAME,
     validate: {
       config: {
-        schema: ExternalIncidentServiceConfigurationSchema,
+        schema: ConfigSchema,
         customValidator: validateCasesWebhookConfig,
       },
       secrets: {
-        schema: ExternalIncidentServiceSecretConfigurationSchema,
+        schema: SecretsSchema,
       },
       params: {
-        schema: ExecutorParamsSchema,
+        schema: ParamsSchema,
       },
       connector: validateConnector,
     },
@@ -64,11 +63,7 @@ export function getConnectorType(): ConnectorType<
 
 // action executor
 export async function executor(
-  execOptions: ConnectorTypeExecutorOptions<
-    CasesWebhookPublicConfigurationType,
-    CasesWebhookSecretConfigurationType,
-    CasesWebhookActionParamsType
-  >
+  execOptions: ConnectorTypeExecutorOptions<Config, Secrets, Params>
 ): Promise<ConnectorTypeExecutorResult<CasesWebhookExecutorResultData>> {
   const { actionId, configurationUtilities, params, logger, connectorUsageCollector } = execOptions;
   const { subAction, subActionParams } = params;
@@ -98,14 +93,14 @@ export async function executor(
   }
 
   if (subAction === 'pushToService') {
-    const pushToServiceParams = subActionParams as ExecutorSubActionPushParams;
+    const pushToServiceParams = subActionParams as PushActionParams;
     data = await api.pushToService({
       externalService,
       params: pushToServiceParams,
       logger,
     });
 
-    logger.debug(`response push to service for case id: ${data.id}`);
+    logger.debug(`response push to service for case id: ${data?.id}`);
   }
 
   return { status: 'ok', data, actionId };

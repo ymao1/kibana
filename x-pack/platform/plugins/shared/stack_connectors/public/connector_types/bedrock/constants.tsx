@@ -9,11 +9,7 @@ import React from 'react';
 import type { ConfigFieldSchema, SecretsFieldSchema } from '@kbn/triggers-actions-ui-plugin/public';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { EuiLink } from '@elastic/eui';
-import {
-  DEFAULT_BEDROCK_MODEL,
-  DEFAULT_BEDROCK_URL,
-  DEFAULT_TOKEN_LIMIT,
-} from '../../../common/bedrock/constants';
+import { DEFAULT_MODEL, DEFAULT_URL, DEFAULT_TOKEN_LIMIT } from '@kbn/connector-schemas/bedrock';
 import { contextWindowLengthField } from '../../common/genai_connectors';
 import * as i18n from './translations';
 
@@ -31,7 +27,7 @@ export const bedrockConfig: ConfigFieldSchema[] = [
     id: 'apiUrl',
     label: i18n.API_URL_LABEL,
     isUrlField: true,
-    defaultValue: DEFAULT_BEDROCK_URL,
+    defaultValue: DEFAULT_URL,
     helpText: (
       <FormattedMessage
         defaultMessage="The Amazon Bedrock API endpoint URL. For more information on the URL, refer to the {bedrockAPIUrlDocs}."
@@ -70,7 +66,7 @@ export const bedrockConfig: ConfigFieldSchema[] = [
         }}
       />
     ),
-    defaultValue: DEFAULT_BEDROCK_MODEL,
+    defaultValue: DEFAULT_MODEL,
   },
   contextWindowLengthField,
 ];

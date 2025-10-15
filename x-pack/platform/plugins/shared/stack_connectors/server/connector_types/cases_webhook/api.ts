@@ -10,7 +10,7 @@ import type {
   Incident,
   PushToServiceApiHandlerArgs,
   PushToServiceResponse,
-} from './types';
+} from '@kbn/connector-schemas/cases_webhook';
 
 const pushToServiceHandler = async ({
   externalService,

@@ -10,14 +10,14 @@ import axios from 'axios';
 
 import { createExternalService } from './service';
 import { request, createAxiosResponse } from '@kbn/actions-plugin/server/lib/axios_utils';
-import type { CasesWebhookPublicConfigurationType, ExternalService } from './types';
+import type { Config, ExternalService } from '@kbn/connector-schemas/cases_webhook';
 import type { Logger } from '@kbn/core/server';
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 import { actionsConfigMock } from '@kbn/actions-plugin/server/actions_config.mock';
 import { getBasicAuthHeader } from '@kbn/actions-plugin/server/lib';
 import { ConnectorUsageCollector } from '@kbn/actions-plugin/server/types';
-import { AuthType, WebhookMethods, SSLCertType } from '../../../common/auth/constants';
-import { CRT_FILE, KEY_FILE } from '../../../common/auth/mocks';
+import { AuthType, WebhookMethods, SSLCertType } from '@kbn/connector-schemas/common/auth';
+import { CRT_FILE, KEY_FILE } from '@kbn/connector-schemas/common/auth/mocks';
 
 const logger = loggingSystemMock.create().get() as jest.Mocked<Logger>;
 
@@ -34,7 +34,7 @@ axios.create = jest.fn(() => axios);
 const requestMock = request as jest.Mock;
 const configurationUtilities = actionsConfigMock.create();
 
-const config: CasesWebhookPublicConfigurationType = {
+const config: Config = {
   createCommentJson: '{"body":{{{case.comment}}}}',
   createCommentMethod: WebhookMethods.POST,
   createCommentUrl: 'https://coolsite.net/issue/{{{external.system.id}}}/comment',

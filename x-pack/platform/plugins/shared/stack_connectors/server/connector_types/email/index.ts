@@ -5,7 +5,6 @@
  * 2.0.
  */
 
-import { z } from '@kbn/zod';
 import { curry } from 'lodash';
 import { i18n } from '@kbn/i18n';
 import type { Logger } from '@kbn/core/server';
@@ -32,7 +31,6 @@ import { TaskErrorSource } from '@kbn/task-manager-plugin/common';
 import { AdditionalEmailServices } from '../../../common';
 import type { SendEmailOptions, Transport } from './send_email';
 import { sendEmail, JSON_TRANSPORT_SERVICE } from './send_email';
-import { portSchema } from '../lib/schemas';
 import { serviceParamValueToKbnSettingMap as emailKbnSettings } from '../../../common/email/constants';
 
 export type EmailConnectorType = ConnectorType<
@@ -47,15 +45,6 @@ export type EmailConnectorTypeExecutorOptions = ConnectorTypeExecutorOptions<
   ActionParamsType
 >;
 
-// config definition
-// due to https://github.com/colinhacks/zod/issues/2491
-type ConfigSchemaType = z.ZodSchema<
-  z.output<typeof ConfigSchema>,
-  z.ZodTypeDef,
-  z.input<typeof ConfigSchema>
->;
-export type ConnectorTypeConfigType = z.infer<ConfigSchemaType>;
-
 // these values for `service` require users to fill in host/port/secure
 export const CUSTOM_HOST_PORT_SERVICES: string[] = [AdditionalEmailServices.OTHER];
 
@@ -66,20 +55,6 @@ export const ELASTIC_CLOUD_SERVICE: SMTPConnection.Options = {
 };
 
 const EMAIL_FOOTER_DIVIDER = '\n\n---\n\n';
-
-const ConfigSchemaProps = {
-  service: z.string().default('other'),
-  host: z.string().nullable().default(null),
-  port: portSchema().nullable().default(null),
-  secure: z.boolean().nullable().default(null),
-  from: z.string(),
-  hasAuth: z.boolean().default(true),
-  tenantId: z.string().nullable().default(null),
-  clientId: z.string().nullable().default(null),
-  oauthTokenUrl: z.string().nullable().default(null),
-};
-
-const ConfigSchema = z.object(ConfigSchemaProps).strict();
 
 function validateConfig(
   configObject: ConnectorTypeConfigType,
@@ -272,7 +247,6 @@ function validateConnector(
 }
 
 // connector type definition
-export const ConnectorTypeId = '.email';
 export function getConnectorType(params: GetConnectorTypeParams): EmailConnectorType {
   const { publicBaseUrl } = params;
   return {
