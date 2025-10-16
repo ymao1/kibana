@@ -11,16 +11,12 @@ import type {
   ActionTypeModel as ConnectorTypeModel,
   GenericValidationResult,
 } from '@kbn/triggers-actions-ui-plugin/public';
-import {
-  SENTINELONE_CONNECTOR_ID,
-  SENTINELONE_TITLE,
-  SUB_ACTION,
-} from '../../../common/sentinelone/constants';
+import { CONNECTOR_ID, CONNECTOR_NAME, SUB_ACTION } from '@kbn/connector-schemas/sentinelone';
 import type {
   SentinelOneConfig,
   SentinelOneSecrets,
   SentinelOneActionParams,
-} from '../../../common/sentinelone/types';
+} from '@kbn/connector-schemas/sentinelone';
 
 interface ValidationErrors {
   subAction: string[];
@@ -32,8 +28,8 @@ export function getConnectorType(): ConnectorTypeModel<
   SentinelOneActionParams
 > {
   return {
-    id: SENTINELONE_CONNECTOR_ID,
-    actionTypeTitle: SENTINELONE_TITLE,
+    id: CONNECTOR_ID,
+    actionTypeTitle: CONNECTOR_NAME,
     iconClass: lazy(() => import('./logo')),
     isExperimental: false,
     selectMessage: i18n.translate(

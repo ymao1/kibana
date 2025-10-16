@@ -7,6 +7,13 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-export * from './coerced';
-export { validateRecordMaxKeys, validateKeysAllowed } from './validators';
-export { convertTimestamp } from './convert_timestamp';
+import { AlertProvidedActionVariables } from '@kbn/alerts-ui-shared';
+import { RULE_TAGS_TEMPLATE } from './constants';
+
+describe('index', () => {
+  describe('tags', () => {
+    it('uses the same string as the public directory', () => {
+      expect(`{{${AlertProvidedActionVariables.ruleTags}}}`).toEqual(RULE_TAGS_TEMPLATE);
+    });
+  });
+});

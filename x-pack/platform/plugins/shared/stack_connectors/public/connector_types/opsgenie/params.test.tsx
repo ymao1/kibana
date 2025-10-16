@@ -11,17 +11,17 @@ import userEvent from '@testing-library/user-event';
 import OpsgenieParamFields from './params';
 import { ActionConnectorMode } from '@kbn/triggers-actions-ui-plugin/public';
 import { OpsgenieSubActions } from '../../../common';
-import type { OpsgenieActionParams } from '../../../server/connector_types';
+import type { Params } from '@kbn/connector-schemas/opsgenie';
 import { createMockActionConnector } from '@kbn/alerts-ui-shared/src/common/test_utils/connector.mock';
 
 describe('OpsgenieParamFields', () => {
   const editAction = jest.fn();
-  const createAlertActionParams: OpsgenieActionParams = {
+  const createAlertActionParams: Params = {
     subAction: OpsgenieSubActions.CreateAlert,
     subActionParams: { message: 'hello', alias: '123' },
   };
 
-  const closeAlertActionParams: OpsgenieActionParams = {
+  const closeAlertActionParams: Params = {
     subAction: OpsgenieSubActions.CloseAlert,
     subActionParams: { alias: '456' },
   };

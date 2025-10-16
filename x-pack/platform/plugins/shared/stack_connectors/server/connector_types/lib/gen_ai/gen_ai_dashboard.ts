@@ -22,7 +22,7 @@ import {
 import {
   CONNECTOR_NAME as OPENAI_TITLE,
   CONNECTOR_ID as OPENAI_CONNECTOR_ID,
-} from '../../../../common/openai/constants';
+} from '@kbn/connector-schemas/openai';
 
 export const getDashboardTitle = (title: string) => `${title} Token Usage`;
 
