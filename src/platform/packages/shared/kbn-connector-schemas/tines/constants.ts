@@ -6,3 +6,17 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+import { i18n } from '@kbn/i18n';
+
+export const CONNECTOR_ID = '.tines';
+export const CONNECTOR_NAME = i18n.translate('xpack.connectors.tines.title', {
+  defaultMessage: 'Tines',
+});
+
+export const API_MAX_RESULTS = 500;
+export enum SUB_ACTION {
+  STORIES = 'stories',
+  WEBHOOKS = 'webhooks',
+  RUN = 'run',
+  TEST = 'test',
+}

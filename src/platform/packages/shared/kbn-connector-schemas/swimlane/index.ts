@@ -6,3 +6,24 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+export * from './constants';
+
+export {
+  ExecutorParamsSchema,
+  SwimlaneSecretsConfigurationSchema,
+  SwimlaneServiceConfigurationSchema,
+  ConfigMappingSchema,
+  ExecutorSubActionPushParamsSchema,
+} from './schemas/latest';
+
+export type {
+  SwimlanePublicConfigurationType,
+  SwimlaneSecretConfigurationType,
+  ExecutorParams,
+  ExecutorSubActionPushParams,
+  PushToServiceApiParams,
+  CreateRecordParams,
+  UpdateRecordParams,
+  MappingConfigType,
+  Incident,
+} from './types/latest';

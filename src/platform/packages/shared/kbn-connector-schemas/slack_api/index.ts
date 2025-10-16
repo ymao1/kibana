@@ -6,3 +6,28 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+export * from './constants';
+
+export {
+  SlackApiConfigSchema,
+  SlackApiSecretsSchema,
+  ValidChannelIdSubActionParamsSchema,
+  ValidChannelIdParamsSchema,
+  PostMessageSubActionParamsSchema,
+  PostBlockkitSubActionParamsSchema,
+  PostMessageParamsSchema,
+  PostBlockkitParamsSchema,
+  SlackApiParamsSchema,
+} from './schemas/latest';
+
+export type {
+  SlackApiConfig,
+  SlackApiSecrets,
+  PostMessageParams,
+  PostMessageSubActionParams,
+  PostBlockkitSubActionParams,
+  PostBlockkitParams,
+  ValidChannelIdSubActionParams,
+  SlackApiParams,
+  SlackApiActionParams,
+} from './types/latest';

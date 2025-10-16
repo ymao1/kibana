@@ -6,3 +6,30 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+export * from './constants';
+
+export {
+  TheHiveConfigSchema,
+  TheHiveSecretsSchema,
+  PushToServiceIncidentSchema,
+  ExecutorParamsSchema,
+  ExecutorSubActionPushParamsSchema,
+  ExecutorSubActionCreateAlertParamsSchema,
+  TheHiveFailureResponseSchema,
+  TheHiveIncidentResponseSchema,
+  TheHiveUpdateIncidentResponseSchema,
+  TheHiveAddCommentResponseSchema,
+  TheHiveCreateAlertResponseSchema,
+} from './schemas/latest';
+
+export type {
+  TheHiveConfig,
+  TheHiveSecrets,
+  ExecutorParams,
+  ExecutorSubActionPushParams,
+  ExecutorSubActionCreateAlertParams,
+  TheHiveFailureResponse,
+  ExternalServiceIncidentResponse,
+  Incident,
+  GetIncidentResponse,
+} from './types/latest';
