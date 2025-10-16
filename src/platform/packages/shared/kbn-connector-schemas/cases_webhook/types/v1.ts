@@ -9,18 +9,27 @@
 
 import type { z } from '@kbn/zod';
 import type { Logger } from '@kbn/core/server';
-import type { ConfigSchema, SecretsSchema, ParamsSchema, PushActionParamsSchema } from '..';
+import type {
+  ExecutorParamsSchema,
+  ExecutorSubActionPushParamsSchema,
+  ExternalIncidentServiceConfigurationSchema,
+  ExternalIncidentServiceSecretConfigurationSchema,
+} from '..';
 
 // config
-export type Config = z.infer<typeof ConfigSchema>;
+export type CasesWebhookPublicConfigurationType = z.infer<
+  typeof ExternalIncidentServiceConfigurationSchema
+>;
 // secrets
-export type Secrets = z.infer<typeof SecretsSchema>;
+export type CasesWebhookSecretConfigurationType = z.infer<
+  typeof ExternalIncidentServiceSecretConfigurationSchema
+>;
 // params
-export type Params = z.infer<typeof ParamsSchema>;
+export type CasesWebhookActionParamsType = z.infer<typeof ExecutorParamsSchema>;
 
 export interface ExternalServiceCredentials {
-  config: Config;
-  secrets: Secrets;
+  config: CasesWebhookPublicConfigurationType;
+  secrets: CasesWebhookSecretConfigurationType;
 }
 
 export interface ExternalServiceIncidentResponse {
@@ -29,10 +38,11 @@ export interface ExternalServiceIncidentResponse {
   url: string;
   pushedDate: string;
 }
-export type Incident = Omit<PushActionParams['incident'], 'externalId'>;
+export type Incident = Omit<ExecutorSubActionPushParams['incident'], 'externalId'>;
 
-export type PushActionParams = z.infer<typeof PushActionParamsSchema>;
-export type PushToServiceApiParams = PushActionParams;
+export type ExecutorParams = z.infer<typeof ExecutorParamsSchema>;
+export type ExecutorSubActionPushParams = z.infer<typeof ExecutorSubActionPushParamsSchema>;
+export type PushToServiceApiParams = ExecutorSubActionPushParams;
 
 // incident service
 export interface ExternalService {

@@ -6,16 +6,20 @@
  */
 
 import type { UserConfiguredActionConnector } from '@kbn/triggers-actions-ui-plugin/public/types';
-import type { Config, Secrets, PushActionParams } from '@kbn/connector-schemas/cases_webhook';
+import type {
+  CasesWebhookPublicConfigurationType,
+  CasesWebhookSecretConfigurationType,
+  ExecutorSubActionPushParams,
+} from '@kbn/connector-schemas/cases_webhook';
 
 export interface CasesWebhookActionParams {
   subAction: string;
-  subActionParams: PushActionParams;
+  subActionParams: ExecutorSubActionPushParams;
 }
 
-export type CasesWebhookConfig = Config;
+export type CasesWebhookConfig = CasesWebhookPublicConfigurationType;
 
-export type CasesWebhookSecrets = Secrets;
+export type CasesWebhookSecrets = CasesWebhookSecretConfigurationType;
 
 export type CasesWebhookActionConnector = UserConfiguredActionConnector<
   CasesWebhookConfig,

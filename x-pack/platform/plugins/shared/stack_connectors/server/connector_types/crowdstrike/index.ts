@@ -17,8 +17,8 @@ import {
   CONNECTOR_ID,
   CONNECTOR_NAME,
   SUB_ACTION,
-  ConfigSchema,
-  SecretsSchema,
+  CrowdstrikeConfigSchema,
+  CrowdstrikeSecretsSchema,
 } from '@kbn/connector-schemas/crowdstrike';
 import type { CrowdstrikeConfig, CrowdstrikeSecrets } from '@kbn/connector-schemas/crowdstrike';
 import type { ExperimentalFeatures } from '../../../common/experimental_features';
@@ -31,8 +31,8 @@ export const getCrowdstrikeConnectorType = (
   name: CONNECTOR_NAME,
   getService: (params) => new CrowdstrikeConnector(params, experimentalFeatures),
   schema: {
-    config: ConfigSchema,
-    secrets: SecretsSchema,
+    config: CrowdstrikeConfigSchema,
+    secrets: CrowdstrikeSecretsSchema,
   },
   validators: [{ type: ValidatorType.CONFIG, validator: urlAllowListValidator('url') }],
   supportedFeatureIds: [EndpointSecurityConnectorFeatureId],

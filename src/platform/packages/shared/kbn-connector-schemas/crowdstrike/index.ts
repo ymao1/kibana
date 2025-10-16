@@ -9,8 +9,8 @@
 export * from './constants';
 
 export {
-  ConfigSchema,
-  SecretsSchema,
+  CrowdstrikeConfigSchema,
+  CrowdstrikeSecretsSchema,
   CrowdstrikeBaseApiResponseSchema,
   CrowdstrikeGetAgentsParamsSchema,
   CrowdstrikeGetAgentOnlineStatusResponseSchema,
@@ -29,8 +29,8 @@ export {
 } from './schemas/latest';
 
 export type {
-  Config,
-  Secrets,
+  CrowdstrikeConfig,
+  CrowdstrikeSecrets,
   CrowdstrikeBaseApiResponse,
   RelaxedCrowdstrikeBaseApiResponse,
   CrowdstrikeGetAgentsParams,

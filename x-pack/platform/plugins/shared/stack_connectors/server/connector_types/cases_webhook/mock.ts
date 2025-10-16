@@ -7,7 +7,7 @@
 
 import type {
   ExternalService,
-  PushActionParams,
+  ExecutorSubActionPushParams,
   PushToServiceApiParams,
 } from '@kbn/connector-schemas/cases_webhook';
 
@@ -65,7 +65,7 @@ export const externalServiceMock = {
   create: createMock,
 };
 
-const executorParams: PushActionParams = {
+const executorParams: ExecutorSubActionPushParams = {
   incident: {
     externalId: 'incident-3',
     title: 'Incident title',

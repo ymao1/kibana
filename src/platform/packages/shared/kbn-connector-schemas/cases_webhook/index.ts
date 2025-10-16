@@ -8,20 +8,21 @@
  */
 export * from './constants';
 export {
-  ConfigSchema,
-  SecretsSchema,
-  ParamsSchema,
-  PushActionParamsSchema,
+  ExecutorParamsSchema,
+  ExecutorSubActionPushParamsSchema,
+  ExternalIncidentServiceConfigurationSchema,
+  ExternalIncidentServiceSecretConfigurationSchema,
 } from './schemas/latest';
 
 export type {
-  Config,
-  Secrets,
-  Params,
+  CasesWebhookPublicConfigurationType,
+  CasesWebhookSecretConfigurationType,
+  CasesWebhookActionParamsType,
   ExternalServiceCredentials,
   ExternalServiceIncidentResponse,
   Incident,
-  PushActionParams,
+  ExecutorParams,
+  ExecutorSubActionPushParams,
   PushToServiceApiParams,
   ExternalService,
   CreateIncidentParams,

@@ -10,12 +10,12 @@ import { z } from '@kbn/zod';
 import { SUB_ACTION } from '..';
 
 // Connector schema
-export const ConfigSchema = z
+export const CrowdstrikeConfigSchema = z
   .object({
     url: z.string(),
   })
   .strict();
-export const SecretsSchema = z
+export const CrowdstrikeSecretsSchema = z
   .object({
     clientId: z.string(),
     clientSecret: z.string(),

@@ -10,7 +10,7 @@
 import { z } from '@kbn/zod';
 import { DEFAULT_MODEL } from '..';
 
-const TelemetryMetadataSchema = z
+export const TelemetryMetadataSchema = z
   .object({
     pluginId: z.string().optional(),
     aggregateBy: z.string().optional(),
@@ -73,7 +73,7 @@ export const BedrockToolChoiceSchema = z
   })
   .strict();
 
-const BedrockUsageSchema = z
+export const BedrockUsageSchema = z
   .object({
     input_tokens: z.coerce.number(),
     output_tokens: z.coerce.number(),

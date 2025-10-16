@@ -10,7 +10,10 @@ import axios from 'axios';
 
 import { createExternalService } from './service';
 import { request, createAxiosResponse } from '@kbn/actions-plugin/server/lib/axios_utils';
-import type { Config, ExternalService } from '@kbn/connector-schemas/cases_webhook';
+import type {
+  CasesWebhookPublicConfigurationType,
+  ExternalService,
+} from '@kbn/connector-schemas/cases_webhook';
 import type { Logger } from '@kbn/core/server';
 import { loggingSystemMock } from '@kbn/core/server/mocks';
 import { actionsConfigMock } from '@kbn/actions-plugin/server/actions_config.mock';
@@ -34,7 +37,7 @@ axios.create = jest.fn(() => axios);
 const requestMock = request as jest.Mock;
 const configurationUtilities = actionsConfigMock.create();
 
-const config: Config = {
+const config: CasesWebhookPublicConfigurationType = {
   createCommentJson: '{"body":{{{case.comment}}}}',
   createCommentMethod: WebhookMethods.POST,
   createCommentUrl: 'https://coolsite.net/issue/{{{external.system.id}}}/comment',

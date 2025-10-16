@@ -46,9 +46,11 @@ export const ExternalIncidentServiceConfiguration = {
   additionalFields: AuthConfiguration.additionalFields,
 };
 
-export const ConfigSchema = z.object(ExternalIncidentServiceConfiguration).strict();
+export const ExternalIncidentServiceConfigurationSchema = z
+  .object(ExternalIncidentServiceConfiguration)
+  .strict();
 
-export const PushActionParamsSchema = z
+export const ExecutorSubActionPushParamsSchema = z
   .object({
     incident: z
       .object({
@@ -75,13 +77,13 @@ export const PushActionParamsSchema = z
   })
   .strict();
 
-export const ParamsSchema = z.discriminatedUnion('subAction', [
+export const ExecutorParamsSchema = z.discriminatedUnion('subAction', [
   z
     .object({
       subAction: z.literal('pushToService'),
-      subActionParams: PushActionParamsSchema,
+      subActionParams: ExecutorSubActionPushParamsSchema,
     })
     .strict(),
 ]);
 
-export const SecretsSchema = SecretConfigurationSchema;
+export const ExternalIncidentServiceSecretConfigurationSchema = SecretConfigurationSchema;
