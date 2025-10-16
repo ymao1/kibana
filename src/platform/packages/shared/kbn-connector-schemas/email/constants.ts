@@ -19,3 +19,12 @@ export const defaultFooterText = i18n.translate(
     defaultMessage: 'Go to Elastic',
   }
 );
+
+export const serviceParamValueToKbnSettingMap = {
+  gmail: 'google-mail',
+  outlook365: 'microsoft-outlook',
+  ses: 'amazon-ses',
+  elastic_cloud: 'elastic-cloud',
+  exchange_server: 'microsoft-exchange',
+  other: 'other',
+} as const;

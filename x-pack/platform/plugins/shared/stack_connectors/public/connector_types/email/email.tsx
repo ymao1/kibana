@@ -14,10 +14,12 @@ import type {
   ActionTypeModel as ConnectorTypeModel,
   GenericValidationResult,
 } from '@kbn/triggers-actions-ui-plugin/public/types';
-import { CONNECTOR_ID } from '@kbn/connector-schemas/email';
+import {
+  CONNECTOR_ID,
+  serviceParamValueToKbnSettingMap as emailKbnSettings,
+} from '@kbn/connector-schemas/email';
 import type { EmailActionParams, EmailConfig, EmailSecrets } from '../types';
 import type { RegistrationServices } from '..';
-import { serviceParamValueToKbnSettingMap as emailKbnSettings } from '../../../common/email/constants';
 
 export const emailServices: Array<EuiSelectOption & { 'kbn-setting-value': string }> = [
   {

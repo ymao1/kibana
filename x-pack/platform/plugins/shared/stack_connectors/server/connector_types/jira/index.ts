@@ -148,7 +148,7 @@ async function executor(
       logger,
     });
 
-    logger.debug(`response push to service for incident id: ${data?.id}`);
+    logger.debug(`response push to service for incident id: ${data.id}`);
   }
 
   if (subAction === 'issueTypes') {

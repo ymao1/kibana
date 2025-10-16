@@ -20,6 +20,7 @@ export {
 export type {
   Config,
   Secrets,
+  Params,
   CreateAlertParams,
   CreateAlertSubActionParams,
   CloseAlertParams,

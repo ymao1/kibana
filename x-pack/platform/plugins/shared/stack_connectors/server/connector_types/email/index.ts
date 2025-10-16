@@ -24,6 +24,7 @@ import {
   ConfigSchema,
   SecretsSchema,
   ParamsSchema,
+  serviceParamValueToKbnSettingMap as emailKbnSettings,
 } from '@kbn/connector-schemas/email';
 import {
   AlertingConnectorFeatureId,
@@ -40,7 +41,6 @@ import { TaskErrorSource } from '@kbn/task-manager-plugin/common';
 import { AdditionalEmailServices } from '../../../common';
 import type { SendEmailOptions, Transport } from './send_email';
 import { sendEmail, JSON_TRANSPORT_SERVICE } from './send_email';
-import { serviceParamValueToKbnSettingMap as emailKbnSettings } from '../../../common/email/constants';
 
 export type EmailConnectorType = ConnectorType<
   ConnectorTypeConfigType,
