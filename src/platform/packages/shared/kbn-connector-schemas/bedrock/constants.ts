@@ -13,7 +13,7 @@ export const CONNECTOR_NAME = i18n.translate('xpack.connectors.bedrock.title', {
   defaultMessage: 'Amazon Bedrock',
 });
 
-export const DEFAULT_MODEL = 'us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+export const DEFAULT_MODEL = 'us.anthropic.claude-sonnet-4-5-20250929-v1:0';
 export const DEFAULT_URL = `https://bedrock-runtime.us-east-1.amazonaws.com` as const;
 
 export const DEFAULT_TIMEOUT_MS = 200000;
