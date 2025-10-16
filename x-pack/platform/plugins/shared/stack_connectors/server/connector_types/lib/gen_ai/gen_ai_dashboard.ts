@@ -11,12 +11,18 @@ import {
   CONNECTOR_NAME as BEDROCK_TITLE,
   CONNECTOR_ID as BEDROCK_CONNECTOR_ID,
 } from '@kbn/connector-schemas/bedrock';
-import { OPENAI_TITLE, OPENAI_CONNECTOR_ID } from '../../../../common/openai/constants';
-import { GEMINI_TITLE, GEMINI_CONNECTOR_ID } from '../../../../common/gemini/constants';
 import {
-  INFERENCE_CONNECTOR_TITLE,
-  INFERENCE_CONNECTOR_ID,
-} from '../../../../common/inference/constants';
+  CONNECTOR_NAME as GEMINI_TITLE,
+  CONNECTOR_ID as GEMINI_CONNECTOR_ID,
+} from '@kbn/connector-schemas/gemini';
+import {
+  CONNECTOR_NAME as INFERENCE_CONNECTOR_TITLE,
+  CONNECTOR_ID as INFERENCE_CONNECTOR_ID,
+} from '@kbn/connector-schemas/inference';
+import {
+  CONNECTOR_NAME as OPENAI_TITLE,
+  CONNECTOR_ID as OPENAI_CONNECTOR_ID,
+} from '../../../../common/openai/constants';
 
 export const getDashboardTitle = (title: string) => `${title} Token Usage`;
 

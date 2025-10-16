@@ -8,7 +8,7 @@
 import React from 'react';
 import { fireEvent, render } from '@testing-library/react';
 import GeminiParamsFields from './params';
-import { SUB_ACTION } from '../../../common/gemini/constants';
+import { SUB_ACTION } from '@kbn/connector-schemas/gemini';
 import { I18nProvider } from '@kbn/i18n-react';
 
 const messageVariables = [

@@ -6,3 +6,49 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+export * from './constants';
+
+export {
+  ExternalIncidentServiceConfigurationSchema,
+  ExternalIncidentServiceSecretConfigurationSchema,
+  ExecutorParamsSchema,
+  ExecutorSubActionPushParamsSchema,
+  ExecutorSubActionGetIncidentParamsSchema,
+  ExecutorSubActionHandshakeParamsSchema,
+  ExecutorSubActionGetCapabilitiesParamsSchema,
+  ExecutorSubActionGetFieldsByIssueTypeParamsSchema,
+  ExecutorSubActionGetIssuesParamsSchema,
+  ExecutorSubActionGetIssueParamsSchema,
+  ExecutorSubActionCommonFieldsParamsSchema,
+} from './schemas/latest';
+
+export type {
+  JiraPublicConfigurationType,
+  JiraSecretConfigurationType,
+  ExecutorParams,
+  ExecutorSubActionPushParams,
+  ExternalServiceCredentials,
+  ExternalServiceIncidentResponse,
+  ExternalServiceParams,
+  Incident,
+  Fields,
+  FieldSchema,
+  CreateIncidentParams,
+  UpdateIncidentParams,
+  CreateCommentParams,
+  JiraExecutorResultData,
+  ExecutorSubActionGetFieldsByIssueTypeParams,
+  ExecutorSubActionCommonFieldsParams,
+  ExecutorSubActionGetIssuesParams,
+  ExecutorSubActionGetIssueParams,
+  ExecutorSubActionGetIncidentParams,
+  ExternalServiceCommentResponse,
+  GetCommonFieldsResponse,
+  GetFieldsByIssueTypeResponse,
+  GetIssueResponse,
+  GetIssuesResponse,
+  GetIssueTypesResponse,
+  PushToServiceApiParams,
+  ExecutorSubActionHandshakeParams,
+  PushToServiceResponse,
+} from './types/latest';

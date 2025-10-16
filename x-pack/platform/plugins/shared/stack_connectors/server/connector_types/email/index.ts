@@ -17,6 +17,15 @@ import type {
   ValidatorServices,
 } from '@kbn/actions-plugin/server/types';
 import {
+  type ConnectorTypeConfigType,
+  type ConnectorTypeSecretsType,
+  type ActionParamsType,
+  CONNECTOR_ID,
+  ConfigSchema,
+  SecretsSchema,
+  ParamsSchema,
+} from '@kbn/connector-schemas/email';
+import {
   AlertingConnectorFeatureId,
   UptimeConnectorFeatureId,
   SecurityConnectorFeatureId,
@@ -150,57 +159,6 @@ function validateConfig(
   }
 }
 
-// secrets definition
-export type ConnectorTypeSecretsType = z.infer<typeof SecretsSchema>;
-
-const SecretsSchemaProps = {
-  user: z.string().nullable().default(null),
-  password: z.string().nullable().default(null),
-  clientSecret: z.string().nullable().default(null),
-};
-
-const SecretsSchema = z.object(SecretsSchemaProps).strict();
-
-// params definition
-export type ActionParamsType = z.infer<typeof ParamsSchema>;
-
-const AttachmentSchemaProps = {
-  content: z.string(),
-  contentType: z.string().optional(),
-  filename: z.string(),
-  encoding: z.string().optional(),
-};
-export const AttachmentSchema = z.object(AttachmentSchemaProps).strict();
-export type Attachment = z.infer<typeof AttachmentSchema>;
-
-const defaultFooterText = i18n.translate('xpack.stackConnectors.email.kibanaFooterLinkText', {
-  defaultMessage: 'Go to Elastic',
-});
-
-export const ParamsSchemaProps = {
-  to: z.array(z.string()).default([]),
-  cc: z.array(z.string()).default([]),
-  bcc: z.array(z.string()).default([]),
-  subject: z.string(),
-  message: z.string(),
-  messageHTML: z.string().nullable().default(null),
-  // kibanaFooterLink isn't inteded for users to set, this is here to be able to programatically
-  // provide a more contextual URL in the footer (ex: URL to the alert details page)
-  kibanaFooterLink: z
-    .object({
-      path: z.string().default('/'),
-      text: z.string().default(defaultFooterText),
-    })
-    .strict()
-    .default({
-      path: '/',
-      text: defaultFooterText,
-    }),
-  attachments: z.array(AttachmentSchema).optional(),
-};
-
-export const ParamsSchema = z.object(ParamsSchemaProps).strict();
-
 function validateParams(paramsObject: unknown, validatorServices: ValidatorServices) {
   const { configurationUtilities } = validatorServices;
 
@@ -250,7 +208,7 @@ function validateConnector(
 export function getConnectorType(params: GetConnectorTypeParams): EmailConnectorType {
   const { publicBaseUrl } = params;
   return {
-    id: ConnectorTypeId,
+    id: CONNECTOR_ID,
     minimumLicenseRequired: 'gold',
     name: i18n.translate('xpack.stackConnectors.email.title', {
       defaultMessage: 'Email',

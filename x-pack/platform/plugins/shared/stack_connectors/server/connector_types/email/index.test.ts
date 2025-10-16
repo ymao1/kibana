@@ -23,13 +23,12 @@ import {
 
 import { ConnectorUsageCollector } from '@kbn/actions-plugin/server/types';
 import { sendEmail } from './send_email';
+import type { EmailConnectorType, EmailConnectorTypeExecutorOptions } from '.';
 import type {
   ActionParamsType,
-  EmailConnectorType,
-  EmailConnectorTypeExecutorOptions,
   ConnectorTypeConfigType,
   ConnectorTypeSecretsType,
-} from '.';
+} from '@kbn/connector-schemas/email';
 import { getConnectorType } from '.';
 import type { ValidateEmailAddressesOptions } from '@kbn/actions-plugin/common';
 import { ActionExecutionSourceType } from '@kbn/actions-plugin/server/types';

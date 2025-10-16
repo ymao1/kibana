@@ -12,3 +12,10 @@ export const CONNECTOR_ID = '.email';
 export const CONNECTOR_NAME = i18n.translate('xpack.connectors.email.title', {
   defaultMessage: 'Email',
 });
+
+export const defaultFooterText = i18n.translate(
+  'xpack.stackConnectors.email.kibanaFooterLinkText',
+  {
+    defaultMessage: 'Go to Elastic',
+  }
+);

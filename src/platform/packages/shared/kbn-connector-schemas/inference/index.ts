@@ -6,3 +6,40 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+export * from './constants';
+
+export {
+  ConfigSchema,
+  SecretsSchema,
+  StreamingResponseSchema,
+  ChatCompleteParamsSchema,
+  ChatCompleteResponseSchema,
+  RerankParamsSchema,
+  RerankResponseSchema,
+  SparseEmbeddingParamsSchema,
+  TextEmbeddingParamsSchema,
+  TextEmbeddingResponseSchema,
+  UnifiedChatCompleteParamsSchema,
+  UnifiedChatCompleteResponseSchema,
+  DashboardActionParamsSchema,
+  DashboardActionResponseSchema,
+} from './schemas/latest';
+
+export type {
+  Config,
+  Secrets,
+  UnifiedChatCompleteParams,
+  UnifiedChatCompleteResponse,
+  ChatCompleteParams,
+  ChatCompleteResponse,
+  RerankParams,
+  RerankResponse,
+  SparseEmbeddingParams,
+  SparseEmbeddingResponse,
+  TextEmbeddingParams,
+  TextEmbeddingResponse,
+  StreamingResponse,
+  DashboardActionParams,
+  DashboardActionResponse,
+  FieldsConfiguration,
+} from './types/latest';

@@ -7,3 +7,12 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 export * from './constants';
+
+export { ConfigSchema, SecretsSchema, ParamsSchema, AttachmentSchema } from './schemas/latest';
+
+export type {
+  ConnectorTypeConfigType,
+  ConnectorTypeSecretsType,
+  ActionParamsType,
+  Attachment,
+} from './types/latest';

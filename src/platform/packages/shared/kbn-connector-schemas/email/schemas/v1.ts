@@ -7,6 +7,7 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import { z } from '@kbn/zod';
+import { defaultFooterText } from '..';
 
 const PORT_MAX = 256 * 256 - 1;
 export const portSchema = () => z.coerce.number().min(1).max(PORT_MAX);
@@ -24,3 +25,43 @@ const ConfigSchemaProps = {
 };
 
 export const ConfigSchema = z.object(ConfigSchemaProps).strict();
+
+const SecretsSchemaProps = {
+  user: z.string().nullable().default(null),
+  password: z.string().nullable().default(null),
+  clientSecret: z.string().nullable().default(null),
+};
+
+export const SecretsSchema = z.object(SecretsSchemaProps).strict();
+
+const AttachmentSchemaProps = {
+  content: z.string(),
+  contentType: z.string().optional(),
+  filename: z.string(),
+  encoding: z.string().optional(),
+};
+export const AttachmentSchema = z.object(AttachmentSchemaProps).strict();
+
+export const ParamsSchemaProps = {
+  to: z.array(z.string()).default([]),
+  cc: z.array(z.string()).default([]),
+  bcc: z.array(z.string()).default([]),
+  subject: z.string(),
+  message: z.string(),
+  messageHTML: z.string().nullable().default(null),
+  // kibanaFooterLink isn't inteded for users to set, this is here to be able to programatically
+  // provide a more contextual URL in the footer (ex: URL to the alert details page)
+  kibanaFooterLink: z
+    .object({
+      path: z.string().default('/'),
+      text: z.string().default(defaultFooterText),
+    })
+    .strict()
+    .default({
+      path: '/',
+      text: defaultFooterText,
+    }),
+  attachments: z.array(AttachmentSchema).optional(),
+};
+
+export const ParamsSchema = z.object(ParamsSchemaProps).strict();

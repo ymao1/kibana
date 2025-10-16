@@ -6,22 +6,6 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-export * from './constants';
 
-export {
-  CreateAlertParamsSchema,
-  ConfigSchema,
-  SecretsSchema,
-  FailureResponse,
-  CloseAlertParamsSchema,
-  Response,
-} from './schemas/latest';
-
-export type {
-  Config,
-  Secrets,
-  CreateAlertParams,
-  CreateAlertSubActionParams,
-  CloseAlertParams,
-  FailureResponseType,
-} from './types/latest';
+export * from './coerced';
+export { validateRecordMaxKeys, validateKeysAllowed } from './validators';
