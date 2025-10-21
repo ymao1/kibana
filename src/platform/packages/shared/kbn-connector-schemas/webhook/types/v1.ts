@@ -6,3 +6,14 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
+import type { z } from '@kbn/zod';
+import type { SecretConfigurationSchema } from '@kbn/connector-schemas/common/auth';
+import type { ConfigSchema, ParamsSchema } from '..';
+
+export type ConnectorTypeConfigType = z.infer<typeof ConfigSchema>;
+
+// secrets definition
+export type ConnectorTypeSecretsType = z.infer<typeof SecretConfigurationSchema>;
+
+// params definition
+export type ActionParamsType = z.infer<typeof ParamsSchema>;
