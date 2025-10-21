@@ -6,7 +6,11 @@
  * your election, the "Elastic License 2.0", the "GNU Affero General Public
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
-import { validateKeysAllowed, validateRecordMaxKeys } from '@kbn/connector-schemas/common/utils';
+import {
+  Coerced,
+  validateKeysAllowed,
+  validateRecordMaxKeys,
+} from '@kbn/connector-schemas/common/utils';
 import { z } from '@kbn/zod';
 
 export const ExternalIncidentServiceConfiguration = {
@@ -30,23 +34,25 @@ export const ExternalIncidentServiceSecretConfigurationSchema = z
 const MAX_ADDITIONAL_FIELDS_LENGTH = 50;
 
 const AdditionalFields = {
-  additionalFields: z
-    .record(
-      z.string().superRefine((value, ctx) => {
-        validateOtherFieldsKeys(value, ctx);
-      }),
-      z.any()
-    )
-    .superRefine((val, ctx) =>
-      validateRecordMaxKeys({
-        record: val,
-        ctx,
-        maxNumberOfFields: MAX_ADDITIONAL_FIELDS_LENGTH,
-        fieldName: 'additionalFields',
-      })
-    )
-    .nullable()
-    .default(null),
+  additionalFields: Coerced(
+    z
+      .record(
+        z.string().superRefine((value, ctx) => {
+          validateOtherFieldsKeys(value, ctx);
+        }),
+        z.any()
+      )
+      .superRefine((val, ctx) =>
+        validateRecordMaxKeys({
+          record: val,
+          ctx,
+          maxNumberOfFields: MAX_ADDITIONAL_FIELDS_LENGTH,
+          fieldName: 'additionalFields',
+        })
+      )
+      .nullable()
+      .default(null)
+  ),
 };
 
 const CommonIncidentAttributes = {

@@ -7,7 +7,11 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 import { z } from '@kbn/zod';
-import { validateKeysAllowed, validateRecordMaxKeys } from '@kbn/connector-schemas/common/utils';
+import {
+  Coerced,
+  validateKeysAllowed,
+  validateRecordMaxKeys,
+} from '@kbn/connector-schemas/common/utils';
 import { DEFAULT_ALERTS_GROUPING_KEY, MAX_ADDITIONAL_FIELDS_LENGTH } from '..';
 
 export const ExternalIncidentServiceConfigurationBase = {
@@ -72,23 +76,25 @@ export const CommonAttributes = {
   subcategory: z.string().nullable().default(null),
   correlation_id: z.string().nullable().default(DEFAULT_ALERTS_GROUPING_KEY),
   correlation_display: z.string().nullable().default(null),
-  additional_fields: z
-    .record(
-      z.string().superRefine((value, ctx) => {
-        validateOtherFieldsKeys(value, ctx);
-      }),
-      z.any()
-    )
-    .superRefine((val, ctx) =>
-      validateRecordMaxKeys({
-        record: val,
-        ctx,
-        maxNumberOfFields: MAX_ADDITIONAL_FIELDS_LENGTH,
-        fieldName: 'additional_fields',
-      })
-    )
-    .nullable()
-    .default(null),
+  additional_fields: Coerced(
+    z
+      .record(
+        z.string().superRefine((value, ctx) => {
+          validateOtherFieldsKeys(value, ctx);
+        }),
+        z.any()
+      )
+      .superRefine((val, ctx) =>
+        validateRecordMaxKeys({
+          record: val,
+          ctx,
+          maxNumberOfFields: MAX_ADDITIONAL_FIELDS_LENGTH,
+          fieldName: 'additional_fields',
+        })
+      )
+      .nullable()
+      .default(null)
+  ),
 };
 
 export const commonIncidentSchemaObjectProperties = Object.keys(CommonAttributes);
