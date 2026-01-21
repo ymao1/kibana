@@ -62,7 +62,7 @@ export const useFetchEntityDetailsHighlights = ({
   entityIdentifier: string;
 }) => {
   const { inference } = useKibana().services;
-  const { fetchEntityDetailsHighlights } = useEntityAnalyticsRoutes();
+  const { converseWithAgentBuilder, fetchEntityDetailsHighlights } = useEntityAnalyticsRoutes();
   const { addError } = useAppToasts();
   const { from, to } = useGlobalTime();
   const [isChatLoading, setIsChatLoading] = useState(false);
@@ -120,6 +120,10 @@ export const useFetchEntityDetailsHighlights = ({
       setIsChatLoading(true);
 
       try {
+        const input = `Context:
+            EntityType: ${entityType},
+            EntityIdentifier: ${getAnonymizedEntityIdentifier(entityIdentifier, replacements)},
+          ${summaryFormatted}`;
         if (isAssistantAvailable) {
           // use inference chat complete API
           const outputResponse = await inference.output({
@@ -127,10 +131,7 @@ export const useFetchEntityDetailsHighlights = ({
             connectorId,
             schema: entityHighlightsSchema,
             system: prompt,
-            input: `Context:
-            EntityType: ${entityType},
-            EntityIdentifier: ${getAnonymizedEntityIdentifier(entityIdentifier, replacements)},
-          ${summaryFormatted}`,
+            input,
             abortSignal: controller.signal,
           });
           const typedOutput = outputResponse.output as EntityHighlightsResponse;
@@ -143,6 +144,13 @@ export const useFetchEntityDetailsHighlights = ({
           });
         } else if (isAgentBuilderAvailable) {
           // use agent builder converse API
+          const response = await converseWithAgentBuilder(
+            {
+              agent_id: 'security.agent',
+              input,
+            },
+            controller.signal
+          );
         }
       } catch (e) {
         if (isInferenceRequestAbortedError(e)) {

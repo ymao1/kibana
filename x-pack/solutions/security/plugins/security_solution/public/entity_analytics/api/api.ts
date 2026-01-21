@@ -468,7 +468,22 @@ export const useEntityAnalyticsRoutes = () => {
         signal,
       });
 
+    const converseWithAgentBuilder = (
+      params: {
+        agent_id: string;
+        input: string;
+      },
+      signal?: AbortSignal
+    ): Promise<EntityDetailsHighlightsResponse> =>
+      http.fetch(`/api/agent_builder/converse`, {
+        version: '2023-10-31',
+        method: 'POST',
+        body: JSON.stringify(params),
+        signal,
+      });
+
     return {
+      converseWithAgentBuilder,
       fetchRiskScorePreview,
       fetchRiskEngineStatus,
       initRiskEngine,
