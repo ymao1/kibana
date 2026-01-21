@@ -75,87 +75,101 @@ export const useFetchEntityDetailsHighlights = ({
     generatedAt: number;
   } | null>(null);
 
-  const fetchEntityHighlights = useCallback(async () => {
-    const errorTitle = i18n.translate(
-      'xpack.securitySolution.flyout.entityDetails.highlights.fetch.errorTitle',
-      {
-        defaultMessage: `Failed to run LLM`,
-      }
-    );
+  const fetchEntityHighlights = useCallback(
+    async ({
+      isAssistantAvailable,
+      isAgentBuilderAvailable,
+    }: {
+      isAssistantAvailable: boolean;
+      isAgentBuilderAvailable: boolean;
+    }) => {
+      const errorTitle = i18n.translate(
+        'xpack.securitySolution.flyout.entityDetails.highlights.fetch.errorTitle',
+        {
+          defaultMessage: `Failed to run LLM`,
+        }
+      );
 
-    // Clear any previously shown error while a new generation attempt is in progress
-    setError(null);
+      // Clear any previously shown error while a new generation attempt is in progress
+      setError(null);
 
-    const { summary, replacements, prompt } = await fetchEntityDetailsHighlights({
-      entityType,
-      entityIdentifier,
-      anonymizationFields,
-      from: new Date(from).getTime(),
-      to: new Date(to).getTime(),
-      connectorId,
-    }).catch((e: Error) => {
-      const caughtError = e instanceof Error ? e : new Error(String(e));
-      addError(caughtError, {
-        title: errorTitle,
-      });
-      setError(caughtError);
-      return { summary: null, replacements: null, prompt: null };
-    });
-
-    if (!summary || !replacements || !prompt) {
-      return;
-    }
-
-    const summaryFormatted = JSON.stringify(summary);
-
-    const controller = new AbortController();
-    setAbortController(controller);
-    setIsChatLoading(true);
-
-    try {
-      const outputResponse = await inference.output({
-        id: 'entity-highlights',
+      const { summary, replacements, prompt } = await fetchEntityDetailsHighlights({
+        entityType,
+        entityIdentifier,
+        anonymizationFields,
+        from: new Date(from).getTime(),
+        to: new Date(to).getTime(),
         connectorId,
-        schema: entityHighlightsSchema,
-        system: prompt,
-        input: `Context:
+      }).catch((e: Error) => {
+        const caughtError = e instanceof Error ? e : new Error(String(e));
+        addError(caughtError, {
+          title: errorTitle,
+        });
+        setError(caughtError);
+        return { summary: null, replacements: null, prompt: null };
+      });
+
+      if (!summary || !replacements || !prompt) {
+        return;
+      }
+
+      const summaryFormatted = JSON.stringify(summary);
+
+      const controller = new AbortController();
+      setAbortController(controller);
+      setIsChatLoading(true);
+
+      try {
+        if (isAssistantAvailable) {
+          // use inference chat complete API
+          const outputResponse = await inference.output({
+            id: 'entity-highlights',
+            connectorId,
+            schema: entityHighlightsSchema,
+            system: prompt,
+            input: `Context:
             EntityType: ${entityType},
             EntityIdentifier: ${getAnonymizedEntityIdentifier(entityIdentifier, replacements)},
           ${summaryFormatted}`,
-        abortSignal: controller.signal,
-      });
-      const typedOutput = outputResponse.output as EntityHighlightsResponse;
+            abortSignal: controller.signal,
+          });
+          const typedOutput = outputResponse.output as EntityHighlightsResponse;
 
-      setAssistantResult({
-        summaryAsText: summaryFormatted,
-        response: typedOutput,
-        replacements,
-        generatedAt: Date.now(),
-      });
-    } catch (e) {
-      if (isInferenceRequestAbortedError(e)) {
-        return;
+          setAssistantResult({
+            summaryAsText: summaryFormatted,
+            response: typedOutput,
+            replacements,
+            generatedAt: Date.now(),
+          });
+        } else if (isAgentBuilderAvailable) {
+          // use agent builder converse API
+        }
+      } catch (e) {
+        if (isInferenceRequestAbortedError(e)) {
+          return;
+        }
+        const caughtError = e instanceof Error ? e : new Error(String(e));
+        addError(caughtError, {
+          title: errorTitle,
+        });
+        setError(caughtError);
+      } finally {
+        setIsChatLoading(false);
+        setAbortController(null);
       }
-      const caughtError = e instanceof Error ? e : new Error(String(e));
-      addError(caughtError, {
-        title: errorTitle,
-      });
-      setError(caughtError);
-    } finally {
-      setIsChatLoading(false);
-      setAbortController(null);
-    }
-  }, [
-    fetchEntityDetailsHighlights,
-    entityType,
-    entityIdentifier,
-    anonymizationFields,
-    from,
-    to,
-    connectorId,
-    inference,
-    addError,
-  ]);
+    },
+    [
+      fetchEntityDetailsHighlights,
+      entityType,
+      entityIdentifier,
+      anonymizationFields,
+      from,
+      to,
+      connectorId,
+      inference,
+      addError,
+    ]
+  );
 
   const abortStream = useCallback(() => {
     if (abortController) {

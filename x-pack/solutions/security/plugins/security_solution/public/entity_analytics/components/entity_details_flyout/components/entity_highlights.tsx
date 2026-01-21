@@ -27,6 +27,7 @@ import { AddConnectorModal } from '@kbn/elastic-assistant/impl/connectorland/add
 import { useLoadActionTypes } from '@kbn/elastic-assistant/impl/connectorland/use_load_action_types';
 import type { ActionConnector, ActionType } from '@kbn/triggers-actions-ui-plugin/public';
 import { useAssistantAvailability } from '../../../../assistant/use_assistant_availability';
+import { useAgentBuilderAvailability } from '../../../../agent_builder/hooks/use_agent_builder_availability';
 import type { EntityType } from '../../../../../common/search_strategy';
 import { useStoredAssistantConnectorId } from '../../../../onboarding/components/hooks/use_stored_state';
 import { useSpaceId } from '../../../../common/hooks/use_space_id';
@@ -74,6 +75,7 @@ export const EntityHighlightsAccordion: React.FC<{
   const [isConnectorModalVisible, setIsConnectorModalVisible] = useState<boolean>(false);
   const { hasAssistantPrivilege, isAssistantEnabled, isAssistantVisible } =
     useAssistantAvailability();
+  const { isAgentBuilderEnabled } = useAgentBuilderAvailability();
   const hasEntityHighlightsLicense = useHasEntityHighlightsLicense();
   const {
     gradientPanelStyle,
@@ -130,10 +132,21 @@ export const EntityHighlightsAccordion: React.FC<{
     setPopover(false);
   }, []);
 
-  const disabled = useMemo(
-    () => !hasAssistantPrivilege || !isAssistantEnabled || !hasEntityHighlightsLicense,
-    [hasAssistantPrivilege, isAssistantEnabled, hasEntityHighlightsLicense]
-  );
+  const disabled = useMemo(() => {
+    if (!hasEntityHighlightsLicense) {
+      return true;
+    }
+
+    const isAssistantAvailable = hasAssistantPrivilege && isAssistantEnabled;
+
+    // if neither assistant nor agent builder is available, disable the highlights
+    return !(isAssistantAvailable || isAgentBuilderEnabled);
+  }, [
+    hasAssistantPrivilege,
+    isAssistantEnabled,
+    hasEntityHighlightsLicense,
+    isAgentBuilderEnabled,
+  ]);
 
   const isLoading = useMemo(
     () => isChatLoading || isAnonymizationFieldsLoading || isLoadingConnectors,
