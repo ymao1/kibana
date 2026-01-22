@@ -471,6 +471,7 @@ export const useEntityAnalyticsRoutes = () => {
     const converseWithAgentBuilder = (
       params: {
         agent_id: string;
+        connector_id: string;
         input: string;
       },
       signal?: AbortSignal

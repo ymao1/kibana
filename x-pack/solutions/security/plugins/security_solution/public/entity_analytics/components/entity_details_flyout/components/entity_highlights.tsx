@@ -20,12 +20,13 @@ import {
   EuiTitle,
   EuiFlexGroup,
 } from '@elastic/eui';
-import { useAssistantContext, useFetchAnonymizationFields } from '@kbn/elastic-assistant';
+import { useFetchAnonymizationFields } from '@kbn/elastic-assistant';
 import React, { Suspense, useCallback, useMemo, useState } from 'react';
 import { FormattedMessage } from '@kbn/i18n-react';
 import { AddConnectorModal } from '@kbn/elastic-assistant/impl/connectorland/add_connector_modal';
 import { useLoadActionTypes } from '@kbn/elastic-assistant/impl/connectorland/use_load_action_types';
 import type { ActionConnector, ActionType } from '@kbn/triggers-actions-ui-plugin/public';
+import { useKibana } from '../../../../common/lib/kibana';
 import { useAssistantAvailability } from '../../../../assistant/use_assistant_availability';
 import { useAgentBuilderAvailability } from '../../../../agent_builder/hooks/use_agent_builder_availability';
 import type { EntityType } from '../../../../../common/search_strategy';
@@ -44,7 +45,10 @@ export const EntityHighlightsAccordion: React.FC<{
 }> = ({ entityType, entityIdentifier }) => {
   const { data: anonymizationFields, isLoading: isAnonymizationFieldsLoading } =
     useFetchAnonymizationFields();
-  const { actionTypeRegistry, http } = useAssistantContext();
+  const {
+    triggersActionsUi: { actionTypeRegistry },
+    http,
+  } = useKibana().services;
   const { data: actionTypes } = useLoadActionTypes({ http });
   const {
     isLoading: isLoadingConnectors,
@@ -105,6 +109,13 @@ export const EntityHighlightsAccordion: React.FC<{
     entityType,
     entityIdentifier,
   });
+
+  const onGenerateClick = useCallback(async () => {
+    await fetchEntityHighlights({
+      isAssistantAvailable: isAssistantVisible,
+      isAgentBuilderAvailable: isAgentBuilderEnabled,
+    });
+  }, [fetchEntityHighlights, isAssistantVisible, isAgentBuilderEnabled]);
 
   const onAddConnectorClick = useCallback(() => {
     setIsConnectorModalVisible(true);
@@ -230,7 +241,7 @@ export const EntityHighlightsAccordion: React.FC<{
               <EuiButtonEmpty
                 size="s"
                 iconType="refresh"
-                onClick={fetchEntityHighlights}
+                onClick={onGenerateClick}
                 isDisabled={!connectorId || isLoading}
                 data-test-subj="entity-highlights-error-regenerate"
               >
@@ -248,7 +259,7 @@ export const EntityHighlightsAccordion: React.FC<{
             assistantResult={assistantResult}
             showAnonymizedValues={showAnonymizedValues}
             generatedAt={assistantResult?.generatedAt ?? null}
-            onRefresh={fetchEntityHighlights}
+            onRefresh={onGenerateClick}
           />
         )}
 
@@ -286,7 +297,7 @@ export const EntityHighlightsAccordion: React.FC<{
               {aiConnectors?.hasConnectors ? (
                 <EuiFlexItem grow={1}>
                   <EuiButton
-                    onClick={fetchEntityHighlights}
+                    onClick={onGenerateClick}
                     isDisabled={!connectorId}
                     css={buttonGradientStyle}
                     size="s"

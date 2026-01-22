@@ -9,6 +9,7 @@ import type { AnonymizationFieldResponse, Replacements } from '@kbn/elastic-assi
 import type { ToolSchema } from '@kbn/inference-common';
 import { isInferenceRequestAbortedError } from '@kbn/inference-common';
 import { i18n } from '@kbn/i18n';
+import { THREAT_HUNTING_AGENT_ID } from '../../../../../common/constants';
 import { useKibana } from '../../../../common/lib/kibana/kibana_react';
 import { useGlobalTime } from '../../../../common/containers/use_global_time';
 import { useAppToasts } from '../../../../common/hooks/use_app_toasts';
@@ -124,6 +125,7 @@ export const useFetchEntityDetailsHighlights = ({
             EntityType: ${entityType},
             EntityIdentifier: ${getAnonymizedEntityIdentifier(entityIdentifier, replacements)},
           ${summaryFormatted}`;
+
         if (isAssistantAvailable) {
           // use inference chat complete API
           const outputResponse = await inference.output({
@@ -134,6 +136,7 @@ export const useFetchEntityDetailsHighlights = ({
             input,
             abortSignal: controller.signal,
           });
+          console.log('Entity Highlights Output Response:', outputResponse);
           const typedOutput = outputResponse.output as EntityHighlightsResponse;
 
           setAssistantResult({
@@ -146,11 +149,13 @@ export const useFetchEntityDetailsHighlights = ({
           // use agent builder converse API
           const response = await converseWithAgentBuilder(
             {
-              agent_id: 'security.agent',
+              agent_id: THREAT_HUNTING_AGENT_ID,
+              connector_id: connectorId,
               input,
             },
             controller.signal
           );
+          console.log('Agent Builder Converse Response:', response);
         }
       } catch (e) {
         if (isInferenceRequestAbortedError(e)) {
