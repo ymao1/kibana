@@ -10079,6 +10079,12 @@ paths:
           required: false
           schema:
             type: boolean
+        - description: Whether to filter by scheduled or ad-hoc attack discoveries. If omitted, both types of attack discoveries are returned. Use `true` to return only scheduled discoveries or `false` to return only ad-hoc discoveries.
+          in: query
+          name: scheduled
+          required: false
+          schema:
+            type: boolean
         - description: Field used to sort results. See `AttackDiscoveryFindSortField` for allowed values.
           example: '@timestamp'
           in: query
@@ -65610,6 +65616,226 @@ paths:
                                                               - from
                                                               - type
                                                           - additionalProperties: false
+                                                            description: Base processor options plus conditional execution
+                                                            type: object
+                                                            properties:
+                                                              action:
+                                                                enum:
+                                                                  - concat
+                                                                type: string
+                                                              customIdentifier:
+                                                                description: Custom identifier to correlate this processor across outputs
+                                                                minLength: 1
+                                                                type: string
+                                                              description:
+                                                                description: Human-readable notes about this processor step
+                                                                type: string
+                                                              from:
+                                                                items:
+                                                                  anyOf:
+                                                                    - additionalProperties: false
+                                                                      type: object
+                                                                      properties:
+                                                                        type:
+                                                                          enum:
+                                                                            - field
+                                                                          type: string
+                                                                        value:
+                                                                          description: A non-empty string.
+                                                                          minLength: 1
+                                                                          type: string
+                                                                      required:
+                                                                        - type
+                                                                        - value
+                                                                    - additionalProperties: false
+                                                                      type: object
+                                                                      properties:
+                                                                        type:
+                                                                          enum:
+                                                                            - literal
+                                                                          type: string
+                                                                        value:
+                                                                          type: string
+                                                                      required:
+                                                                        - type
+                                                                        - value
+                                                                minItems: 1
+                                                                type: array
+                                                              ignore_failure:
+                                                                description: Continue pipeline execution if this processor fails
+                                                                type: boolean
+                                                              ignore_missing:
+                                                                type: boolean
+                                                              to:
+                                                                description: A non-empty string.
+                                                                minLength: 1
+                                                                type: string
+                                                              where:
+                                                                anyOf:
+                                                                  - anyOf:
+                                                                      - additionalProperties: false
+                                                                        description: A condition that compares a field to a value or range using an operator as the key.
+                                                                        type: object
+                                                                        properties:
+                                                                          contains:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Contains comparison value.
+                                                                          endsWith:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Ends-with comparison value.
+                                                                          eq:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Equality comparison value.
+                                                                          field:
+                                                                            description: The document field to filter on.
+                                                                            minLength: 1
+                                                                            type: string
+                                                                          gt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Greater-than comparison value.
+                                                                          gte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Greater-than-or-equal comparison value.
+                                                                          lt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Less-than comparison value.
+                                                                          lte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Less-than-or-equal comparison value.
+                                                                          neq:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Inequality comparison value.
+                                                                          range:
+                                                                            additionalProperties: false
+                                                                            description: Range comparison values.
+                                                                            type: object
+                                                                            properties:
+                                                                              gt:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                              gte:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                              lt:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                              lte:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                          startsWith:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Starts-with comparison value.
+                                                                        required:
+                                                                          - field
+                                                                      - additionalProperties: false
+                                                                        description: A condition that checks for the existence or non-existence of a field.
+                                                                        type: object
+                                                                        properties:
+                                                                          exists:
+                                                                            description: Indicates whether the field exists or not.
+                                                                            type: boolean
+                                                                          field:
+                                                                            description: The document field to check.
+                                                                            minLength: 1
+                                                                            type: string
+                                                                        required:
+                                                                          - field
+                                                                    description: A basic filter condition, either unary or binary.
+                                                                  - additionalProperties: false
+                                                                    description: A logical AND that groups multiple conditions.
+                                                                    type: object
+                                                                    properties:
+                                                                      and:
+                                                                        description: An array of conditions. All sub-conditions must be true for this condition to be true.
+                                                                        items: {}
+                                                                        type: array
+                                                                    required:
+                                                                      - and
+                                                                  - additionalProperties: false
+                                                                    description: A logical OR that groups multiple conditions.
+                                                                    type: object
+                                                                    properties:
+                                                                      or:
+                                                                        description: An array of conditions. At least one sub-condition must be true for this condition to be true.
+                                                                        items: {}
+                                                                        type: array
+                                                                    required:
+                                                                      - or
+                                                                  - additionalProperties: false
+                                                                    description: A logical NOT that negates a condition.
+                                                                    type: object
+                                                                    properties:
+                                                                      not:
+                                                                        description: A condition that negates another condition.
+                                                                    required:
+                                                                      - not
+                                                                  - additionalProperties: false
+                                                                    description: A condition that always evaluates to false.
+                                                                    type: object
+                                                                    properties:
+                                                                      never:
+                                                                        additionalProperties: false
+                                                                        description: An empty object. This condition never matches.
+                                                                        type: object
+                                                                        properties: {}
+                                                                    required:
+                                                                      - never
+                                                                  - additionalProperties: false
+                                                                    description: A condition that always evaluates to true. Useful for catch-all scenarios, but use with caution as partitions are ordered.
+                                                                    type: object
+                                                                    properties:
+                                                                      always:
+                                                                        additionalProperties: false
+                                                                        description: An empty object. This condition always matches.
+                                                                        type: object
+                                                                        properties: {}
+                                                                    required:
+                                                                      - always
+                                                                description: Conditional expression controlling whether this processor runs
+                                                            required:
+                                                              - action
+                                                              - from
+                                                              - to
+                                                          - additionalProperties: false
                                                             description: Manual ingest pipeline wrapper around native Elasticsearch processors
                                                             type: object
                                                             properties:
@@ -69733,6 +69959,226 @@ paths:
                                                           - from
                                                           - type
                                                       - additionalProperties: false
+                                                        description: Base processor options plus conditional execution
+                                                        type: object
+                                                        properties:
+                                                          action:
+                                                            enum:
+                                                              - concat
+                                                            type: string
+                                                          customIdentifier:
+                                                            description: Custom identifier to correlate this processor across outputs
+                                                            minLength: 1
+                                                            type: string
+                                                          description:
+                                                            description: Human-readable notes about this processor step
+                                                            type: string
+                                                          from:
+                                                            items:
+                                                              anyOf:
+                                                                - additionalProperties: false
+                                                                  type: object
+                                                                  properties:
+                                                                    type:
+                                                                      enum:
+                                                                        - field
+                                                                      type: string
+                                                                    value:
+                                                                      description: A non-empty string.
+                                                                      minLength: 1
+                                                                      type: string
+                                                                  required:
+                                                                    - type
+                                                                    - value
+                                                                - additionalProperties: false
+                                                                  type: object
+                                                                  properties:
+                                                                    type:
+                                                                      enum:
+                                                                        - literal
+                                                                      type: string
+                                                                    value:
+                                                                      type: string
+                                                                  required:
+                                                                    - type
+                                                                    - value
+                                                            minItems: 1
+                                                            type: array
+                                                          ignore_failure:
+                                                            description: Continue pipeline execution if this processor fails
+                                                            type: boolean
+                                                          ignore_missing:
+                                                            type: boolean
+                                                          to:
+                                                            description: A non-empty string.
+                                                            minLength: 1
+                                                            type: string
+                                                          where:
+                                                            anyOf:
+                                                              - anyOf:
+                                                                  - additionalProperties: false
+                                                                    description: A condition that compares a field to a value or range using an operator as the key.
+                                                                    type: object
+                                                                    properties:
+                                                                      contains:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Contains comparison value.
+                                                                      endsWith:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Ends-with comparison value.
+                                                                      eq:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Equality comparison value.
+                                                                      field:
+                                                                        description: The document field to filter on.
+                                                                        minLength: 1
+                                                                        type: string
+                                                                      gt:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Greater-than comparison value.
+                                                                      gte:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Greater-than-or-equal comparison value.
+                                                                      lt:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Less-than comparison value.
+                                                                      lte:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Less-than-or-equal comparison value.
+                                                                      neq:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Inequality comparison value.
+                                                                      range:
+                                                                        additionalProperties: false
+                                                                        description: Range comparison values.
+                                                                        type: object
+                                                                        properties:
+                                                                          gt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                          gte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                          lt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                          lte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                      startsWith:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Starts-with comparison value.
+                                                                    required:
+                                                                      - field
+                                                                  - additionalProperties: false
+                                                                    description: A condition that checks for the existence or non-existence of a field.
+                                                                    type: object
+                                                                    properties:
+                                                                      exists:
+                                                                        description: Indicates whether the field exists or not.
+                                                                        type: boolean
+                                                                      field:
+                                                                        description: The document field to check.
+                                                                        minLength: 1
+                                                                        type: string
+                                                                    required:
+                                                                      - field
+                                                                description: A basic filter condition, either unary or binary.
+                                                              - additionalProperties: false
+                                                                description: A logical AND that groups multiple conditions.
+                                                                type: object
+                                                                properties:
+                                                                  and:
+                                                                    description: An array of conditions. All sub-conditions must be true for this condition to be true.
+                                                                    items: {}
+                                                                    type: array
+                                                                required:
+                                                                  - and
+                                                              - additionalProperties: false
+                                                                description: A logical OR that groups multiple conditions.
+                                                                type: object
+                                                                properties:
+                                                                  or:
+                                                                    description: An array of conditions. At least one sub-condition must be true for this condition to be true.
+                                                                    items: {}
+                                                                    type: array
+                                                                required:
+                                                                  - or
+                                                              - additionalProperties: false
+                                                                description: A logical NOT that negates a condition.
+                                                                type: object
+                                                                properties:
+                                                                  not:
+                                                                    description: A condition that negates another condition.
+                                                                required:
+                                                                  - not
+                                                              - additionalProperties: false
+                                                                description: A condition that always evaluates to false.
+                                                                type: object
+                                                                properties:
+                                                                  never:
+                                                                    additionalProperties: false
+                                                                    description: An empty object. This condition never matches.
+                                                                    type: object
+                                                                    properties: {}
+                                                                required:
+                                                                  - never
+                                                              - additionalProperties: false
+                                                                description: A condition that always evaluates to true. Useful for catch-all scenarios, but use with caution as partitions are ordered.
+                                                                type: object
+                                                                properties:
+                                                                  always:
+                                                                    additionalProperties: false
+                                                                    description: An empty object. This condition always matches.
+                                                                    type: object
+                                                                    properties: {}
+                                                                required:
+                                                                  - always
+                                                            description: Conditional expression controlling whether this processor runs
+                                                        required:
+                                                          - action
+                                                          - from
+                                                          - to
+                                                      - additionalProperties: false
                                                         description: Manual ingest pipeline wrapper around native Elasticsearch processors
                                                         type: object
                                                         properties:
@@ -73612,6 +74058,226 @@ paths:
                                                               - action
                                                               - from
                                                               - type
+                                                          - additionalProperties: false
+                                                            description: Base processor options plus conditional execution
+                                                            type: object
+                                                            properties:
+                                                              action:
+                                                                enum:
+                                                                  - concat
+                                                                type: string
+                                                              customIdentifier:
+                                                                description: Custom identifier to correlate this processor across outputs
+                                                                minLength: 1
+                                                                type: string
+                                                              description:
+                                                                description: Human-readable notes about this processor step
+                                                                type: string
+                                                              from:
+                                                                items:
+                                                                  anyOf:
+                                                                    - additionalProperties: false
+                                                                      type: object
+                                                                      properties:
+                                                                        type:
+                                                                          enum:
+                                                                            - field
+                                                                          type: string
+                                                                        value:
+                                                                          description: A non-empty string.
+                                                                          minLength: 1
+                                                                          type: string
+                                                                      required:
+                                                                        - type
+                                                                        - value
+                                                                    - additionalProperties: false
+                                                                      type: object
+                                                                      properties:
+                                                                        type:
+                                                                          enum:
+                                                                            - literal
+                                                                          type: string
+                                                                        value:
+                                                                          type: string
+                                                                      required:
+                                                                        - type
+                                                                        - value
+                                                                minItems: 1
+                                                                type: array
+                                                              ignore_failure:
+                                                                description: Continue pipeline execution if this processor fails
+                                                                type: boolean
+                                                              ignore_missing:
+                                                                type: boolean
+                                                              to:
+                                                                description: A non-empty string.
+                                                                minLength: 1
+                                                                type: string
+                                                              where:
+                                                                anyOf:
+                                                                  - anyOf:
+                                                                      - additionalProperties: false
+                                                                        description: A condition that compares a field to a value or range using an operator as the key.
+                                                                        type: object
+                                                                        properties:
+                                                                          contains:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Contains comparison value.
+                                                                          endsWith:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Ends-with comparison value.
+                                                                          eq:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Equality comparison value.
+                                                                          field:
+                                                                            description: The document field to filter on.
+                                                                            minLength: 1
+                                                                            type: string
+                                                                          gt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Greater-than comparison value.
+                                                                          gte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Greater-than-or-equal comparison value.
+                                                                          lt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Less-than comparison value.
+                                                                          lte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Less-than-or-equal comparison value.
+                                                                          neq:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Inequality comparison value.
+                                                                          range:
+                                                                            additionalProperties: false
+                                                                            description: Range comparison values.
+                                                                            type: object
+                                                                            properties:
+                                                                              gt:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                              gte:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                              lt:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                              lte:
+                                                                                anyOf:
+                                                                                  - type: string
+                                                                                  - type: number
+                                                                                  - type: boolean
+                                                                                description: A value that can be a string, number, or boolean.
+                                                                          startsWith:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: Starts-with comparison value.
+                                                                        required:
+                                                                          - field
+                                                                      - additionalProperties: false
+                                                                        description: A condition that checks for the existence or non-existence of a field.
+                                                                        type: object
+                                                                        properties:
+                                                                          exists:
+                                                                            description: Indicates whether the field exists or not.
+                                                                            type: boolean
+                                                                          field:
+                                                                            description: The document field to check.
+                                                                            minLength: 1
+                                                                            type: string
+                                                                        required:
+                                                                          - field
+                                                                    description: A basic filter condition, either unary or binary.
+                                                                  - additionalProperties: false
+                                                                    description: A logical AND that groups multiple conditions.
+                                                                    type: object
+                                                                    properties:
+                                                                      and:
+                                                                        description: An array of conditions. All sub-conditions must be true for this condition to be true.
+                                                                        items: {}
+                                                                        type: array
+                                                                    required:
+                                                                      - and
+                                                                  - additionalProperties: false
+                                                                    description: A logical OR that groups multiple conditions.
+                                                                    type: object
+                                                                    properties:
+                                                                      or:
+                                                                        description: An array of conditions. At least one sub-condition must be true for this condition to be true.
+                                                                        items: {}
+                                                                        type: array
+                                                                    required:
+                                                                      - or
+                                                                  - additionalProperties: false
+                                                                    description: A logical NOT that negates a condition.
+                                                                    type: object
+                                                                    properties:
+                                                                      not:
+                                                                        description: A condition that negates another condition.
+                                                                    required:
+                                                                      - not
+                                                                  - additionalProperties: false
+                                                                    description: A condition that always evaluates to false.
+                                                                    type: object
+                                                                    properties:
+                                                                      never:
+                                                                        additionalProperties: false
+                                                                        description: An empty object. This condition never matches.
+                                                                        type: object
+                                                                        properties: {}
+                                                                    required:
+                                                                      - never
+                                                                  - additionalProperties: false
+                                                                    description: A condition that always evaluates to true. Useful for catch-all scenarios, but use with caution as partitions are ordered.
+                                                                    type: object
+                                                                    properties:
+                                                                      always:
+                                                                        additionalProperties: false
+                                                                        description: An empty object. This condition always matches.
+                                                                        type: object
+                                                                        properties: {}
+                                                                    required:
+                                                                      - always
+                                                                description: Conditional expression controlling whether this processor runs
+                                                            required:
+                                                              - action
+                                                              - from
+                                                              - to
                                                           - additionalProperties: false
                                                             description: Manual ingest pipeline wrapper around native Elasticsearch processors
                                                             type: object
@@ -77554,6 +78220,226 @@ paths:
                                                           - from
                                                           - type
                                                       - additionalProperties: false
+                                                        description: Base processor options plus conditional execution
+                                                        type: object
+                                                        properties:
+                                                          action:
+                                                            enum:
+                                                              - concat
+                                                            type: string
+                                                          customIdentifier:
+                                                            description: Custom identifier to correlate this processor across outputs
+                                                            minLength: 1
+                                                            type: string
+                                                          description:
+                                                            description: Human-readable notes about this processor step
+                                                            type: string
+                                                          from:
+                                                            items:
+                                                              anyOf:
+                                                                - additionalProperties: false
+                                                                  type: object
+                                                                  properties:
+                                                                    type:
+                                                                      enum:
+                                                                        - field
+                                                                      type: string
+                                                                    value:
+                                                                      description: A non-empty string.
+                                                                      minLength: 1
+                                                                      type: string
+                                                                  required:
+                                                                    - type
+                                                                    - value
+                                                                - additionalProperties: false
+                                                                  type: object
+                                                                  properties:
+                                                                    type:
+                                                                      enum:
+                                                                        - literal
+                                                                      type: string
+                                                                    value:
+                                                                      type: string
+                                                                  required:
+                                                                    - type
+                                                                    - value
+                                                            minItems: 1
+                                                            type: array
+                                                          ignore_failure:
+                                                            description: Continue pipeline execution if this processor fails
+                                                            type: boolean
+                                                          ignore_missing:
+                                                            type: boolean
+                                                          to:
+                                                            description: A non-empty string.
+                                                            minLength: 1
+                                                            type: string
+                                                          where:
+                                                            anyOf:
+                                                              - anyOf:
+                                                                  - additionalProperties: false
+                                                                    description: A condition that compares a field to a value or range using an operator as the key.
+                                                                    type: object
+                                                                    properties:
+                                                                      contains:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Contains comparison value.
+                                                                      endsWith:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Ends-with comparison value.
+                                                                      eq:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Equality comparison value.
+                                                                      field:
+                                                                        description: The document field to filter on.
+                                                                        minLength: 1
+                                                                        type: string
+                                                                      gt:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Greater-than comparison value.
+                                                                      gte:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Greater-than-or-equal comparison value.
+                                                                      lt:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Less-than comparison value.
+                                                                      lte:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Less-than-or-equal comparison value.
+                                                                      neq:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Inequality comparison value.
+                                                                      range:
+                                                                        additionalProperties: false
+                                                                        description: Range comparison values.
+                                                                        type: object
+                                                                        properties:
+                                                                          gt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                          gte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                          lt:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                          lte:
+                                                                            anyOf:
+                                                                              - type: string
+                                                                              - type: number
+                                                                              - type: boolean
+                                                                            description: A value that can be a string, number, or boolean.
+                                                                      startsWith:
+                                                                        anyOf:
+                                                                          - type: string
+                                                                          - type: number
+                                                                          - type: boolean
+                                                                        description: Starts-with comparison value.
+                                                                    required:
+                                                                      - field
+                                                                  - additionalProperties: false
+                                                                    description: A condition that checks for the existence or non-existence of a field.
+                                                                    type: object
+                                                                    properties:
+                                                                      exists:
+                                                                        description: Indicates whether the field exists or not.
+                                                                        type: boolean
+                                                                      field:
+                                                                        description: The document field to check.
+                                                                        minLength: 1
+                                                                        type: string
+                                                                    required:
+                                                                      - field
+                                                                description: A basic filter condition, either unary or binary.
+                                                              - additionalProperties: false
+                                                                description: A logical AND that groups multiple conditions.
+                                                                type: object
+                                                                properties:
+                                                                  and:
+                                                                    description: An array of conditions. All sub-conditions must be true for this condition to be true.
+                                                                    items: {}
+                                                                    type: array
+                                                                required:
+                                                                  - and
+                                                              - additionalProperties: false
+                                                                description: A logical OR that groups multiple conditions.
+                                                                type: object
+                                                                properties:
+                                                                  or:
+                                                                    description: An array of conditions. At least one sub-condition must be true for this condition to be true.
+                                                                    items: {}
+                                                                    type: array
+                                                                required:
+                                                                  - or
+                                                              - additionalProperties: false
+                                                                description: A logical NOT that negates a condition.
+                                                                type: object
+                                                                properties:
+                                                                  not:
+                                                                    description: A condition that negates another condition.
+                                                                required:
+                                                                  - not
+                                                              - additionalProperties: false
+                                                                description: A condition that always evaluates to false.
+                                                                type: object
+                                                                properties:
+                                                                  never:
+                                                                    additionalProperties: false
+                                                                    description: An empty object. This condition never matches.
+                                                                    type: object
+                                                                    properties: {}
+                                                                required:
+                                                                  - never
+                                                              - additionalProperties: false
+                                                                description: A condition that always evaluates to true. Useful for catch-all scenarios, but use with caution as partitions are ordered.
+                                                                type: object
+                                                                properties:
+                                                                  always:
+                                                                    additionalProperties: false
+                                                                    description: An empty object. This condition always matches.
+                                                                    type: object
+                                                                    properties: {}
+                                                                required:
+                                                                  - always
+                                                            description: Conditional expression controlling whether this processor runs
+                                                        required:
+                                                          - action
+                                                          - from
+                                                          - to
+                                                      - additionalProperties: false
                                                         description: Manual ingest pipeline wrapper around native Elasticsearch processors
                                                         type: object
                                                         properties:
@@ -81432,6 +82318,226 @@ paths:
                                               - from
                                               - type
                                           - additionalProperties: false
+                                            description: Base processor options plus conditional execution
+                                            type: object
+                                            properties:
+                                              action:
+                                                enum:
+                                                  - concat
+                                                type: string
+                                              customIdentifier:
+                                                description: Custom identifier to correlate this processor across outputs
+                                                minLength: 1
+                                                type: string
+                                              description:
+                                                description: Human-readable notes about this processor step
+                                                type: string
+                                              from:
+                                                items:
+                                                  anyOf:
+                                                    - additionalProperties: false
+                                                      type: object
+                                                      properties:
+                                                        type:
+                                                          enum:
+                                                            - field
+                                                          type: string
+                                                        value:
+                                                          description: A non-empty string.
+                                                          minLength: 1
+                                                          type: string
+                                                      required:
+                                                        - type
+                                                        - value
+                                                    - additionalProperties: false
+                                                      type: object
+                                                      properties:
+                                                        type:
+                                                          enum:
+                                                            - literal
+                                                          type: string
+                                                        value:
+                                                          type: string
+                                                      required:
+                                                        - type
+                                                        - value
+                                                minItems: 1
+                                                type: array
+                                              ignore_failure:
+                                                description: Continue pipeline execution if this processor fails
+                                                type: boolean
+                                              ignore_missing:
+                                                type: boolean
+                                              to:
+                                                description: A non-empty string.
+                                                minLength: 1
+                                                type: string
+                                              where:
+                                                anyOf:
+                                                  - anyOf:
+                                                      - additionalProperties: false
+                                                        description: A condition that compares a field to a value or range using an operator as the key.
+                                                        type: object
+                                                        properties:
+                                                          contains:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Contains comparison value.
+                                                          endsWith:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Ends-with comparison value.
+                                                          eq:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Equality comparison value.
+                                                          field:
+                                                            description: The document field to filter on.
+                                                            minLength: 1
+                                                            type: string
+                                                          gt:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Greater-than comparison value.
+                                                          gte:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Greater-than-or-equal comparison value.
+                                                          lt:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Less-than comparison value.
+                                                          lte:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Less-than-or-equal comparison value.
+                                                          neq:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Inequality comparison value.
+                                                          range:
+                                                            additionalProperties: false
+                                                            description: Range comparison values.
+                                                            type: object
+                                                            properties:
+                                                              gt:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                              gte:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                              lt:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                              lte:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                          startsWith:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Starts-with comparison value.
+                                                        required:
+                                                          - field
+                                                      - additionalProperties: false
+                                                        description: A condition that checks for the existence or non-existence of a field.
+                                                        type: object
+                                                        properties:
+                                                          exists:
+                                                            description: Indicates whether the field exists or not.
+                                                            type: boolean
+                                                          field:
+                                                            description: The document field to check.
+                                                            minLength: 1
+                                                            type: string
+                                                        required:
+                                                          - field
+                                                    description: A basic filter condition, either unary or binary.
+                                                  - additionalProperties: false
+                                                    description: A logical AND that groups multiple conditions.
+                                                    type: object
+                                                    properties:
+                                                      and:
+                                                        description: An array of conditions. All sub-conditions must be true for this condition to be true.
+                                                        items: {}
+                                                        type: array
+                                                    required:
+                                                      - and
+                                                  - additionalProperties: false
+                                                    description: A logical OR that groups multiple conditions.
+                                                    type: object
+                                                    properties:
+                                                      or:
+                                                        description: An array of conditions. At least one sub-condition must be true for this condition to be true.
+                                                        items: {}
+                                                        type: array
+                                                    required:
+                                                      - or
+                                                  - additionalProperties: false
+                                                    description: A logical NOT that negates a condition.
+                                                    type: object
+                                                    properties:
+                                                      not:
+                                                        description: A condition that negates another condition.
+                                                    required:
+                                                      - not
+                                                  - additionalProperties: false
+                                                    description: A condition that always evaluates to false.
+                                                    type: object
+                                                    properties:
+                                                      never:
+                                                        additionalProperties: false
+                                                        description: An empty object. This condition never matches.
+                                                        type: object
+                                                        properties: {}
+                                                    required:
+                                                      - never
+                                                  - additionalProperties: false
+                                                    description: A condition that always evaluates to true. Useful for catch-all scenarios, but use with caution as partitions are ordered.
+                                                    type: object
+                                                    properties:
+                                                      always:
+                                                        additionalProperties: false
+                                                        description: An empty object. This condition always matches.
+                                                        type: object
+                                                        properties: {}
+                                                    required:
+                                                      - always
+                                                description: Conditional expression controlling whether this processor runs
+                                            required:
+                                              - action
+                                              - from
+                                              - to
+                                          - additionalProperties: false
                                             description: Manual ingest pipeline wrapper around native Elasticsearch processors
                                             type: object
                                             properties:
@@ -85254,6 +86360,226 @@ paths:
                                               - action
                                               - from
                                               - type
+                                          - additionalProperties: false
+                                            description: Base processor options plus conditional execution
+                                            type: object
+                                            properties:
+                                              action:
+                                                enum:
+                                                  - concat
+                                                type: string
+                                              customIdentifier:
+                                                description: Custom identifier to correlate this processor across outputs
+                                                minLength: 1
+                                                type: string
+                                              description:
+                                                description: Human-readable notes about this processor step
+                                                type: string
+                                              from:
+                                                items:
+                                                  anyOf:
+                                                    - additionalProperties: false
+                                                      type: object
+                                                      properties:
+                                                        type:
+                                                          enum:
+                                                            - field
+                                                          type: string
+                                                        value:
+                                                          description: A non-empty string.
+                                                          minLength: 1
+                                                          type: string
+                                                      required:
+                                                        - type
+                                                        - value
+                                                    - additionalProperties: false
+                                                      type: object
+                                                      properties:
+                                                        type:
+                                                          enum:
+                                                            - literal
+                                                          type: string
+                                                        value:
+                                                          type: string
+                                                      required:
+                                                        - type
+                                                        - value
+                                                minItems: 1
+                                                type: array
+                                              ignore_failure:
+                                                description: Continue pipeline execution if this processor fails
+                                                type: boolean
+                                              ignore_missing:
+                                                type: boolean
+                                              to:
+                                                description: A non-empty string.
+                                                minLength: 1
+                                                type: string
+                                              where:
+                                                anyOf:
+                                                  - anyOf:
+                                                      - additionalProperties: false
+                                                        description: A condition that compares a field to a value or range using an operator as the key.
+                                                        type: object
+                                                        properties:
+                                                          contains:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Contains comparison value.
+                                                          endsWith:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Ends-with comparison value.
+                                                          eq:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Equality comparison value.
+                                                          field:
+                                                            description: The document field to filter on.
+                                                            minLength: 1
+                                                            type: string
+                                                          gt:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Greater-than comparison value.
+                                                          gte:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Greater-than-or-equal comparison value.
+                                                          lt:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Less-than comparison value.
+                                                          lte:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Less-than-or-equal comparison value.
+                                                          neq:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Inequality comparison value.
+                                                          range:
+                                                            additionalProperties: false
+                                                            description: Range comparison values.
+                                                            type: object
+                                                            properties:
+                                                              gt:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                              gte:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                              lt:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                              lte:
+                                                                anyOf:
+                                                                  - type: string
+                                                                  - type: number
+                                                                  - type: boolean
+                                                                description: A value that can be a string, number, or boolean.
+                                                          startsWith:
+                                                            anyOf:
+                                                              - type: string
+                                                              - type: number
+                                                              - type: boolean
+                                                            description: Starts-with comparison value.
+                                                        required:
+                                                          - field
+                                                      - additionalProperties: false
+                                                        description: A condition that checks for the existence or non-existence of a field.
+                                                        type: object
+                                                        properties:
+                                                          exists:
+                                                            description: Indicates whether the field exists or not.
+                                                            type: boolean
+                                                          field:
+                                                            description: The document field to check.
+                                                            minLength: 1
+                                                            type: string
+                                                        required:
+                                                          - field
+                                                    description: A basic filter condition, either unary or binary.
+                                                  - additionalProperties: false
+                                                    description: A logical AND that groups multiple conditions.
+                                                    type: object
+                                                    properties:
+                                                      and:
+                                                        description: An array of conditions. All sub-conditions must be true for this condition to be true.
+                                                        items: {}
+                                                        type: array
+                                                    required:
+                                                      - and
+                                                  - additionalProperties: false
+                                                    description: A logical OR that groups multiple conditions.
+                                                    type: object
+                                                    properties:
+                                                      or:
+                                                        description: An array of conditions. At least one sub-condition must be true for this condition to be true.
+                                                        items: {}
+                                                        type: array
+                                                    required:
+                                                      - or
+                                                  - additionalProperties: false
+                                                    description: A logical NOT that negates a condition.
+                                                    type: object
+                                                    properties:
+                                                      not:
+                                                        description: A condition that negates another condition.
+                                                    required:
+                                                      - not
+                                                  - additionalProperties: false
+                                                    description: A condition that always evaluates to false.
+                                                    type: object
+                                                    properties:
+                                                      never:
+                                                        additionalProperties: false
+                                                        description: An empty object. This condition never matches.
+                                                        type: object
+                                                        properties: {}
+                                                    required:
+                                                      - never
+                                                  - additionalProperties: false
+                                                    description: A condition that always evaluates to true. Useful for catch-all scenarios, but use with caution as partitions are ordered.
+                                                    type: object
+                                                    properties:
+                                                      always:
+                                                        additionalProperties: false
+                                                        description: An empty object. This condition always matches.
+                                                        type: object
+                                                        properties: {}
+                                                    required:
+                                                      - always
+                                                description: Conditional expression controlling whether this processor runs
+                                            required:
+                                              - action
+                                              - from
+                                              - to
                                           - additionalProperties: false
                                             description: Manual ingest pipeline wrapper around native Elasticsearch processors
                                             type: object
@@ -100803,6 +102129,11 @@ components:
         alert_workflow_status_updated_at:
           description: The optional time the attack discovery alert workflow status was last updated
           type: string
+        assignees:
+          description: The optional array of user-IDs who have been assigned the attack
+          items:
+            type: string
+          type: array
         connector_id:
           description: The ID of the connector that generated the attack discovery
           type: string
