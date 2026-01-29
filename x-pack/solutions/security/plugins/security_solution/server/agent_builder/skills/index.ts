@@ -6,4 +6,5 @@
  */
 
 export { alertAnalysisSkill } from './alert_analysis_skill';
+export { getEntityAnalysisSkill } from './entity_analysis/entity_analysis_skill';
 export { registerSkills } from './register_skills';

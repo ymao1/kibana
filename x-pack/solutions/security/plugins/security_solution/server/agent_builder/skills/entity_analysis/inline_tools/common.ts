@@ -1,0 +1,80 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import { z } from '@kbn/zod';
+import { DEFAULT_DATA_VIEW_ID } from '@kbn/data-views-plugin/common/constants';
+import type { IScopedClusterClient, KibanaRequest } from '@kbn/core/server';
+import type { ToolProvider } from '@kbn/agent-builder-server';
+import { IdentifierType } from '../../../../../common/api/entity_analytics/common/common.gen';
+import { DEFAULT_ALERTS_INDEX } from '../../../../../common/constants';
+import type { EntityAnalyticsRoutesDeps } from '../../../../lib/entity_analytics/types';
+import type { EntityType } from '../../../../../common/entity_analytics/types';
+import { EntityTypeToIdentifierField } from '../../../../../common/entity_analytics/types';
+
+export const entityAnalyticsInlineToolSchema = z.object({
+  entityType: IdentifierType.describe('The type of entity: host, user, service, or generic'),
+  prompt: z.string().describe('The prompt or question that calling this tool will help to answer.'),
+  queryExtraContext: z
+    .string()
+    .describe('Information from previous chat messages like an ESQL filter that should be used.'),
+});
+export const getDependencies = async (
+  entityType: EntityType,
+  esClient: IScopedClusterClient,
+  getStartServices: EntityAnalyticsRoutesDeps['getStartServices'],
+  request: KibanaRequest,
+  toolProvider: ToolProvider
+) => {
+  const [core, startPlugins] = await getStartServices();
+  const spaceId = startPlugins.spaces?.spacesService.getSpaceId(request) || 'default';
+  const soClient = core.savedObjects.getScopedClient(request);
+  const dataViewsService = await startPlugins.dataViews.dataViewsServiceFactory(
+    soClient,
+    esClient.asCurrentUser
+  );
+  const hasGenerateESQLQuery = await toolProvider.has({
+    toolId: 'platform.core.generate_esql',
+    request,
+  });
+  const generateESQLTool = hasGenerateESQLQuery
+    ? await toolProvider.get({
+        toolId: 'platform.core.generate_esql',
+        request,
+      })
+    : null;
+  const uiSettingsClient = core.uiSettings.asScopedToClient(soClient);
+  const securityDataViewId = `${DEFAULT_DATA_VIEW_ID}-${spaceId}`;
+  const dataView = await dataViewsService.get(securityDataViewId);
+  const indexPattern = dataView.getIndexPattern();
+  // remove alert indices from the pattern
+  const indexPatterns = indexPattern
+    .split(',')
+    .filter((pattern) => !pattern.includes(DEFAULT_ALERTS_INDEX)) // Filter out alerts index. The explore dataview isn't available in the server side.
+    .join(',');
+
+  const generalSecuritySolutionMessage = getGeneralSecuritySolutionMessage(
+    entityType,
+    indexPatterns
+  );
+
+  return {
+    generalSecuritySolutionMessage,
+    generateESQLTool,
+    soClient,
+    spaceId,
+    uiSettingsClient,
+  };
+};
+
+const getGeneralSecuritySolutionMessage = async (entityType: EntityType, indexPatterns: string) => {
+  return `
+If you believe that the current information and index mappings are not enough to answer the user's question, you must not generate an ESQL query.
+Always try querying the most appropriate domain index when available.
+When it isn't enough, you can query security solution events and logs.
+For that, you must generate an ES|QL, and you **MUST ALWAYS** use the following from clause (ONLY FOR LOGS AND NOT FOR OTHER INDICES): "FROM ${indexPatterns}"
+When searching for logs of a ${entityType} you **MUST ALWAYS** use the following where clause "where ${EntityTypeToIdentifierField[entityType]} == {identifier}"`;
+};

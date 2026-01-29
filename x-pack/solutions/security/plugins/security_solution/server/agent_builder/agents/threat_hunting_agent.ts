@@ -27,12 +27,13 @@ const PLATFORM_TOOL_IDS = [
   platformCoreTools.productDocumentation,
   platformCoreTools.generateEsql,
   platformCoreTools.executeEsql,
+  platformCoreTools.loadSkill,
 ];
 
 const SECURITY_TOOL_IDS = [
   SECURITY_ALERTS_TOOL_ID,
   SECURITY_ATTACK_DISCOVERY_SEARCH_TOOL_ID,
-  SECURITY_ENTITY_RISK_SCORE_TOOL_ID,
+  // SECURITY_ENTITY_RISK_SCORE_TOOL_ID,
   SECURITY_LABS_SEARCH_TOOL_ID,
 ];
 

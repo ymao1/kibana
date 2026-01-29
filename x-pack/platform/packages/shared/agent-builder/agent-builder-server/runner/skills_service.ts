@@ -25,4 +25,3 @@ export interface SkillsService {
    */
   convertSkillTool(tool: SkillBoundedTool): ExecutableTool;
 }
-

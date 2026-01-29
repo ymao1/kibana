@@ -234,24 +234,29 @@ export class Plugin implements ISecuritySolutionPlugin {
   }
 
   private registerAgentBuilderAttachmentsAndTools(
-    agentBuilder: SecuritySolutionPluginSetupDependencies['agentBuilder'],
+    plugins: SecuritySolutionPluginSetupDependencies,
     core: SecuritySolutionPluginCoreSetupDependencies,
     logger: Logger
   ): void {
-    if (!agentBuilder) {
+    if (!plugins.agentBuilder) {
       return;
     }
 
-    registerTools(agentBuilder, core, logger).catch((error) => {
+    registerTools(plugins.agentBuilder, core, logger).catch((error) => {
       this.logger.error(`Error registering security tools: ${error}`);
     });
-    registerAttachments(agentBuilder).catch((error) => {
+    registerAttachments(plugins.agentBuilder).catch((error) => {
       this.logger.error(`Error registering security attachments: ${error}`);
     });
-    registerSkills(agentBuilder).catch((error) => {
+    registerSkills({
+      agentBuilder: plugins.agentBuilder,
+      getStartServices: core.getStartServices,
+      ml: plugins.ml,
+      kibanaVersion: this.pluginContext.env.packageInfo.version,
+    }).catch((error) => {
       this.logger.error(`Error registering security skills: ${error}`);
     });
-    registerAgents(agentBuilder, core, logger).catch((error) => {
+    registerAgents(plugins.agentBuilder, core, logger).catch((error) => {
       this.logger.error(`Error registering security agent: ${error}`);
     });
   }
@@ -653,7 +658,7 @@ export class Plugin implements ISecuritySolutionPlugin {
       this.logger.warn('Task Manager not available, health diagnostic task not registered.');
     }
 
-    this.registerAgentBuilderAttachmentsAndTools(plugins.agentBuilder, core, this.logger);
+    this.registerAgentBuilderAttachmentsAndTools(plugins, core, this.logger);
 
     return {
       setProductFeaturesConfigurator:

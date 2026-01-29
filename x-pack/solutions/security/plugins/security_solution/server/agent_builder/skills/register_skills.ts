@@ -6,11 +6,24 @@
  */
 
 import type { AgentBuilderPluginSetup } from '@kbn/agent-builder-plugin/server';
-import { alertAnalysisSkill } from './alert_analysis_skill';
+import { alertAnalysisSkill, getEntityAnalysisSkill } from '.';
+import type { EntityAnalyticsRoutesDeps } from '../../lib/entity_analytics/types';
 
+interface RegisterSkillsOpts {
+  agentBuilder: AgentBuilderPluginSetup;
+  getStartServices: EntityAnalyticsRoutesDeps['getStartServices'];
+  ml: EntityAnalyticsRoutesDeps['ml'];
+  kibanaVersion: string;
+}
 /**
  * Registers all security agent builder skills with the agentBuilder plugin
  */
-export const registerSkills = async (agentBuilder: AgentBuilderPluginSetup): Promise<void> => {
+export const registerSkills = async ({
+  agentBuilder,
+  getStartServices,
+  ml,
+  kibanaVersion,
+}: RegisterSkillsOpts): Promise<void> => {
   agentBuilder.skill.registerSkill(alertAnalysisSkill);
+  agentBuilder.skill.registerSkill(getEntityAnalysisSkill({ getStartServices, ml, kibanaVersion }));
 };

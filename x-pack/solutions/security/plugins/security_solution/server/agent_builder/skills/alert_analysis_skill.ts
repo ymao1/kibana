@@ -87,17 +87,14 @@ export const alertAnalysisSkill = defineSkillType({
     entity.name == "ENTITY_VALUE_PLACEHOLDER"
   )
 | WHERE @timestamp >= NOW() - INTERVAL 7 DAYS
-| KEEP _id, _index, @timestamp, kibana.alert.rule.name, kibana.alert.severity, 
-       kibana.alert.workflow_status, host.name, user.name, source.ip, 
+| KEEP _id, _index, @timestamp, kibana.alert.rule.name, kibana.alert.severity,
+       kibana.alert.workflow_status, host.name, user.name, source.ip,
        destination.ip, entity.name, entity.type, message
 | SORT @timestamp DESC
 | LIMIT 100`,
     },
   ],
-  getAllowedTools: () => [
-    `security.alerts`,
-    `security.security_labs_search`,
-  ],
+  getAllowedTools: () => [`security.alerts`, `security.security_labs_search`],
   getInlineTools: () => [
     {
       id: 'security.alert-analysis.get-related-alerts',
