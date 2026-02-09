@@ -4,7 +4,7 @@ Evaluation test suites for the SIEM Entity Analytics skill, built on top of [`@k
 
 ## Overview
 
-This test suite contains evaluation tests specifically for the SIEM Entity Analytics skill (`security.entity_analytics.agent`), which provides security analysis capabilities through the Agent Builder API.
+This test suite contains evaluation tests specifically for the SIEM Entity Analytics skill (`entity-analysis`), which provides entity analysis capabilities.
 
 For general information about writing evaluation tests, configuration, and usage, see the main [`@kbn/evals` documentation](../../../../platform/packages/shared/kbn-evals/README.md).
 
@@ -60,7 +60,8 @@ Start Scout server:
 node scripts/scout.js start-server --stateful --config-dir security_entity_analytics
 ```
 
-The `security_entity_analytics` configuration extends the default `--stateful` config and enables the `securitySolution.naturalLanguageThreatHunting.enabled` feature flag at the server level, which is useful for running evaluation tests that require this feature to be enabled.
+<!-- 
+The `security_entity_analytics` configuration extends the default `--stateful` config and enables the `securitySolution.naturalLanguageThreatHunting.enabled` feature flag at the server level, which is useful for running evaluation tests that require this feature to be enabled. -->
 
 ### Run Evaluations
 

@@ -49,6 +49,14 @@ export class SiemEntityAnalyticsEvaluationChatClient {
 
   converse: ConverseFunction = async ({ messages, conversationId, options: { agentId } }) => {
     this.log.info('Calling converse for ' + agentId);
+    this.log.info(
+      JSON.stringify({
+        agent_id: agentId,
+        connector_id: this.connectorId,
+        conversation_id: conversationId,
+        input: messages[messages.length - 1].message,
+      })
+    );
 
     const callConverseApi = async (): Promise<{
       conversationId?: string;
@@ -72,6 +80,7 @@ export class SiemEntityAnalyticsEvaluationChatClient {
           input: messages[messages.length - 1].message,
         }),
       });
+      this.log.info(`Converse API response: ${JSON.stringify(response)}`);
 
       const {
         conversation_id: conversationIdFromResponse,

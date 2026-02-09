@@ -25,7 +25,7 @@ export const getEntityAnalysisSkill = (ctx: EntityAnalysisSkillsContext) =>
     id: 'entity-analysis',
     name: 'entity-analysis',
     basePath: 'skills/security/entities',
-    description: `Comprehensive guide to analyze user, host, service and generic security entities, including their risk scores, behaviors and anomalies as well as asset criticality, entity store, privileged user and watchlist data`,
+    description: `Comprehensive guide to query for and analyze user, host, service and generic entities, sorting by risk scores, finding unusual behaviors, access patterns and anomalies, getting entity profiles from entity store.`,
     body: `# Entity Analysis Guide
 
 This skill helps generate queries based on natural language threat hunting questions about user, host, service and generic entities using **Entity Analytics** data:

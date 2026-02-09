@@ -16,13 +16,8 @@ import {
 import { deleteAllRules } from '@kbn/detections-response-ftr-services/rules';
 import { dataGeneratorFactory } from '@kbn/test-suites-security-solution-apis/test_suites/detections_response/utils';
 import { deleteAllAlerts, createAlertsIndex } from '@kbn/detections-response-ftr-services/alerts';
+import { THREAT_HUNTING_AGENT_ID } from '@kbn/security-solution-plugin/common/constants';
 import { evaluate } from '../src/evaluate';
-import {
-  createEntityAnalyticsTestAgent,
-  deleteEntityAnalyticsTestAgent,
-} from '../src/helpers/agent';
-
-const AGENT_ID = 'test_agent';
 
 evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svlSecurity' }, () => {
   const userId = uuidv4();
@@ -34,13 +29,11 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
     );
     const dataView = dataViewRouteHelpersFactory(supertest);
     await dataView.create('security-solution', 'ecs_compliant,auditbeat-*');
-    await createEntityAnalyticsTestAgent({ agentId: AGENT_ID, supertest, log });
   });
 
   evaluate.afterAll(async ({ supertest, log }) => {
     const dataView = dataViewRouteHelpersFactory(supertest);
     await dataView.delete('security-solution');
-    await deleteEntityAnalyticsTestAgent({ agentId: AGENT_ID, supertest, log });
   });
 
   evaluate.describe('without data', () => {
@@ -50,7 +43,7 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
           name: 'entity-analytics: risk score without data',
           description:
             'Questions to test the SIEM Entity Analytics agent - risk score without data',
-          agentId: AGENT_ID,
+          agentId: THREAT_HUNTING_AGENT_ID,
           examples: [
             {
               input: {
@@ -63,9 +56,8 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
                   'Prompt the user to enable the risk engine',
                 ],
                 toolCalls: [
-                  {
-                    id: 'security.entity_analytics.threat_hunting',
-                  },
+                  { id: 'platform.core.load_skill' },
+                  { id: 'security.entity_analysis.risk_score' },
                 ],
               },
               metadata: { query_intent: 'Factual' },
@@ -81,9 +73,8 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
                   'Prompt the user to enable the risk engine',
                 ],
                 toolCalls: [
-                  {
-                    id: 'security.entity_analytics.threat_hunting',
-                  },
+                  { id: 'platform.core.load_skill' },
+                  { id: 'security.entity_analysis.risk_score' },
                 ],
               },
               metadata: { query_intent: 'Factual' },
@@ -98,9 +89,8 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
                   'Prompt the user to enable the risk engine',
                 ],
                 toolCalls: [
-                  {
-                    id: 'security.entity_analytics.threat_hunting',
-                  },
+                  { id: 'platform.core.load_skill' },
+                  { id: 'security.entity_analysis.risk_score' },
                 ],
               },
               metadata: { query_intent: 'Factual' },
@@ -147,7 +137,7 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
         dataset: {
           name: 'entity-analytics: risk score',
           description: 'Questions to test the SIEM Entity Analytics agent - risk score',
-          agentId: AGENT_ID,
+          agentId: THREAT_HUNTING_AGENT_ID,
           examples: [
             {
               input: {
@@ -156,8 +146,9 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
               output: {
                 criteria: ['Return at least 5 users with the highest risk scores.'],
                 toolCalls: [
+                  { id: 'platform.core.load_skill' },
                   {
-                    id: 'security.entity_analytics.threat_hunting',
+                    id: 'security.entity_analysis.risk_score',
                     criteria: [
                       `The tool should return the following ESQL query:
                       FROM risk-score.risk-score-latest-default
@@ -180,8 +171,9 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
               output: {
                 criteria: ['Return the risk score of user-1 over the last 90 days.'],
                 toolCalls: [
+                  { id: 'platform.core.load_skill' },
                   {
-                    id: 'security.entity_analytics.threat_hunting',
+                    id: 'security.entity_analysis.risk_score',
                     criteria: [
                       `The tool should return an ESQL query with the following structure:
                       * FROM index: risk-score.risk-score-default
@@ -201,8 +193,9 @@ evaluate.describe('SIEM Entity Analytics Agent - Risk Score Tests', { tag: '@svl
               output: {
                 criteria: ['Return the 10 users with the highest risk scores right now.'],
                 toolCalls: [
+                  { id: 'platform.core.load_skill' },
                   {
-                    id: 'security.entity_analytics.threat_hunting',
+                    id: 'security.entity_analysis.risk_score',
                     criteria: [
                       `The tool should return the following ESQL query:
                       FROM risk-score.risk-score-latest-default

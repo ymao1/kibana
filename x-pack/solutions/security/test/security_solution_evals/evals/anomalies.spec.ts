@@ -6,7 +6,10 @@
  */
 
 import { dataViewRouteHelpersFactory } from '@kbn/test-suites-security-solution-apis/test_suites/entity_analytics/utils';
-import { DEFAULT_ANOMALY_SCORE } from '@kbn/security-solution-plugin/common/constants';
+import {
+  DEFAULT_ANOMALY_SCORE,
+  THREAT_HUNTING_AGENT_ID,
+} from '@kbn/security-solution-plugin/common/constants';
 import { deleteAllRules } from '@kbn/detections-response-ftr-services/rules';
 import { deleteAllAlerts, createAlertsIndex } from '@kbn/detections-response-ftr-services/alerts';
 import {
@@ -17,12 +20,6 @@ import {
   waitForAllJobsToStart,
 } from '../src/helpers/ml';
 import { evaluate } from '../src/evaluate';
-import {
-  createEntityAnalyticsTestAgent,
-  deleteEntityAnalyticsTestAgent,
-} from '../src/helpers/agent';
-
-const AGENT_ID = 'test_agent';
 
 evaluate.describe(
   'SIEM Entity Analytics Agent - ML Security Prompts Tests',
@@ -80,13 +77,11 @@ evaluate.describe(
       );
       const dataView = dataViewRouteHelpersFactory(supertest);
       await dataView.create('security-solution', indexPattern);
-      await createEntityAnalyticsTestAgent({ agentId: AGENT_ID, supertest, log });
     });
 
     evaluate.afterAll(async ({ kbnClient, supertest, log }) => {
       const dataView = dataViewRouteHelpersFactory(supertest);
       await dataView.delete('security-solution');
-      await deleteEntityAnalyticsTestAgent({ agentId: AGENT_ID, supertest, log });
     });
 
     evaluate.describe('without data', () => {
@@ -96,7 +91,7 @@ evaluate.describe(
             name: 'entity-analytics:anomalies without data',
             description:
               'Questions to test the SIEM Entity Analytics agent - anomalies without data',
-            agentId: AGENT_ID,
+            agentId: THREAT_HUNTING_AGENT_ID,
             examples: [
               {
                 input: {
@@ -477,7 +472,7 @@ evaluate.describe(
           dataset: {
             name: 'entity-analytics: anomalies',
             description: 'Questions to test the SIEM Entity Analytics agent - anomalies',
-            agentId: AGENT_ID,
+            agentId: THREAT_HUNTING_AGENT_ID,
             examples: [
               // Flaky test, it needs v3_windows_anomalous_service enabled to work
               // {
@@ -527,8 +522,9 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${securityAuthJobIds.join(', ')}`,
                   ],
                   toolCalls: [
+                    { id: 'platform.core.load_skill' },
                     {
-                      id: 'security.entity_analytics.threat_hunting',
+                      id: 'security.entity_analysis.anomaly_detection',
                       criteria: [`returns an ESQL query for the ".ml-anomalies-*" index`],
                     },
                   ],
@@ -545,9 +541,8 @@ evaluate.describe(
                     `Mention lmd_high_count_remote_file_transfer job id`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -562,9 +557,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${padJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -579,9 +573,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${dedJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -596,9 +589,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${padJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -613,9 +605,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${securityAuthJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -630,9 +621,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${dedJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -647,9 +637,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${dedJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -665,9 +654,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: ${dedJobIds.join(', ')}`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -682,9 +670,8 @@ evaluate.describe(
                     `Mention at least one result with new location`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
                 metadata: { query_intent: 'Factual' },
@@ -700,9 +687,8 @@ evaluate.describe(
                     `Mention at least 1 job id from the list: auth_rare_hour_for_a_user`,
                   ],
                   toolCalls: [
-                    {
-                      id: 'security.entity_analytics.threat_hunting',
-                    },
+                    { id: 'platform.core.load_skill' },
+                    { id: 'security.entity_analysis.anomaly_detection' },
                   ],
                 },
               },

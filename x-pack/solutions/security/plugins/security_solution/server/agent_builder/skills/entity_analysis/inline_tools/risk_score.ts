@@ -20,7 +20,6 @@ import {
 import type { EntityType } from '../../../../../common/api/entity_analytics';
 import type { EntityAnalysisSkillsContext } from '../entity_analysis_skill';
 import { entityAnalyticsInlineToolSchema, getDependencies } from './common';
-import { RiskEngineDataClient } from '../../../../lib/entity_analytics/risk_engine/risk_engine_data_client';
 
 export const getRiskScoreInlineTool = (ctx: EntityAnalysisSkillsContext): SkillBoundedTool => ({
   id: 'security.entity_analysis.risk_score',
@@ -29,28 +28,26 @@ export const getRiskScoreInlineTool = (ctx: EntityAnalysisSkillsContext): SkillB
   description: `Entity risk scoring is an advanced Elastic Security analytics feature that helps security analysts detect changes in an entity's risk posture, hunt for new threats, and prioritise incident response`,
   handler: async ({ entityType, prompt, queryExtraContext }, context) => {
     try {
-      const { esClient, logger, request, toolProvider } = context;
+      const { esClient, request, toolProvider } = context;
       const results: ToolHandlerResult[] = [];
       let message: string = ``;
 
-      const { generalSecuritySolutionMessage, generateESQLTool, soClient, spaceId } =
-        await getDependencies(entityType, esClient, ctx.getStartServices, request, toolProvider);
+      const { generalSecuritySolutionMessage, generateESQLTool, spaceId } = await getDependencies(
+        entityType,
+        esClient,
+        ctx.getStartServices,
+        request,
+        toolProvider
+      );
 
       const riskScoreIndexPattern = getRiskScoreLatestIndex(spaceId);
       const riskScoreTimeSeriesIndexPattern = getRiskScoreTimeSeriesIndex(spaceId);
 
-      const riskEngineClient = new RiskEngineDataClient({
-        logger,
-        kibanaVersion: ctx.kibanaVersion,
-        esClient: esClient.asCurrentUser,
-        soClient,
-        namespace: spaceId,
-        auditLogger: undefined,
+      const indexExists = await esClient.asInternalUser.indices.exists({
+        index: riskScoreIndexPattern,
       });
 
-      const engineStatus = await riskEngineClient.getStatus({ namespace: spaceId });
-
-      if (engineStatus.riskEngineStatus === 'ENABLED') {
+      if (indexExists) {
         message = `
         This is a set of rules that you must follow strictly:
         * Use the latest risk score index pattern: ${riskScoreIndexPattern} when answering questions about the current risk score of entities.
@@ -79,7 +76,7 @@ export const getRiskScoreInlineTool = (ctx: EntityAnalysisSkillsContext): SkillB
           }
         }
       } else {
-        message = `The risk engine is not enabled in this environment. The current status is: ${engineStatus.riskEngineStatus}. The user needs to enable the risk engine so that this agent can answer risk-related questions.`;
+        message = `Risk score index does not exist for this space. The user needs to enable the risk engine so that this agent can answer risk-related questions.`;
       }
 
       return {

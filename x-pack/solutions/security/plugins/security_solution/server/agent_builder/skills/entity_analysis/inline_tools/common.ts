@@ -6,11 +6,10 @@
  */
 
 import { z } from '@kbn/zod';
-import { DEFAULT_DATA_VIEW_ID } from '@kbn/data-views-plugin/common/constants';
 import type { IScopedClusterClient, KibanaRequest } from '@kbn/core/server';
 import type { ToolProvider } from '@kbn/agent-builder-server';
+import { DEFAULT_DATA_VIEW_ID, DEFAULT_ALERTS_INDEX } from '../../../../../common/constants';
 import { IdentifierType } from '../../../../../common/api/entity_analytics/common/common.gen';
-import { DEFAULT_ALERTS_INDEX } from '../../../../../common/constants';
 import type { EntityAnalyticsRoutesDeps } from '../../../../lib/entity_analytics/types';
 import type { EntityType } from '../../../../../common/entity_analytics/types';
 import { EntityTypeToIdentifierField } from '../../../../../common/entity_analytics/types';
