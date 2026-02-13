@@ -3,5 +3,5 @@
   "id": "@kbn/evals-suite-agent-builder",
   "owner": "@elastic/workchat-eng",
   "group": "platform",
-  "visibility": "private"
+  "visibility": "shared"
 }

@@ -89,32 +89,27 @@ PHOENIX_BASE_URL=http://localhost:6006 KBN_EVALS_EXECUTOR=phoenix node scripts/p
 
 To add new evaluation tests:
 
-1. Create a new spec file in the appropriate `evals/` subdirectory
-2. Use the `evaluate` fixture from `src/evaluate.ts`
-3. Define your dataset with `examples` containing `input` and `output` fields
-4. Use `criteria` in the output for criteria-based evaluation
+1. Create a new spec file in the `evals/` directory
+2. Import the `evaluate` fixture from `src/evaluate.ts`
+3. Define your dataset with standard `@kbn/evals` format:
+   - `input.question` - the question to ask the agent
+   - `output.expected` - a descriptive string of the expected response (used by Factuality, Relevance, Groundedness evaluators)
+   - `metadata.expectedOnlyToolId` - the primary tool ID expected to be called (used by ToolUsageOnly evaluator)
+   - `metadata.agentId` - the agent ID to use for the conversation
 
 Example:
 
 ```typescript
-import { evaluate as base } from '../../src/evaluate';
-import type { EvaluateDataset } from '../../src/evaluate_dataset';
-import { createEvaluateDataset } from '../../src/evaluate_dataset';
+import { THREAT_HUNTING_AGENT_ID } from '@kbn/security-solution-plugin/common/constants';
+import { evaluate } from '../src/evaluate';
 
-const evaluate = base.extend<{ evaluateDataset: EvaluateDataset }, {}>({
-  evaluateDataset: [
-    ({ chatClient, evaluators, phoenixClient }, use) => {
-      use(
-        createEvaluateDataset({
-          chatClient,
-          evaluators,
-          phoenixClient,
-        })
-      );
-    },
-    { scope: 'test' },
-  ],
-});
+const myToolId = 'security.my_skill.my_tool';
+
+// Set default evaluators for this spec
+const SPEC_EVALUATORS = ['ToolUsageOnly', 'Groundedness', 'Relevance', 'Sequence Accuracy'];
+if (!process.env.SELECTED_EVALUATORS) {
+  process.env.SELECTED_EVALUATORS = SPEC_EVALUATORS.join(',');
+}
 
 evaluate.describe('My Test Suite', { tag: '@svlSecurity' }, () => {
   evaluate('my test', async ({ evaluateDataset }) => {
@@ -128,12 +123,12 @@ evaluate.describe('My Test Suite', { tag: '@svlSecurity' }, () => {
               question: 'My question?',
             },
             output: {
-              criteria: [
-                'Criteria 1',
-                'Criteria 2',
-              ],
+              expected: 'A descriptive expected answer or behavior.',
             },
-            metadata: { query_intent: 'Factual' },
+            metadata: {
+              expectedOnlyToolId: myToolId,
+              agentId: THREAT_HUNTING_AGENT_ID,
+            },
           },
         ],
       },
