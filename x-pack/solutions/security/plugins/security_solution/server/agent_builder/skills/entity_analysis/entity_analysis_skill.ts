@@ -22,7 +22,7 @@ export const getEntityAnalysisSkill = (ctx: EntityAnalysisSkillsContext) =>
     description: `Guide to analyzing security entities (hosts, users, services, generic). Analyze how an entity's risk score has changed over time (e.g. last 90 days), show the riskiest entity and its inputs, sort and rank the top security entities by risk scores, criticality, risk inputs and behaviors.`,
     content: `# Entity Analysis Guide
 
-This skill helps you analyze security entites. Entities include hosts, users, services and generic. Each entity can have
+This skill helps you analyze security entities. Entities include hosts, users, services and generic. Each entity can have
 
 - **Risk Score**: normalized score (0-100) indicating riskiness of an entity.
 - **Risk Inputs**: list of highest-risk alerts and logs contributing to the risk score.

@@ -113,7 +113,7 @@ export const getRiskScoreInlineTool = (ctx: EntityAnalysisSkillsContext): SkillB
   id: ENTITY_ANALYSIS_RISK_SCORE_INLINE_TOOL_ID,
   type: ToolType.builtin,
   schema: entityAnalyticsInlineToolSchema,
-  description: `Entity risk scoring is an advanced Elastic Security analytics feature that helps security analysts detect changes in an entity's risk posture, hunt for new threats, and prioritise incident response`,
+  description: `Query and analyze entity risk scores. Use this tool for ANY question about risk scores, risk levels, riskiest entities, or entity risk rankings. Returns current risk scores (0-100 scale), risk levels, risk history over time, and risk inputs for users, hosts, and other security entities. This tool automatically handles index selection and entity filtering.`,
   handler: (args, context) =>
     riskScoreInlineToolHandler(args as EntityAnalyticsInlineToolType, { ...context, ...ctx }),
 });

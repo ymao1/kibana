@@ -20,10 +20,6 @@ import {
   type RetrievedDoc,
   type ExperimentTask,
   type TaskOutput,
-} from '@kbn/evals';
-import type { EsClient } from '@kbn/scout';
-import type { ToolingLog } from '@kbn/tooling-log';
-import {
   extractAllStrings,
   extractMaxSemver,
   extractReleaseDateNearVersion,
@@ -31,7 +27,10 @@ import {
   getFinalAssistantMessage,
   getStringMeta,
   getToolCallSteps,
+  createToolUsageOnlyEvaluator,
 } from '@kbn/evals';
+import type { EsClient } from '@kbn/scout';
+import type { ToolingLog } from '@kbn/tooling-log';
 import type { AgentBuilderEvaluationChatClient } from './chat_client';
 
 interface DatasetExample extends Example {
@@ -139,28 +138,7 @@ function configureExperiment({
   });
 
   const selectedEvaluators = selectEvaluators([
-    {
-      name: 'ToolUsageOnly',
-      kind: 'CODE' as const,
-      evaluate: async ({ output, metadata }) => {
-        const expectedOnlyToolId = getStringMeta(metadata, 'expectedOnlyToolId');
-        if (!expectedOnlyToolId) return { score: 1 };
-
-        const toolCalls = getToolCallSteps(output as TaskOutput);
-        if (toolCalls.length === 0) {
-          return { score: 0, metadata: { reason: 'No tool calls found', expectedOnlyToolId } };
-        }
-
-        const usedToolIds = toolCalls.map((t) => t.tool_id).filter(Boolean);
-        const hasExpected = usedToolIds.includes(expectedOnlyToolId);
-        const allExpected = usedToolIds.every((id) => id === expectedOnlyToolId);
-
-        return {
-          score: hasExpected && allExpected ? 1 : 0,
-          metadata: { expectedOnlyToolId, usedToolIds },
-        };
-      },
-    },
+    createToolUsageOnlyEvaluator(),
     {
       name: 'DocVersionReleaseDate',
       kind: 'CODE' as const,
