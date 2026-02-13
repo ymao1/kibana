@@ -5,10 +5,12 @@
  * 2.0.
  */
 
-// NOTE: All imports from @kbn/evals MUST be type-only to avoid pulling in the
-// full barrel which includes ESM-only transitive deps that break Jest.
-import type { Evaluator, TaskOutput } from '@kbn/evals';
-import { AUXILIARY_DISCOVERY_TOOLS, getStringMeta, getToolCallStepsWithParams } from './helpers';
+import type { Evaluator, TaskOutput } from '../../types';
+import {
+  AUXILIARY_DISCOVERY_TOOLS,
+  getStringMeta,
+  getToolCallStepsWithParams,
+} from '../../utils/evaluation_helpers';
 
 /** Acceptable general-purpose tools that can substitute for a specialized tool. */
 const ACCEPTABLE_ALTERNATIVES = new Set([

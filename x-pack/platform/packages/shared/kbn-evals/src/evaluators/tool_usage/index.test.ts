@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import { createToolUsageOnlyEvaluator } from './tool_usage_only';
+import { createToolUsageOnlyEvaluator } from '.';
 
 const evaluate = createToolUsageOnlyEvaluator().evaluate;
 

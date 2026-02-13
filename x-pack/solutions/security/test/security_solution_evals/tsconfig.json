@@ -12,7 +12,6 @@
   "exclude": ["target/**/*"],
   "kbn_references": [
     "@kbn/evals",
-    "@kbn/evals-suite-agent-builder",
     "@kbn/tooling-log",
     "@kbn/core",
     "@kbn/test-suites-security-solution-apis",

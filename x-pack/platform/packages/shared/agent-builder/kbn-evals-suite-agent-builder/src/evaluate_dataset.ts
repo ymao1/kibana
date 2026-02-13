@@ -25,12 +25,13 @@ import {
   extractReleaseDateNearVersion,
   getBooleanMeta,
   getFinalAssistantMessage,
+  getStringMeta,
   getToolCallSteps,
+  createToolUsageOnlyEvaluator,
 } from '@kbn/evals';
 import type { EsClient } from '@kbn/scout';
 import type { ToolingLog } from '@kbn/tooling-log';
 import type { AgentBuilderEvaluationChatClient } from './chat_client';
-import { createToolUsageOnlyEvaluator, getStringMeta } from './evaluators';
 
 interface DatasetExample extends Example {
   input: {

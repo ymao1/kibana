@@ -5,7 +5,8 @@
  * 2.0.
  */
 
-import type { Evaluator, TaskOutput } from '@kbn/evals';
+import type { Evaluator, TaskOutput } from '../../types';
+import { resolveModelPricing, calculateCost } from './model_pricing';
 
 interface ModelUsageStats {
   input_tokens?: number;
@@ -15,14 +16,15 @@ interface ModelUsageStats {
   connector_id?: string;
 }
 
-const INPUT_PRICE_PER_1K = 0.003;
-const OUTPUT_PRICE_PER_1K = 0.015;
-
 /**
  * Evaluator that reports token-usage statistics and estimated cost.
  *
  * Score is the total number of tokens consumed. Metadata includes a
- * per-token breakdown and a rough cost estimate.
+ * per-token breakdown and cost estimate based on per-model pricing
+ * sourced from litellm / provider pricing pages.
+ *
+ * When the model is recognized, the cost is calculated using real
+ * per-token rates. When unknown, cost is omitted (reported as `null`).
  */
 export const createTokenUsageEvaluator = (): Evaluator => ({
   name: 'TokenUsage',
@@ -35,9 +37,12 @@ export const createTokenUsageEvaluator = (): Evaluator => ({
     const outputTokens = modelUsage?.output_tokens ?? 0;
     const totalTokens = inputTokens + outputTokens;
     const llmCalls = modelUsage?.llm_calls ?? 0;
+    const model = modelUsage?.model;
 
-    const estimatedCost =
-      (inputTokens / 1000) * INPUT_PRICE_PER_1K + (outputTokens / 1000) * OUTPUT_PRICE_PER_1K;
+    const pricing = model ? resolveModelPricing(model) : undefined;
+    const estimatedCostUsd = pricing
+      ? Math.round(calculateCost(inputTokens, outputTokens, pricing) * 1_000_000) / 1_000_000
+      : null;
 
     return {
       score: totalTokens,
@@ -47,10 +52,17 @@ export const createTokenUsageEvaluator = (): Evaluator => ({
         outputTokens,
         totalTokens,
         llmCalls,
-        model: modelUsage?.model,
+        model,
         connectorId: modelUsage?.connector_id,
-        estimatedCostUsd: Math.round(estimatedCost * 10000) / 10000,
+        estimatedCostUsd,
+        pricingResolved: pricing != null,
+        ...(pricing && {
+          inputCostPerMToken: pricing.inputCostPerToken * 1_000_000,
+          outputCostPerMToken: pricing.outputCostPerToken * 1_000_000,
+        }),
       },
     };
   },
 });
+
+export { resolveModelPricing, calculateCost, type ModelPricing } from './model_pricing';
