@@ -1850,12 +1850,12 @@ finishes and then call this operation once.
   /**
    * Returns pre-computed ML anomaly records with baseline data for a given entity.
    */
-  async getBehavioralSummary(props: GetBehavioralSummaryProps) {
-    this.log.info(`${new Date().toISOString()} Calling API GetBehavioralSummary`);
+  async getAnomalySummary(props: GetAnomalySummaryProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetAnomalySummary`);
     return this.kbnClient
-      .request<GetBehavioralSummaryResponse>({
+      .request<GetAnomalySummaryResponse>({
         path: replaceParams(
-          '/internal/entity_analytics/entities/{entity_id}/behavioral_summary',
+          '/internal/entity_analytics/entities/{entity_id}/anomaly_summary',
           props.params
         ),
         headers: {
@@ -4032,9 +4032,9 @@ export interface GetAllTranslationStatsDashboardMigrationProps {
 export interface GetAssetCriticalityRecordProps {
   query: GetAssetCriticalityRecordRequestQueryInput;
 }
-export interface GetBehavioralSummaryProps {
-  params: GetBehavioralSummaryRequestParamsInput;
-  body: GetBehavioralSummaryRequestBodyInput;
+export interface GetAnomalySummaryProps {
+  params: GetAnomalySummaryRequestParamsInput;
+  body: GetAnomalySummaryRequestBodyInput;
 }
 export interface GetDashboardMigrationProps {
   params: GetDashboardMigrationRequestParamsInput;
