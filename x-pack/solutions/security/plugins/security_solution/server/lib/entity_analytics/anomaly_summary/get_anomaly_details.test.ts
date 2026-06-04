@@ -20,9 +20,8 @@ jest.mock('../ml_anomaly_detection', () => ({
   getJobConfig: jest.fn(),
 }));
 
-const { searchEntityAnomalies, fetchBaselineBehavior, getJobConfig } = jest.requireMock(
-  '../ml_anomaly_detection'
-);
+const { searchEntityAnomalies, fetchBaselineBehavior, getJobConfig } =
+  jest.requireMock('../ml_anomaly_detection');
 
 const makeAnomaly = (overrides: Partial<AnomalyHit> = {}): AnomalyHit => ({
   _id: 'anomaly-1',
