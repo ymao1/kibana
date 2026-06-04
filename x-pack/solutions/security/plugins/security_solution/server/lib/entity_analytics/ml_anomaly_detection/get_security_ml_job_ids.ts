@@ -12,7 +12,7 @@ import {
   ML_GROUP_IDS,
   type LEGACY_ML_GROUP_ID,
   type ML_GROUP_ID,
-} from '../../../../../../common/constants';
+} from '../../../../common/constants';
 
 const isSecurityJob = (job: ModuleJob): boolean =>
   job.config?.groups?.some((group) =>

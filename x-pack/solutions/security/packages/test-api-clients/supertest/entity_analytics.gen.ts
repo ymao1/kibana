@@ -481,14 +481,14 @@ The entity will be immediately deleted from the latest index.  It will remain av
       .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana');
   },
   /**
-   * Returns pre-computed ML anomaly records with baseline data for a given entity.
+   * Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
    */
   getBehavioralSummary(props: GetBehavioralSummaryProps, kibanaSpace: string = 'default') {
     return supertest
       .post(
         getRouteUrlForSpace(
           replaceParams(
-            '/internal/entity_analytics/entities/{entity_id}/behavioral_summary',
+            '/internal/entity_analytics/entities/{entity_type}/{entity_id}/behavioral_summary',
             props.params
           ),
           kibanaSpace

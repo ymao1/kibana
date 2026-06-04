@@ -14,7 +14,7 @@ import {
 import { API_VERSIONS, APP_ID, BEHAVIOR_DETAILS_INTERNAL_URL } from '../../../../common/constants';
 import type { EntityAnalyticsRoutesDeps } from '../types';
 import { withMinimumLicense } from '../utils/with_minimum_license';
-import { getAnomaliesFromDetailsIndex } from './get_anomaly_details';
+import { getEntityAnomalies } from './get_anomaly_details';
 
 export const registerBehavioralSummaryRoutes = ({
   router,
@@ -45,7 +45,7 @@ export const registerBehavioralSummaryRoutes = ({
       withMinimumLicense(async (context, request, response) => {
         const siemResponse = buildSiemResponse(response);
         try {
-          const { entity_id: entityId } = request.params;
+          const { entity_id: entityId, entity_type: entityType } = request.params;
           const { page = 1, pageSize = 100, from, jobIds, sort } = request.body ?? {};
 
           const secSol = await context.securitySolution;
@@ -55,9 +55,15 @@ export const registerBehavioralSummaryRoutes = ({
 
           const namespace = secSol.getSpaceId();
 
-          const anomalies = await getAnomaliesFromDetailsIndex({
-            esClient,
+          if (!ml) {
+            logger.warn('ML plugin is unavailable; returning empty behavioral summary.');
+            return response.ok({ body: { entityId, entityType, anomalies: [] } });
+          }
+
+          const anomalies = await getEntityAnomalies({
             entityId,
+            entityType,
+            esClient,
             fromMs: from,
             jobIds,
             logger,
@@ -72,6 +78,7 @@ export const registerBehavioralSummaryRoutes = ({
           return response.ok({
             body: {
               entityId,
+              entityType,
               anomalies,
             },
           });

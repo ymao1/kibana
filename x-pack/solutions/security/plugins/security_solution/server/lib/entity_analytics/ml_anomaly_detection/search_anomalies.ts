@@ -1,0 +1,163 @@
+/*
+ * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+ * or more contributor license agreements. Licensed under the Elastic License
+ * 2.0; you may not use this file except in compliance with the Elastic License
+ * 2.0.
+ */
+
+import type { KibanaRequest, Logger, SavedObjectsClientContract } from '@kbn/core/server';
+import type { EntityType } from '@kbn/entity-store/common';
+import type { MlPluginSetup } from '@kbn/ml-plugin/server';
+import { euid } from '@kbn/entity-store/common/euid_helpers';
+import { ML_AD_LOOKBACK } from './constants';
+import { getSecurityMlJobIds } from './get_security_ml_job_ids';
+import type { AnomalyHit } from './types';
+
+interface RawAnomalyRecord {
+  _id?: string;
+  timestamp: number;
+  job_id: string;
+  detector_index: number;
+  function?: string;
+  record_score: number;
+  field_name?: string;
+  by_field_name?: string;
+  by_field_value?: string;
+  over_field_name?: string;
+  over_field_value?: string;
+  partition_field_name?: string;
+  partition_field_value?: string;
+  actual?: number[];
+  typical?: number[];
+}
+
+interface RequiredHit {
+  _id: string;
+  _source: Required<RawAnomalyRecord>;
+  fields?: Record<string, unknown>;
+}
+
+const mapToAnomalyHit = (hit: RequiredHit): AnomalyHit | undefined => {
+  const { _id: id, _source: src } = hit;
+  const entityId = (hit.fields?.entity_id as string[] | undefined)?.[0];
+  if (!entityId) return undefined;
+  return {
+    _id: id,
+    entityId,
+    jobId: src.job_id,
+    detectorIndex: src.detector_index,
+    detectorFunction: src.function ?? '',
+    timestamp: src.timestamp,
+    recordScore: src.record_score,
+    actual: src.actual[0],
+    typical: src.typical[0],
+    fieldName: src.field_name,
+    byFieldName: src.by_field_name,
+    byFieldValue: src.by_field_value,
+    overFieldName: src.over_field_name,
+    overFieldValue: src.over_field_value,
+    partitionFieldName: src.partition_field_name,
+    partitionFieldValue: src.partition_field_value,
+  };
+};
+
+export interface EntityAnomalies {
+  [jobId: string]: AnomalyHit[];
+}
+
+export type AnomalySortField = 'timestamp' | 'record_score' | 'job_id';
+export type AnomalySortOrder = 'asc' | 'desc';
+
+const ANOMALY_SORT_FIELD_MAP: Record<AnomalySortField, string> = {
+  timestamp: 'timestamp',
+  record_score: 'record_score',
+  job_id: 'job_id',
+};
+
+const DEFAULT_SORT_SPEC: Array<{ field: AnomalySortField; order: AnomalySortOrder }> = [
+  { field: 'timestamp', order: 'desc' },
+];
+
+export interface SearchEntityAnomaliesOpts {
+  entityType: EntityType;
+  entityId: string;
+  fromMs?: number;
+  jobIds?: string[];
+  sort?: Array<{ field: AnomalySortField; order: AnomalySortOrder }>;
+  from?: number;
+  size?: number;
+  logger: Logger;
+  ml: MlPluginSetup;
+  soClient: SavedObjectsClientContract;
+}
+
+export const searchEntityAnomalies = async ({
+  entityType,
+  entityId,
+  fromMs,
+  jobIds: filterJobIds,
+  sort = DEFAULT_SORT_SPEC,
+  from = 0,
+  size = 100,
+  logger,
+  ml,
+  soClient,
+}: SearchEntityAnomaliesOpts): Promise<AnomalyHit[]> => {
+  const mlSystem = ml.mlSystemProvider({} as KibanaRequest, soClient);
+  const securityJobIds = await getSecurityMlJobIds({ ml, soClient });
+
+  if (securityJobIds.length === 0) return [];
+
+  // Intersect the caller-supplied job filter with the known security job IDs.
+  const effectiveJobIds = filterJobIds?.length
+    ? securityJobIds.filter((id) => filterJobIds.includes(id))
+    : securityJobIds;
+
+  if (effectiveJobIds.length === 0) return [];
+
+  try {
+    const resp = await mlSystem.mlAnomalySearch<RawAnomalyRecord>(
+      {
+        from,
+        size,
+        runtime_mappings: {
+          entity_id: euid.painless.getEuidRuntimeMapping(entityType),
+        },
+        fields: ['entity_id'],
+        query: {
+          bool: {
+            filter: [
+              { term: { result_type: 'record' } },
+              { term: { is_interim: false } },
+              { range: { record_score: { gte: 1 } } },
+              { range: { timestamp: { gte: fromMs ?? `now-${ML_AD_LOOKBACK}` } } },
+              { term: { entity_id: entityId } },
+              { terms: { job_id: effectiveJobIds } },
+            ],
+          },
+        },
+        sort: sort.map(({ field, order }) => ({ [ANOMALY_SORT_FIELD_MAP[field]]: { order } })),
+      },
+      []
+    );
+
+    return resp.hits.hits
+      .filter(
+        (hit): hit is typeof hit & RequiredHit =>
+          hit._id != null &&
+          hit._source?.actual?.[0] != null &&
+          hit._source?.typical?.[0] != null &&
+          hit._source?.detector_index != null &&
+          (hit.fields?.entity_id as string[] | undefined)?.[0] != null
+      )
+      .map(mapToAnomalyHit)
+      .filter((hit): hit is AnomalyHit => hit != null);
+  } catch (error) {
+    logger.warn(
+      `Error searching anomalies for entity "${entityId}" (type: ${entityType}): ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+    return [];
+  }
+};

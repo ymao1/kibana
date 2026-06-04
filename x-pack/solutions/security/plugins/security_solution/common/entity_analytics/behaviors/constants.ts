@@ -6,4 +6,4 @@
  */
 
 export const BEHAVIOR_DETAILS_INTERNAL_URL =
-  '/internal/entity_analytics/entities/{entity_id}/behavioral_summary';
+  '/internal/entity_analytics/entities/{entity_type}/{entity_id}/behavioral_summary';

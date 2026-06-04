@@ -5,8 +5,6 @@
  * 2.0.
  */
 
-import type { EntityType } from '@kbn/entity-store/common';
-
 export interface AnomalyHit {
   _id: string;
   entityId: string;
@@ -36,30 +34,3 @@ export type EnrichedAnomalyHit = AnomalyHit & {
   // or copied from the anomaly record typical field
   baselineValues?: Array<number | string>;
 };
-
-export interface EnrichedAnomalyRecord {
-  entity: {
-    id: string;
-    type: EntityType;
-  };
-  anomaly: {
-    _id: string;
-    job_id: string;
-    detector_index: number;
-    detector_function: string;
-    timestamp: number;
-    record_score: number;
-    field_name?: string;
-    actual?: number;
-    typical?: number;
-    by_field_name?: string;
-    by_field_value?: string;
-    over_field_name?: string;
-    over_field_value?: string;
-    partition_field_name?: string;
-    partition_field_value?: string;
-    anomalous_value?: number | string;
-    anomalous_value_count?: number;
-    baseline_values?: Array<number | string>;
-  };
-}

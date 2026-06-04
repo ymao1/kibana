@@ -40,7 +40,7 @@ export const BehavioralSummaryRequestBody = lazySchema(() =>
     sort: z
       .array(
         z.object({
-          field: z.enum(['@timestamp', 'record_score', 'job_id']),
+          field: z.enum(['timestamp', 'record_score', 'job_id']),
           order: z.enum(['asc', 'desc']),
         })
       )
@@ -113,6 +113,10 @@ export type BehavioralSummaryResponse = z.infer<typeof BehavioralSummaryResponse
 
 export const GetBehavioralSummaryRequestParams = lazySchema(() =>
   z.object({
+    /**
+     * Entity type — determines which EUID runtime mapping is used when searching the anomalies index
+     */
+    entity_type: z.enum(['user', 'host']),
     entity_id: z.string().min(1).max(1000),
   })
 );
