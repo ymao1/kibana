@@ -5,4 +5,4 @@
  * 2.0.
  */
 
-export { registerBehavioralSummaryRoutes } from './route';
+export * from './anomaly_summary.gen';

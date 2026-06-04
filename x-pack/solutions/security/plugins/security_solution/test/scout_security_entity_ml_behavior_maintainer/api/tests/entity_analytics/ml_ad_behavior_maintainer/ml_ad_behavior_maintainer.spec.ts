@@ -8,7 +8,7 @@
 import { apiTest, tags } from '@kbn/scout-security';
 import { expect } from '@kbn/scout-security/api';
 import type { AnomalySummaryEntry } from '../../../../../../common/api/entity_analytics/behavioral_summary';
-import { BEHAVIOR_DETAILS_INTERNAL_URL } from '../../../../../../common/entity_analytics/behaviors/constants';
+import { ENTITY_ANOMALY_SUMMARY_INTERNAL_URL } from '../../../../../../common/entity_analytics/behaviors/constants';
 import {
   CAROL_EUID,
   DAVID_EUID,
@@ -31,7 +31,7 @@ const INTERNAL_HEADERS = {
 
 /** Build the request URL for a given entity EUID and entity type. */
 const buildUrl = (entityEuid: string, entityType: 'user' | 'host'): string =>
-  BEHAVIOR_DETAILS_INTERNAL_URL.replace('{entity_type}', entityType).replace(
+  ENTITY_ANOMALY_SUMMARY_INTERNAL_URL.replace('{entity_type}', entityType).replace(
     '{entity_id}',
     encodeURIComponent(entityEuid)
   );
@@ -120,7 +120,10 @@ apiTest.describe(
       log.debug(`Indexing test source events...`);
       const sourceData = sourceTestData();
       await esClient.bulk({
-        operations: sourceData.flatMap((data) => [{ create: { _index: SOURCE_EVENTS_INDEX } }, data]),
+        operations: sourceData.flatMap((data) => [
+          { create: { _index: SOURCE_EVENTS_INDEX } },
+          data,
+        ]),
         refresh: true,
       });
 
@@ -335,7 +338,7 @@ apiTest.describe(
         // rare detector: baseline_values = most common by_field_values from source index
         // Source events for carol.davis include 3 events with source.geo.region_name='New York'
         expect(Array.isArray(rareAnomaly?.baselineValues)).toBe(true);
-        expect((rareAnomaly?.baselineValues?.length ?? 0)).toBeGreaterThanOrEqual(1);
+        expect(rareAnomaly?.baselineValues?.length ?? 0).toBeGreaterThanOrEqual(1);
         expect(rareAnomaly?.baselineValues?.[0]).toBe('New York');
         expect(rareAnomaly?.anomalousValueCount).toBe(1);
 

@@ -8,23 +8,23 @@
 import { buildSiemResponse } from '@kbn/lists-plugin/server/routes/utils';
 import { transformError } from '@kbn/securitysolution-es-utils';
 import {
-  GetBehavioralSummaryRequestBody,
-  GetBehavioralSummaryRequestParams,
+  GetAnomalySummaryRequestBody,
+  GetAnomalySummaryRequestParams,
 } from '../../../../common/api/entity_analytics';
-import { API_VERSIONS, APP_ID, BEHAVIOR_DETAILS_INTERNAL_URL } from '../../../../common/constants';
+import {
+  API_VERSIONS,
+  APP_ID,
+  ENTITY_ANOMALY_SUMMARY_INTERNAL_URL,
+} from '../../../../common/constants';
 import type { EntityAnalyticsRoutesDeps } from '../types';
 import { withMinimumLicense } from '../utils/with_minimum_license';
 import { getEntityAnomalies } from './get_anomaly_details';
 
-export const registerBehavioralSummaryRoutes = ({
-  router,
-  logger,
-  ml,
-}: EntityAnalyticsRoutesDeps) => {
+export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnalyticsRoutesDeps) => {
   router.versioned
     .post({
       access: 'internal',
-      path: BEHAVIOR_DETAILS_INTERNAL_URL,
+      path: ENTITY_ANOMALY_SUMMARY_INTERNAL_URL,
       security: {
         authz: {
           requiredPrivileges: ['securitySolution', `${APP_ID}-entity-analytics`],
@@ -37,8 +37,8 @@ export const registerBehavioralSummaryRoutes = ({
         version: API_VERSIONS.internal.v1,
         validate: {
           request: {
-            params: GetBehavioralSummaryRequestParams,
-            body: GetBehavioralSummaryRequestBody,
+            params: GetAnomalySummaryRequestParams,
+            body: GetAnomalySummaryRequestBody,
           },
         },
       },
@@ -56,7 +56,7 @@ export const registerBehavioralSummaryRoutes = ({
           const namespace = secSol.getSpaceId();
 
           if (!ml) {
-            logger.warn('ML plugin is unavailable; returning empty behavioral summary.');
+            logger.warn('ML plugin is unavailable; returning empty anomaly summary.');
             return response.ok({ body: { entityId, entityType, anomalies: [] } });
           }
 
@@ -83,7 +83,7 @@ export const registerBehavioralSummaryRoutes = ({
             },
           });
         } catch (err) {
-          logger.error(`Error retrieving behavioral summary - ${err}`);
+          logger.error(`Error retrieving anomaly summary - ${err}`);
 
           const error = transformError(err);
           return siemResponse.error({ statusCode: error.statusCode, body: error.message });

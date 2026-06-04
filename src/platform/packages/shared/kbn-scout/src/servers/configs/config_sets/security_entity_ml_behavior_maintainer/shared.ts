@@ -9,6 +9,6 @@
 
 export const securityEntityMlBehaviorMaintainerServerArgs = [
   `--xpack.securitySolution.enableExperimental=${JSON.stringify([
-    'entityAnalyticsMlJobBehaviorMaintainer',
+    'entityAnalyticsAnomalyDetails',
   ])}`,
 ];
