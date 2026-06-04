@@ -64,11 +64,11 @@ import type {
 } from '@kbn/security-solution-plugin/common/api/entity_analytics/risk_engine/entity_calculation_route.gen';
 import type { EntityDetailsHighlightsRequestBodyInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/entity_details/highlights.gen';
 import type { FindAssetCriticalityRecordsRequestQueryInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/asset_criticality/list_asset_criticality.gen';
-import type { GetAssetCriticalityRecordRequestQueryInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/asset_criticality/get_asset_criticality.gen';
 import type {
   GetAnomalySummaryRequestParamsInput,
   GetAnomalySummaryRequestBodyInput,
 } from '@kbn/security-solution-plugin/common/api/entity_analytics/anomaly_summary/anomaly_summary.gen';
+import type { GetAssetCriticalityRecordRequestQueryInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/asset_criticality/get_asset_criticality.gen';
 import type { GetEntityEngineRequestParamsInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/entity_store/engine/get.gen';
 import type { GetEntityStoreStatusRequestQueryInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/entity_store/status.gen';
 import type { GetWatchlistRequestParamsInput } from '@kbn/security-solution-plugin/common/api/entity_analytics/watchlists/management/get.gen';
@@ -355,7 +355,7 @@ If a record already exists for the specified entity, that record is overwritten 
   },
   /**
       * Delete a single entity in Entity Store.
-The entity will be immediately deleted from the latest index.  It will remain available in historical snapshots if it has been snapshotted.  The delete operation does not prevent the entity from being recreated if it is observed again in the future.
+The entity will be immediately deleted from the latest index.  It will remain available in historical snapshots if it has been snapshotted.  The delete operation does not prevent the entity from being recreated if it is observed again in the future. 
 
       */
   deleteSingleEntity(props: DeleteSingleEntityProps, kibanaSpace: string = 'default') {
@@ -460,6 +460,25 @@ The entity will be immediately deleted from the latest index.  It will remain av
       .query(props.query);
   },
   /**
+   * Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
+   */
+  getAnomalySummary(props: GetAnomalySummaryProps, kibanaSpace: string = 'default') {
+    return supertest
+      .post(
+        getRouteUrlForSpace(
+          replaceParams(
+            '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary',
+            props.params
+          ),
+          kibanaSpace
+        )
+      )
+      .set('kbn-xsrf', 'true')
+      .set(ELASTIC_HTTP_VERSION_HEADER, '2023-10-31')
+      .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana')
+      .send(props.body as object);
+  },
+  /**
    * Get the asset criticality record for a specific entity.
    */
   getAssetCriticalityRecord(
@@ -479,25 +498,6 @@ The entity will be immediately deleted from the latest index.  It will remain av
       .set('kbn-xsrf', 'true')
       .set(ELASTIC_HTTP_VERSION_HEADER, '1')
       .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana');
-  },
-  /**
-   * Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
-   */
-  getAnomalySummary(props: GetAnomalySummaryProps, kibanaSpace: string = 'default') {
-    return supertest
-      .post(
-        getRouteUrlForSpace(
-          replaceParams(
-            '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary',
-            props.params
-          ),
-          kibanaSpace
-        )
-      )
-      .set('kbn-xsrf', 'true')
-      .set(ELASTIC_HTTP_VERSION_HEADER, '2023-10-31')
-      .set(X_ELASTIC_INTERNAL_ORIGIN_REQUEST, 'kibana')
-      .send(props.body as object);
   },
   /**
    * Get the engine descriptor for a specific entity type, including its configuration and current status.
@@ -1127,12 +1127,12 @@ export interface EntityDetailsHighlightsProps {
 export interface FindAssetCriticalityRecordsProps {
   query: FindAssetCriticalityRecordsRequestQueryInput;
 }
-export interface GetAssetCriticalityRecordProps {
-  query: GetAssetCriticalityRecordRequestQueryInput;
-}
 export interface GetAnomalySummaryProps {
   params: GetAnomalySummaryRequestParamsInput;
   body: GetAnomalySummaryRequestBodyInput;
+}
+export interface GetAssetCriticalityRecordProps {
+  query: GetAssetCriticalityRecordRequestQueryInput;
 }
 export interface GetEntityEngineProps {
   params: GetEntityEngineRequestParamsInput;

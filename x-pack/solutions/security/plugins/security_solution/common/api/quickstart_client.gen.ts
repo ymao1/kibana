@@ -217,6 +217,11 @@ import type {
   GetEndpointSuggestionsResponse,
 } from './endpoint/suggestions/get_suggestions.gen';
 import type {
+  GetAnomalySummaryRequestParamsInput,
+  GetAnomalySummaryRequestBodyInput,
+  GetAnomalySummaryResponse,
+} from './entity_analytics/anomaly_summary/anomaly_summary.gen';
+import type {
   BulkUpsertAssetCriticalityRecordsRequestBodyInput,
   BulkUpsertAssetCriticalityRecordsResponse,
 } from './entity_analytics/asset_criticality/bulk_upload_asset_criticality.gen';
@@ -242,11 +247,6 @@ import type {
   InternalUploadAssetCriticalityV2CsvResponse,
   UploadAssetCriticalityRecordsResponse,
 } from './entity_analytics/asset_criticality/upload_asset_criticality_csv.gen';
-import type {
-  GetAnomalySummaryRequestParamsInput,
-  GetAnomalySummaryRequestBodyInput,
-  GetAnomalySummaryResponse,
-} from './entity_analytics/anomaly_summary/anomaly_summary.gen';
 import type {
   EntityDetailsHighlightsRequestBodyInput,
   EntityDetailsHighlightsResponse,
@@ -1307,7 +1307,7 @@ The difference between the `id` and `rule_id` is that the `id` is a unique rule 
   }
   /**
     * Delete a single entity in Entity Store.
-The entity will be immediately deleted from the latest index.  It will remain available in historical snapshots if it has been snapshotted.  The delete operation does not prevent the entity from being recreated if it is observed again in the future.
+The entity will be immediately deleted from the latest index.  It will remain available in historical snapshots if it has been snapshotted.  The delete operation does not prevent the entity from being recreated if it is observed again in the future. 
 
     */
   async deleteSingleEntity(props: DeleteSingleEntityProps) {
@@ -1819,6 +1819,25 @@ finishes and then call this operation once.
       .catch(catchAxiosErrorFormatAndThrow);
   }
   /**
+   * Queries ML anomaly records on demand, enriches them with baseline data, and returns results for a given entity.
+   */
+  async getAnomalySummary(props: GetAnomalySummaryProps) {
+    this.log.info(`${new Date().toISOString()} Calling API GetAnomalySummary`);
+    return this.kbnClient
+      .request<GetAnomalySummaryResponse>({
+        path: replaceParams(
+          '/internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary',
+          props.params
+        ),
+        headers: {
+          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
+        },
+        method: 'POST',
+        body: props.body,
+      })
+      .catch(catchAxiosErrorFormatAndThrow);
+  }
+  /**
    * Get the asset criticality record for a specific entity.
    */
   async getAssetCriticalityRecord(props: GetAssetCriticalityRecordProps) {
@@ -1844,25 +1863,6 @@ finishes and then call this operation once.
           [ELASTIC_HTTP_VERSION_HEADER]: '1',
         },
         method: 'GET',
-      })
-      .catch(catchAxiosErrorFormatAndThrow);
-  }
-  /**
-   * Returns pre-computed ML anomaly records with baseline data for a given entity.
-   */
-  async getAnomalySummary(props: GetAnomalySummaryProps) {
-    this.log.info(`${new Date().toISOString()} Calling API GetAnomalySummary`);
-    return this.kbnClient
-      .request<GetAnomalySummaryResponse>({
-        path: replaceParams(
-          '/internal/entity_analytics/entities/{entity_id}/anomaly_summary',
-          props.params
-        ),
-        headers: {
-          [ELASTIC_HTTP_VERSION_HEADER]: '2023-10-31',
-        },
-        method: 'POST',
-        body: props.body,
       })
       .catch(catchAxiosErrorFormatAndThrow);
   }
@@ -2547,14 +2547,14 @@ Requires the **Timeline and Notes** read privilege (`notes_read`).
   /**
     * Install and update all Elastic prebuilt detection rules and Timelines.
 
-This endpoint allows you to install and update prebuilt detection rules and Timelines provided by Elastic.
+This endpoint allows you to install and update prebuilt detection rules and Timelines provided by Elastic. 
 When you call this endpoint, it will:
 - Install any new prebuilt detection rules that are not currently installed in your system.
 - Update any existing prebuilt detection rules that have been modified or improved by Elastic.
 - Install any new prebuilt Timelines that are not currently installed in your system.
 - Update any existing prebuilt Timelines that have been modified or improved by Elastic.
 
-This ensures that your detection engine is always up-to-date with the latest rules and Timelines,
+This ensures that your detection engine is always up-to-date with the latest rules and Timelines, 
 providing you with the most current and effective threat detection capabilities.
 
     */
@@ -2775,7 +2775,7 @@ The difference between the `id` and `rule_id` is that the `id` is a unique rule 
   /**
     * Apply a bulk action, such as bulk edit, duplicate, or delete, to multiple detection rules. The bulk action is applied to all rules that match the query or to the rules listed by their IDs.
 
-The edit action allows you to add, delete, or set tags, index patterns, investigation fields, rule actions and schedules for multiple rules at once.
+The edit action allows you to add, delete, or set tags, index patterns, investigation fields, rule actions and schedules for multiple rules at once. 
 The edit action is idempotent, meaning that if you add a tag to a rule that already has that tag, no changes are made. The same is true for other edit actions, for example removing an index pattern that is not specified in a rule will not result in any changes. The only exception is the `add_rule_actions` and `set_rule_actions` action, which is non-idempotent. This means that if you add or set a rule action to a rule that already has that action, a new action is created with a new unique ID.
 > warn
 > When used with [API key](https://www.elastic.co/docs/deploy-manage/api-keys) authentication, the user's key gets assigned to the affected rules. If the user's key gets deleted or the user becomes inactive, the rules will stop running.
@@ -2956,7 +2956,7 @@ each of those indices.
       .catch(catchAxiosErrorFormatAndThrow);
   }
   /**
-    * Retrieve the status of all Elastic prebuilt detection rules and Timelines.
+    * Retrieve the status of all Elastic prebuilt detection rules and Timelines. 
 
 This endpoint provides detailed information about the number of custom rules, installed prebuilt rules, available prebuilt rules that are not installed, outdated prebuilt rules, installed prebuilt timelines, available prebuilt timelines that are not installed, and outdated prebuilt timelines.
 
@@ -4029,12 +4029,12 @@ export interface FindRulesProps {
 export interface GetAllTranslationStatsDashboardMigrationProps {
   params: GetAllTranslationStatsDashboardMigrationRequestParamsInput;
 }
-export interface GetAssetCriticalityRecordProps {
-  query: GetAssetCriticalityRecordRequestQueryInput;
-}
 export interface GetAnomalySummaryProps {
   params: GetAnomalySummaryRequestParamsInput;
   body: GetAnomalySummaryRequestBodyInput;
+}
+export interface GetAssetCriticalityRecordProps {
+  query: GetAssetCriticalityRecordRequestQueryInput;
 }
 export interface GetDashboardMigrationProps {
   params: GetDashboardMigrationRequestParamsInput;
