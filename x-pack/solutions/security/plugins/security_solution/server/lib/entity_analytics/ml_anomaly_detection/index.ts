@@ -10,15 +10,6 @@ export type { AnomalySortField, AnomalySortOrder, EntityAnomalies } from './sear
 export { searchEntityAnomalies } from './search_anomalies';
 export type { JobConfig } from './get_job_config';
 export { getJobConfig } from './get_job_config';
-export {
-  clearJobConfigCacheForTest,
-  fetchBaselineBehavior,
-  getJobConfig,
-} from './fetch_baseline_behavior';
+export { fetchBaselineBehavior } from './fetch_baseline_behavior';
 export { getSecurityMlJobIds } from './get_security_ml_job_ids';
-export {
-  ANOMALY_SEARCH_PAGE_SIZE,
-  MAX_ALLOWED_ITERS,
-  ML_AD_JOB_ENTITY_TYPES,
-  ML_AD_LOOKBACK,
-} from './constants';
+export { ML_AD_LOOKBACK } from './constants';

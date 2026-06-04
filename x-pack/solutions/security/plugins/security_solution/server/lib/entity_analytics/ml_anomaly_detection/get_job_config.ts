@@ -8,6 +8,7 @@
 import type { KibanaRequest, Logger, SavedObjectsClientContract } from '@kbn/core/server';
 import type { MlDetector, QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
+import { parseDuration } from '@kbn/alerting-plugin/common/parse_duration';
 import {
   tactics as mitreTactics,
   techniques as mitreTechniques,
@@ -22,6 +23,12 @@ export interface JobConfig {
   jobName: string | null;
   threatTactics: string[];
   threatTechniques: string[];
+}
+
+interface JobCustomSettings {
+  security_app_display_name?: string;
+  threat_tactics?: string[];
+  threat_techniques?: string[];
 }
 
 interface GetJobConfigOpts {
@@ -53,8 +60,6 @@ export const getJobConfig = async ({
     const jobs = resp.jobs ?? [];
 
     for (const job of jobs) {
-      const jobId = job.job_id;
-
       const bucketSpanStr = job.analysis_config?.bucket_span;
       let bucketSpanMs = 60 * 60 * 1000; // default to 1h
       if (typeof bucketSpanStr === 'string') {

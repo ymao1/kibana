@@ -5,11 +5,11 @@
  * 2.0.
  */
 
-import { loggingSystemMock, savedObjectsClientMock } from '@kbn/core/server/mocks';
+import { loggingSystemMock } from '@kbn/core/server/mocks';
 import type { ElasticsearchClient } from '@kbn/core/server';
-import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import { fetchBaselineBehavior } from './fetch_baseline_behavior';
 import { makeAnomaly } from './test_helpers';
+import type { JobConfig } from './get_job_config';
 
 jest.mock('@kbn/entity-store/common/euid_helpers', () => ({
   euid: {
@@ -21,32 +21,13 @@ jest.mock('@kbn/entity-store/common/euid_helpers', () => ({
 
 const MOCK_CURRENT_TIME = 1778241600000; // 2026-05-08T12:00:00.000Z
 
-const soClient = savedObjectsClientMock.create();
 let logger: ReturnType<typeof loggingSystemMock.createLogger>;
-let mockJobsFn: jest.Mock;
-let mockMl: MlPluginSetup;
-
-const makeJob = (overrides: Record<string, unknown> = {}) => ({
-  datafeed_config: {
-    indices: ['logs-*'],
-    query: { bool: { filter: [{ term: { 'event.action': 'authentication' } }] } },
-  },
-  analysis_config: {
-    detectors: [{ function: 'rare', by_field_name: 'source.ip', detector_index: 0 }],
-    influencers: ['user.name', 'source.ip'],
-  },
-  ...overrides,
-});
 
 beforeEach(() => {
   jest.useFakeTimers();
   jest.setSystemTime(MOCK_CURRENT_TIME);
   jest.clearAllMocks();
   logger = loggingSystemMock.createLogger();
-  mockJobsFn = jest.fn().mockResolvedValue({ jobs: [makeJob()] });
-  mockMl = {
-    anomalyDetectorsProvider: jest.fn().mockReturnValue({ jobs: mockJobsFn }),
-  } as unknown as MlPluginSetup;
 });
 
 afterEach(() => {
@@ -62,6 +43,9 @@ describe('fetchBaselineBehavior', () => {
     datafeedQuery: { bool: { filter: [{ term: { 'event.action': 'authentication' } }] } },
     detectors: [{ function: 'rare', by_field_name: 'source.ip' }],
     bucketSpanMs: 3600000,
+    jobName: null,
+    threatTactics: [],
+    threatTechniques: [],
     ...overrides,
   });
 

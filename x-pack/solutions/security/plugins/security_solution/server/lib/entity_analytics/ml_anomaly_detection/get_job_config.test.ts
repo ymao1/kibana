@@ -64,6 +64,16 @@ describe('getJobConfig', () => {
     });
   });
 
+  it('parses bucket_span string into milliseconds', async () => {
+    mockJobsFn.mockResolvedValueOnce({
+      jobs: [makeJob({ analysis_config: { detectors: [], bucket_span: '15m' } })],
+    });
+
+    const result = await getJobConfig({ jobIds: ['test-job'], logger, ml: mockMl, soClient });
+
+    expect(result.get('test-job')?.bucketSpanMs).toBe(900000);
+  });
+
   it('defaults bucketSpanMs to 1h when bucket_span is absent', async () => {
     mockJobsFn.mockResolvedValueOnce({
       jobs: [makeJob({ analysis_config: { detectors: [] } })],

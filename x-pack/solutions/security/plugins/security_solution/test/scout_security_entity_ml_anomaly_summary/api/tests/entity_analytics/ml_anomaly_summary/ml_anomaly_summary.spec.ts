@@ -7,8 +7,8 @@
 
 import { apiTest, tags } from '@kbn/scout-security';
 import { expect } from '@kbn/scout-security/api';
-import type { AnomalySummaryEntry } from '../../../../../../common/api/entity_analytics/behavioral_summary';
-import { ENTITY_ANOMALY_SUMMARY_INTERNAL_URL } from '../../../../../../common/entity_analytics/behaviors/constants';
+import type { AnomalySummaryEntry } from '../../../../../../common/api/entity_analytics/anomaly_summary';
+import { ENTITY_ANOMALY_SUMMARY_INTERNAL_URL } from '../../../../../../common/entity_analytics/anomalies/constants';
 import {
   CAROL_EUID,
   DAVID_EUID,
@@ -18,7 +18,7 @@ import {
   anomalyTestData,
   ANOMALY_RECORD_IDS,
   SOURCE_EVENT_IDS,
-} from '../../../fixtures/ml_ad_behavior_maintainer_test_data';
+} from '../../../fixtures/ml_anomaly_summary_test_data';
 
 const ML_ANOMALIES_SHARED_INDEX = '.ml-anomalies-shared';
 const SOURCE_EVENTS_INDEX = 'logs-windows.forwarded-default';
@@ -37,7 +37,7 @@ const buildUrl = (entityEuid: string, entityType: 'user' | 'host'): string =>
   );
 
 apiTest.describe(
-  'ML Anomaly Detection Behavioral Summary — on-demand route',
+  'ML Anomaly Detection Summary API',
   { tag: [...tags.stateful.classic, ...tags.serverless.security.complete] },
   () => {
     let defaultHeaders: Record<string, string>;
@@ -187,7 +187,7 @@ apiTest.describe(
     });
 
     apiTest(
-      'behavioral summary returns anomalies for an entity with anomaly records',
+      'anomaly summary returns anomalies for an entity with anomaly records',
       async ({ apiClient }) => {
         const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
           headers: { ...defaultHeaders, 'elastic-api-version': '1' },
@@ -231,7 +231,7 @@ apiTest.describe(
     );
 
     apiTest(
-      'behavioral summary returns correct jobName and threat fields for suspicious_login_activity_ea',
+      'anomaly summary returns correct jobName and threat fields for suspicious_login_activity_ea',
       async ({ apiClient }) => {
         const response = await apiClient.post(buildUrl(DAVID_EUID, 'user'), {
           headers: { ...defaultHeaders, 'elastic-api-version': '1' },
@@ -253,7 +253,7 @@ apiTest.describe(
     );
 
     apiTest(
-      'behavioral summary returns empty anomalies for entity with no anomaly records',
+      'anomaly summary returns empty anomalies for entity with no anomaly records',
       async ({ apiClient }) => {
         const response = await apiClient.post(buildUrl(NO_BEHAVIORS_EUID, 'host'), {
           headers: { ...defaultHeaders, 'elastic-api-version': '1' },
@@ -268,7 +268,7 @@ apiTest.describe(
       }
     );
 
-    apiTest('behavioral summary filters anomalies by jobIds', async ({ apiClient }) => {
+    apiTest('anomaly summary filters anomalies by jobIds', async ({ apiClient }) => {
       const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
         headers: { ...defaultHeaders, 'elastic-api-version': '1' },
         responseType: 'json',
@@ -281,7 +281,7 @@ apiTest.describe(
       expect(body.anomalies[0].jobId).toBe('auth_high_count_logon_events_ea');
     });
 
-    apiTest('behavioral summary respects pageSize and page', async ({ apiClient }) => {
+    apiTest('anomaly summary respects pageSize and page', async ({ apiClient }) => {
       const page1Response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
         headers: { ...defaultHeaders, 'elastic-api-version': '1' },
         responseType: 'json',
@@ -303,24 +303,21 @@ apiTest.describe(
       expect(page1Body.anomalies[0].jobId).not.toBe(page2Body.anomalies[0].jobId);
     });
 
-    apiTest(
-      'behavioral summary sorts anomalies by record_score descending',
-      async ({ apiClient }) => {
-        const response = await apiClient.post(buildUrl(WIN_APP01_EUID, 'host'), {
-          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
-          responseType: 'json',
-          body: { sort: [{ field: 'record_score', order: 'desc' }] },
-        });
+    apiTest('anomaly summary sorts anomalies by record_score descending', async ({ apiClient }) => {
+      const response = await apiClient.post(buildUrl(WIN_APP01_EUID, 'host'), {
+        headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+        responseType: 'json',
+        body: { sort: [{ field: 'record_score', order: 'desc' }] },
+      });
 
-        expect(response.statusCode).toBe(200);
-        const body = response.body as { anomalies: AnomalySummaryEntry[] };
-        expect(body.anomalies).toHaveLength(2);
-        expect(body.anomalies[0].recordScore).toBeGreaterThanOrEqual(body.anomalies[1].recordScore);
-      }
-    );
+      expect(response.statusCode).toBe(200);
+      const body = response.body as { anomalies: AnomalySummaryEntry[] };
+      expect(body.anomalies).toHaveLength(2);
+      expect(body.anomalies[0].recordScore).toBeGreaterThanOrEqual(body.anomalies[1].recordScore);
+    });
 
     apiTest(
-      'behavioral summary enriches anomalies with baseline values from source index',
+      'anomaly summary enriches anomalies with baseline values from source index',
       async ({ apiClient }) => {
         const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
           headers: { ...defaultHeaders, 'elastic-api-version': '1' },
