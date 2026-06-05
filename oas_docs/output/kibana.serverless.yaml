@@ -8538,9 +8538,15 @@ paths:
           required: false
           schema:
             type: string
-        - description: Whether to filter by shared visibility. If omitted, both shared and privately visible Attack discoveries are returned. Use `true` to return only shared discoveries, `false` to return only those visible to the current user.
+        - description: Whether to filter by shared visibility. If omitted, both shared and privately visible Attack discoveries are returned. Use `true` to return only shared discoveries, `false` to return only those visible to the current user. Mutually exclusive with `include_all_authors`.
           in: query
           name: shared
+          required: false
+          schema:
+            type: boolean
+        - description: If `true`, the response will include all attack discoveries matching other criteria regardless of who created them. Mutually exclusive with `shared`.
+          in: query
+          name: include_all_authors
           required: false
           schema:
             type: boolean
@@ -25879,6 +25885,8 @@ paths:
                         type: string
                       condition:
                         description: Agent condition expression to evaluate whether to apply this integration to its inputs.
+                        maxLength: 10000
+                        nullable: true
                         type: string
                       created_at:
                         type: string
@@ -25934,6 +25942,8 @@ paths:
                                   nullable: true
                                 condition:
                                   description: Agent condition expression to evaluate whether to apply this input.
+                                  maxLength: 10000
+                                  nullable: true
                                   type: string
                                 config:
                                   additionalProperties:
@@ -25973,6 +25983,8 @@ paths:
                                         nullable: true
                                       condition:
                                         description: Agent condition expression to evaluate whether to apply this stream.
+                                        maxLength: 10000
+                                        nullable: true
                                         type: string
                                       config:
                                         additionalProperties:
@@ -26093,6 +26105,8 @@ paths:
                               properties:
                                 condition:
                                   description: Agent condition expression to evaluate whether to apply this input.
+                                  maxLength: 10000
+                                  nullable: true
                                   type: string
                                 deprecated:
                                   $ref: '#/components/schemas/Kibana_HTTP_APIs_deprecation_info'
@@ -26106,6 +26120,8 @@ paths:
                                     properties:
                                       condition:
                                         description: Agent condition expression to evaluate whether to apply this stream.
+                                        maxLength: 10000
+                                        nullable: true
                                         type: string
                                       deprecated:
                                         $ref: '#/components/schemas/Kibana_HTTP_APIs_deprecation_info'
@@ -34934,7 +34950,7 @@ paths:
 
         Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
 
-        Delete datastream assets for a specific input package, by data stream name.<br/><br/>[Required authorization] Route required privileges: integrations-all AND fleet-agent-policies-all.
+        Delete datastream assets for a specific package, by data stream name.<br/><br/>[Required authorization] Route required privileges: integrations-all AND fleet-agent-policies-all.
       operationId: delete-fleet-epm-packages-pkgname-pkgversion-datastream-assets
       parameters:
         - description: A required header to protect against CSRF attacks
@@ -35005,7 +35021,7 @@ paths:
                   - message
                   - attributes
           description: Bad Request
-      summary: Delete assets for an input package
+      summary: Delete assets for a package
       tags:
         - Elastic Package Manager (EPM)
       x-metaTags:
@@ -59410,159 +59426,6 @@ paths:
       x-metaTags:
         - content: Kibana, Elastic Cloud Serverless
           name: product_name
-  /api/streams/{name}/significant_events/_generate:
-    post:
-      description: |-
-        **Spaces method and path for this operation:**
-
-        <div><span class="operation-verb post">post</span>&nbsp;<span class="operation-path">/s/{space_id}/api/streams/{name}/significant_events/_generate</span></div>
-
-        Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
-
-        Generate significant events queries based on the stream data<br/><br/>[Required authorization] Route required privileges: read_stream.
-      operationId: post-streams-name-significant-events-generate
-      parameters:
-        - description: A required header to protect against CSRF attacks
-          in: header
-          name: kbn-xsrf
-          required: true
-          schema:
-            example: 'true'
-            type: string
-        - description: The name of the stream.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-        - description: Optional connector ID. If not provided, the default AI connector from settings will be used.
-          in: query
-          name: connectorId
-          required: false
-          schema:
-            type: string
-        - description: Start of the time range as an ISO 8601 date string.
-          in: query
-          name: from
-          required: true
-          schema:
-            type: string
-        - description: End of the time range as an ISO 8601 date string.
-          in: query
-          name: to
-          required: true
-          schema:
-            type: string
-        - description: Number of sample documents to use for generation from the current data of stream
-          in: query
-          name: sampleDocsSize
-          required: false
-          schema:
-            type: number
-      requestBody:
-        content:
-          application/json:
-            examples: {}
-            schema:
-              anyOf:
-                - additionalProperties: false
-                  type: object
-                  properties: {}
-                - nullable: true
-                - {}
-      responses:
-        '200':
-          description: Generated significant event query definitions.
-      summary: Generate significant events
-      tags:
-        - streams
-      x-state: Experimental
-      x-metaTags:
-        - content: Kibana, Elastic Cloud Serverless
-          name: product_name
-  /api/streams/{name}/significant_events/_preview:
-    post:
-      description: |-
-        **Spaces method and path for this operation:**
-
-        <div><span class="operation-verb post">post</span>&nbsp;<span class="operation-path">/s/{space_id}/api/streams/{name}/significant_events/_preview</span></div>
-
-        Refer to [Spaces](https://www.elastic.co/docs/deploy-manage/manage-spaces) for more information.
-
-        Preview significant event results based on a given query<br/><br/>[Required authorization] Route required privileges: read_stream.
-      operationId: post-streams-name-significant-events-preview
-      parameters:
-        - description: A required header to protect against CSRF attacks
-          in: header
-          name: kbn-xsrf
-          required: true
-          schema:
-            example: 'true'
-            type: string
-        - description: The name of the stream.
-          in: path
-          name: name
-          required: true
-          schema:
-            type: string
-        - description: Start of the time range as an ISO 8601 date string.
-          in: query
-          name: from
-          required: true
-          schema:
-            type: string
-        - description: End of the time range as an ISO 8601 date string.
-          in: query
-          name: to
-          required: true
-          schema:
-            type: string
-        - description: The bucket size for aggregating events (e.g. "1m", "1h").
-          in: query
-          name: bucketSize
-          required: true
-          schema:
-            pattern: ^(\d+)([smhd])$
-            type: string
-      requestBody:
-        content:
-          application/json:
-            examples:
-              previewSignificantEvents:
-                value:
-                  query:
-                    esql:
-                      query: FROM logs.nginx | WHERE log.level == "error" | STATS count = COUNT(*) BY host.name
-            schema:
-              additionalProperties: false
-              type: object
-              properties:
-                query:
-                  additionalProperties: false
-                  type: object
-                  properties:
-                    esql:
-                      additionalProperties: false
-                      type: object
-                      properties:
-                        query:
-                          type: string
-                      required:
-                        - query
-                  required:
-                    - esql
-              required:
-                - query
-      responses:
-        '200':
-          description: Significant event preview results.
-      summary: Preview significant events
-      tags:
-        - streams
-      x-state: Experimental
-      x-metaTags:
-        - content: Kibana, Elastic Cloud Serverless
-          name: product_name
   /api/streams/{streamName}/attachments:
     get:
       description: |-
@@ -61428,6 +61291,16 @@ paths:
             maxItems: 25
             minItems: 1
             type: array
+        - description: Filter aggregations by managed status.
+          in: query
+          name: managed
+          required: false
+          schema:
+            enum:
+              - all
+              - managed
+              - unmanaged
+            type: string
       responses:
         '200':
           content:
@@ -69166,10 +69039,43 @@ components:
       additionalProperties: false
       description: APM service map embeddable schema
       properties:
+        alert_status_filter:
+          items:
+            enum:
+              - active
+              - recovered
+              - untracked
+              - delayed
+            type: string
+          maxItems: 4
+          type: array
+        anomaly_severity_filter:
+          items:
+            enum:
+              - critical
+              - major
+              - minor
+              - warning
+              - low
+              - unknown
+            type: string
+          maxItems: 6
+          type: array
+        connection_filter:
+          items:
+            enum:
+              - orphaned
+              - connected
+            type: string
+          maxItems: 2
+          type: array
         description:
           type: string
         environment:
           default: ENVIRONMENT_ALL
+          type: string
+        find_query:
+          maxLength: 2048
           type: string
         hide_border:
           type: boolean
@@ -69177,10 +69083,27 @@ components:
           type: boolean
         kuery:
           type: string
+        map_orientation:
+          enum:
+            - horizontal
+            - vertical
+          type: string
         service_group_id:
           type: string
         service_name:
           type: string
+        slo_status_filter:
+          items:
+            enum:
+              - healthy
+              - degrading
+              - violated
+              - noData
+            type: string
+          maxItems: 4
+          type: array
+        sync_with_dashboard_filters:
+          type: boolean
         time_range:
           $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-es-query-server-timeRangeSchema'
         title:
@@ -71151,7 +71074,12 @@ components:
           type: string
         condition:
           description: Agent condition expression to evaluate whether to apply this integration to its inputs.
+          maxLength: 10000
+          nullable: true
           type: string
+        create_dataset_templates:
+          description: When true, install dedicated index templates for streams with a custom data_stream.dataset. Defaults to true for input packages, false for integration packages.
+          type: boolean
         description:
           description: Package policy description
           type: string
@@ -71189,6 +71117,8 @@ components:
             properties:
               condition:
                 description: Agent condition expression to evaluate whether to apply this input.
+                maxLength: 10000
+                nullable: true
                 type: string
               config:
                 additionalProperties:
@@ -71228,6 +71158,8 @@ components:
                       nullable: true
                     condition:
                       description: Agent condition expression to evaluate whether to apply this stream.
+                      maxLength: 10000
+                      nullable: true
                       type: string
                     config:
                       additionalProperties:
@@ -73739,6 +73671,8 @@ components:
           type: string
         condition:
           description: Agent condition expression to evaluate whether to apply this integration to its inputs.
+          maxLength: 10000
+          nullable: true
           type: string
         created_at:
           type: string
@@ -73807,6 +73741,8 @@ components:
                 nullable: true
               condition:
                 description: Agent condition expression to evaluate whether to apply this input.
+                maxLength: 10000
+                nullable: true
                 type: string
               config:
                 additionalProperties:
@@ -73846,6 +73782,8 @@ components:
                       nullable: true
                     condition:
                       description: Agent condition expression to evaluate whether to apply this stream.
+                      maxLength: 10000
+                      nullable: true
                       type: string
                     config:
                       additionalProperties:
@@ -74129,6 +74067,10 @@ components:
     Kibana_HTTP_APIs_es_asset_reference:
       additionalProperties: false
       properties:
+        customDataStreamOriginDataset:
+          type: string
+        customDataStreamOriginType:
+          type: string
         deferred:
           type: boolean
         id:
@@ -79861,6 +79803,30 @@ components:
         - message
         - panel_type
         - panel_config
+      title: Dropped panel
+      type: object
+    Kibana_HTTP_APIs_kbn-dashboard-dropped-property-warning:
+      additionalProperties: false
+      description: A panel that was excluded from the response because its type is not supported by the API.
+      properties:
+        key:
+          description: The name of the property that was dropped.
+          type: string
+        message:
+          description: Human-readable explanation of why the property was dropped.
+          type: string
+        type:
+          enum:
+            - dropped_property
+          type: string
+        value:
+          description: The original value of the property that was dropped.
+          nullable: true
+      required:
+        - type
+        - message
+        - key
+        - value
       title: Dropped panel
       type: object
     Kibana_HTTP_APIs_kbn-dashboard-options:
@@ -91326,6 +91292,8 @@ components:
           type: string
         condition:
           description: Agent condition expression to evaluate whether to apply this integration to its inputs.
+          maxLength: 10000
+          nullable: true
           type: string
         created_at:
           type: string
@@ -91380,6 +91348,8 @@ components:
                     nullable: true
                   condition:
                     description: Agent condition expression to evaluate whether to apply this input.
+                    maxLength: 10000
+                    nullable: true
                     type: string
                   config:
                     additionalProperties:
@@ -91419,6 +91389,8 @@ components:
                           nullable: true
                         condition:
                           description: Agent condition expression to evaluate whether to apply this stream.
+                          maxLength: 10000
+                          nullable: true
                           type: string
                         config:
                           additionalProperties:
@@ -91539,6 +91511,8 @@ components:
                 properties:
                   condition:
                     description: Agent condition expression to evaluate whether to apply this input.
+                    maxLength: 10000
+                    nullable: true
                     type: string
                   deprecated:
                     $ref: '#/components/schemas/Kibana_HTTP_APIs_deprecation_info'
@@ -91552,6 +91526,8 @@ components:
                       properties:
                         condition:
                           description: Agent condition expression to evaluate whether to apply this stream.
+                          maxLength: 10000
+                          nullable: true
                           type: string
                         deprecated:
                           $ref: '#/components/schemas/Kibana_HTTP_APIs_deprecation_info'
@@ -94742,7 +94718,12 @@ components:
               type: string
         condition:
           description: Agent condition expression to evaluate whether to apply this integration to its inputs.
+          maxLength: 10000
+          nullable: true
           type: string
+        create_dataset_templates:
+          description: When true, install dedicated index templates for streams with a custom data_stream.dataset. Defaults to true for input packages, false for integration packages.
+          type: boolean
         description:
           description: Policy description.
           type: string
@@ -94777,6 +94758,8 @@ components:
             properties:
               condition:
                 description: Agent condition expression to evaluate whether to apply this input.
+                maxLength: 10000
+                nullable: true
                 type: string
               deprecated:
                 $ref: '#/components/schemas/Kibana_HTTP_APIs_deprecation_info'
@@ -94790,6 +94773,8 @@ components:
                   properties:
                     condition:
                       description: Agent condition expression to evaluate whether to apply this stream.
+                      maxLength: 10000
+                      nullable: true
                       type: string
                     deprecated:
                       $ref: '#/components/schemas/Kibana_HTTP_APIs_deprecation_info'
@@ -99673,6 +99658,8 @@ components:
           type: string
         condition:
           description: Agent condition expression to evaluate whether to apply this integration to its inputs.
+          maxLength: 10000
+          nullable: true
           type: string
         description:
           description: Package policy description
@@ -99707,6 +99694,8 @@ components:
             properties:
               condition:
                 description: Agent condition expression to evaluate whether to apply this input.
+                maxLength: 10000
+                nullable: true
                 type: string
               config:
                 additionalProperties:
@@ -99746,6 +99735,8 @@ components:
                       nullable: true
                     condition:
                       description: Agent condition expression to evaluate whether to apply this stream.
+                      maxLength: 10000
+                      nullable: true
                       type: string
                     config:
                       additionalProperties:
