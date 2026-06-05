@@ -170,6 +170,36 @@ describe('fetchBaselineBehavior', () => {
       expect(tsRange.range['@timestamp'].gte).toBe(1_700_000_000_000);
     });
 
+    it('uses toMs as the upper bound when toMs is before the bucket span end', async () => {
+      // timestamp=1_000_000, bucketSpanMs=3_600_000 → bucket end = 4_600_000
+      // toMs=2_000_000 < 4_600_000, so lte should be capped at toMs
+      const anomaly = makeAnomaly({ timestamp: 1_000_000 });
+      mockEsSearch.mockResolvedValueOnce({ aggregations: {} });
+
+      await fetchBaselineBehavior({ ...defaultOpts, anomaly, toMs: 2_000_000, esClient, logger });
+
+      const body = mockEsSearch.mock.calls[0][0];
+      const tsRange = body.query.bool.filter.find(
+        (f: unknown) => typeof f === 'object' && f !== null && 'range' in (f as object)
+      ) as { range: { '@timestamp': { lte: number } } };
+      expect(tsRange.range['@timestamp'].lte).toBe(2_000_000);
+    });
+
+    it('uses the bucket span end as the upper bound when toMs is after the bucket span end', async () => {
+      // timestamp=1_000_000, bucketSpanMs=3_600_000 → bucket end = 4_600_000
+      // toMs=5_000_000 > 4_600_000, so lte should remain at the bucket end
+      const anomaly = makeAnomaly({ timestamp: 1_000_000 });
+      mockEsSearch.mockResolvedValueOnce({ aggregations: {} });
+
+      await fetchBaselineBehavior({ ...defaultOpts, anomaly, toMs: 5_000_000, esClient, logger });
+
+      const body = mockEsSearch.mock.calls[0][0];
+      const tsRange = body.query.bool.filter.find(
+        (f: unknown) => typeof f === 'object' && f !== null && 'range' in (f as object)
+      ) as { range: { '@timestamp': { lte: number } } };
+      expect(tsRange.range['@timestamp'].lte).toBe(1_000_000 + 3_600_000);
+    });
+
     it('returns original anomaly (with anomalousValue) when search throws', async () => {
       const anomaly = makeAnomaly({ byFieldValue: 'evil-ip' });
       mockEsSearch.mockRejectedValueOnce(new Error('cluster unavailable'));
@@ -244,6 +274,28 @@ describe('fetchBaselineBehavior', () => {
       const body = mockEsSearch.mock.calls[0][0];
       expect(body.runtime_mappings.hour_of_day).toBeDefined();
       expect(body.runtime_mappings.day_of_week).toBeDefined();
+    });
+
+    it('caps the timestamp upper bound at toMs when toMs is before the bucket span end', async () => {
+      // timestamp=1_000_000, bucketSpanMs=3_600_000 → bucket end = 4_600_000
+      // toMs=2_000_000 < 4_600_000, so lte should be capped at toMs
+      const anomaly = makeAnomaly({ actual: 43200, timestamp: 1_000_000 });
+      mockEsSearch.mockResolvedValueOnce({ aggregations: { time_bucket: { doc_count: 0 } } });
+
+      await fetchBaselineBehavior({
+        ...defaultOpts,
+        jobConfig: timeOfDayConfig,
+        anomaly,
+        toMs: 2_000_000,
+        esClient,
+        logger,
+      });
+
+      const body = mockEsSearch.mock.calls[0][0];
+      const tsRange = body.query.bool.filter.find(
+        (f: unknown) => typeof f === 'object' && f !== null && 'range' in (f as object)
+      ) as { range: { '@timestamp': { lte: number } } };
+      expect(tsRange.range['@timestamp'].lte).toBe(2_000_000);
     });
 
     it('search request matches snapshot', async () => {

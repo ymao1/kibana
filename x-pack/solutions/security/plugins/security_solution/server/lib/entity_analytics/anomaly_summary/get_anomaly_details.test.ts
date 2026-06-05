@@ -315,13 +315,14 @@ describe('getEntityAnomalies', () => {
     expect(getJobConfig.mock.calls[0][0].jobIds).toHaveLength(2);
   });
 
-  it('forwards fromMs, jobIds, sort, and pagination to searchEntityAnomalies', async () => {
+  it('forwards fromMs, toMs, jobIds, sort, and pagination to searchEntityAnomalies', async () => {
     searchEntityAnomalies.mockResolvedValue([]);
 
     await getEntityAnomalies({
       ...defaultParams,
       esClient,
       fromMs: 1_700_000_000_000,
+      toMs: 1_700_100_000_000,
       jobIds: ['job-A'],
       sort: [{ field: 'record_score', order: 'desc' }],
       offset: 10,
@@ -336,11 +337,30 @@ describe('getEntityAnomalies', () => {
         entityId: 'user:alice',
         entityType: 'user',
         fromMs: 1_700_000_000_000,
+        toMs: 1_700_100_000_000,
         jobIds: ['job-A'],
         sort: [{ field: 'record_score', order: 'desc' }],
         from: 10,
         size: 20,
       })
+    );
+  });
+
+  it('forwards toMs to fetchBaselineBehavior', async () => {
+    const anomaly = makeAnomaly({ _id: 'a1' });
+    searchEntityAnomalies.mockResolvedValue([anomaly]);
+
+    await getEntityAnomalies({
+      ...defaultParams,
+      esClient,
+      toMs: 1_700_100_000_000,
+      logger,
+      ml: mockMl,
+      soClient,
+    });
+
+    expect(fetchBaselineBehavior).toHaveBeenCalledWith(
+      expect.objectContaining({ toMs: 1_700_100_000_000 })
     );
   });
 });

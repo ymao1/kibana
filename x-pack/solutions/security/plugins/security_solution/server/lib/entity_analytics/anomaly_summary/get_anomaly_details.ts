@@ -52,6 +52,7 @@ interface GetEntityAnomaliesParams {
   entityType: EntityType;
   esClient: ElasticsearchClient;
   fromMs?: number;
+  toMs?: number;
   jobIds?: string[];
   logger: Logger;
   ml: MlPluginSetup;
@@ -67,6 +68,7 @@ export const getEntityAnomalies = async ({
   entityType,
   esClient,
   fromMs,
+  toMs,
   jobIds,
   logger,
   ml,
@@ -80,6 +82,7 @@ export const getEntityAnomalies = async ({
     entityType,
     entityId,
     fromMs,
+    toMs,
     jobIds,
     sort,
     from: offset,
@@ -106,6 +109,7 @@ export const getEntityAnomalies = async ({
         entityType,
         esClient,
         fromMs,
+        toMs,
         jobConfig: jobConfigs.get(anomaly.jobId) ?? null,
         jobId: anomaly.jobId,
         logger,

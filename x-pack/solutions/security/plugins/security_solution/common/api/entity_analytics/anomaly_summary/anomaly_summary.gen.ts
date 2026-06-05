@@ -31,6 +31,10 @@ export const AnomalySummaryRequestBody = lazySchema(() =>
      */
     from: z.number().int().min(0).optional(),
     /**
+     * End time as epoch milliseconds; only anomalies at or before this timestamp are returned
+     */
+    to: z.number().int().min(0).optional(),
+    /**
      * Filter results to the specified ML job IDs; returns all jobs when omitted
      */
     jobIds: z.array(z.string().max(150)).max(200).optional(),

@@ -20,6 +20,8 @@ import type { EntityAnalyticsRoutesDeps } from '../types';
 import { withMinimumLicense } from '../utils/with_minimum_license';
 import { getEntityAnomalies } from './get_anomaly_details';
 
+const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
+
 export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnalyticsRoutesDeps) => {
   router.versioned
     .post({
@@ -46,7 +48,15 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
         const siemResponse = buildSiemResponse(response);
         try {
           const { entity_id: entityId, entity_type: entityType } = request.params;
-          const { page = 1, pageSize = 100, from, jobIds, sort } = request.body ?? {};
+          const { page = 1, pageSize = 100, from, to, jobIds, sort } = request.body ?? {};
+
+          // Validate that `from` is not older than 1 year ago
+          if (from !== undefined && from < Date.now() - ONE_YEAR_MS) {
+            return siemResponse.error({
+              statusCode: 400,
+              body: '`from` must not be older than 1 year',
+            });
+          }
 
           const secSol = await context.securitySolution;
           const core = await context.core;
@@ -65,6 +75,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             entityType,
             esClient,
             fromMs: from,
+            toMs: to,
             jobIds,
             logger,
             ml,

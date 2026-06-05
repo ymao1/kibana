@@ -82,6 +82,7 @@ export interface SearchEntityAnomaliesOpts {
   entityType: EntityType;
   entityId: string;
   fromMs?: number;
+  toMs?: number;
   jobIds?: string[];
   sort?: Array<{ field: AnomalySortField; order: AnomalySortOrder }>;
   from?: number;
@@ -95,6 +96,7 @@ export const searchEntityAnomalies = async ({
   entityType,
   entityId,
   fromMs,
+  toMs,
   jobIds: filterJobIds,
   sort = DEFAULT_SORT_SPEC,
   from = 0,
@@ -130,7 +132,14 @@ export const searchEntityAnomalies = async ({
               { term: { result_type: 'record' } },
               { term: { is_interim: false } },
               { range: { record_score: { gte: 1 } } },
-              { range: { timestamp: { gte: fromMs ?? `now-${ML_AD_LOOKBACK}` } } },
+              {
+                range: {
+                  timestamp: {
+                    gte: fromMs ?? `now-${ML_AD_LOOKBACK}`,
+                    ...(toMs !== undefined ? { lte: toMs } : {}),
+                  },
+                },
+              },
               { term: { entity_id: entityId } },
               { terms: { job_id: effectiveJobIds } },
             ],

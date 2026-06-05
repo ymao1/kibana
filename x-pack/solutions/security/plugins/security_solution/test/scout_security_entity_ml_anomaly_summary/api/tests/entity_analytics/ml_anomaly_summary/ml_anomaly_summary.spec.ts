@@ -73,7 +73,7 @@ apiTest.describe(
         responseType: 'json',
         body: {
           policy_ids: [agentPolicyId],
-          package: { name: 'pad', version: '2.1.0' },
+          package: { name: 'pad', version: '2.1.1' },
           name: 'pad-1',
           description: '',
           namespace: '',
@@ -267,6 +267,29 @@ apiTest.describe(
         expect(body.anomalies).toHaveLength(0);
       }
     );
+
+    apiTest('returns 400 when from is older than 1 year', async ({ apiClient }) => {
+      const twoYearsAgoMs = Date.now() - 2 * 365 * 24 * 60 * 60 * 1000;
+      const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+        headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+        responseType: 'json',
+        body: { from: twoYearsAgoMs },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.body.message).toContain('`from` must not be older than 1 year');
+    });
+
+    apiTest('returns 200 when from is within 1 year', async ({ apiClient }) => {
+      const thirtyDaysAgoMs = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const response = await apiClient.post(buildUrl(NO_BEHAVIORS_EUID, 'host'), {
+        headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+        responseType: 'json',
+        body: { from: thirtyDaysAgoMs },
+      });
+
+      expect(response.statusCode).toBe(200);
+    });
 
     apiTest('anomaly summary filters anomalies by jobIds', async ({ apiClient }) => {
       const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {

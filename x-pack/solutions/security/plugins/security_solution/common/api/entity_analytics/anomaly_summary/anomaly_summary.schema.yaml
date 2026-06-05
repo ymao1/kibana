@@ -61,6 +61,11 @@ components:
           format: int64
           minimum: 0
           description: Start time as epoch milliseconds; only anomalies at or after this timestamp are returned
+        to:
+          type: integer
+          format: int64
+          minimum: 0
+          description: End time as epoch milliseconds; only anomalies at or before this timestamp are returned
         jobIds:
           type: array
           maxItems: 200

@@ -94,6 +94,7 @@ interface QuerySharedOpts {
   entityType: EntityType;
   esClient: ElasticsearchClient;
   fromMs?: number;
+  toMs?: number;
   jobConfig: JobConfig;
   jobId: string;
   logger: Logger;
@@ -105,6 +106,7 @@ const fetchRareBaselineForAnomaly = async ({
   entityId,
   esClient,
   fromMs,
+  toMs,
   jobConfig,
   jobId,
   logger,
@@ -129,7 +131,10 @@ const fetchRareBaselineForAnomaly = async ({
             {
               range: {
                 '@timestamp': {
-                  lte: anomaly.timestamp + jobConfig.bucketSpanMs,
+                  lte:
+                    toMs !== undefined
+                      ? Math.min(toMs, anomaly.timestamp + jobConfig.bucketSpanMs)
+                      : anomaly.timestamp + jobConfig.bucketSpanMs,
                   gte: fromMs ?? `now-${ML_AD_LOOKBACK}`,
                 },
               },
@@ -181,6 +186,7 @@ const fetchTimeBaselineForAnomaly = async ({
   entityType,
   esClient,
   fromMs,
+  toMs,
   jobConfig,
   jobId,
   logger,
@@ -238,7 +244,10 @@ const fetchTimeBaselineForAnomaly = async ({
             {
               range: {
                 '@timestamp': {
-                  lte: anomaly.timestamp + jobConfig.bucketSpanMs,
+                  lte:
+                    toMs !== undefined
+                      ? Math.min(toMs, anomaly.timestamp + jobConfig.bucketSpanMs)
+                      : anomaly.timestamp + jobConfig.bucketSpanMs,
                   gte: fromMs ?? `now-${ML_AD_LOOKBACK}`,
                 },
               },
@@ -270,6 +279,7 @@ interface FetchBaselineBehaviorOpts {
   entityType: EntityType;
   esClient: ElasticsearchClient;
   fromMs?: number;
+  toMs?: number;
   jobConfig: JobConfig | null;
   jobId: string;
   logger: Logger;
@@ -281,6 +291,7 @@ export const fetchBaselineBehavior = async ({
   entityType,
   esClient,
   fromMs,
+  toMs,
   jobConfig,
   jobId,
   logger,
@@ -301,6 +312,7 @@ export const fetchBaselineBehavior = async ({
       entityType,
       esClient,
       fromMs,
+      toMs,
       jobConfig,
       jobId,
       logger,

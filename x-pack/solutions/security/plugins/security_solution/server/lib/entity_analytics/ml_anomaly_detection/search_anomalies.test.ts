@@ -132,6 +132,43 @@ describe('searchEntityAnomalies', () => {
     expect(tsFilter).toEqual({ range: { timestamp: { gte: 1_700_000_000_000 } } });
   });
 
+  it('omits the lte bound from the timestamp filter when toMs is not provided', async () => {
+    await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
+
+    const [body] = mockMlAnomalySearch.mock.calls[0];
+    const tsFilter = body.query.bool.filter.find(
+      (f: unknown) =>
+        typeof f === 'object' &&
+        f !== null &&
+        'range' in (f as object) &&
+        'timestamp' in (f as { range: object }).range
+    );
+    expect(tsFilter.range.timestamp).not.toHaveProperty('lte');
+  });
+
+  it('uses toMs as the timestamp upper bound when provided', async () => {
+    await searchEntityAnomalies({
+      ...defaultOpts,
+      fromMs: 1_700_000_000_000,
+      toMs: 1_700_100_000_000,
+      logger,
+      ml: mockMl,
+      soClient,
+    });
+
+    const [body] = mockMlAnomalySearch.mock.calls[0];
+    const tsFilter = body.query.bool.filter.find(
+      (f: unknown) =>
+        typeof f === 'object' &&
+        f !== null &&
+        'range' in (f as object) &&
+        'timestamp' in (f as { range: object }).range
+    );
+    expect(tsFilter).toEqual({
+      range: { timestamp: { gte: 1_700_000_000_000, lte: 1_700_100_000_000 } },
+    });
+  });
+
   it('intersects filterJobIds with security job IDs', async () => {
     await searchEntityAnomalies({
       ...defaultOpts,
