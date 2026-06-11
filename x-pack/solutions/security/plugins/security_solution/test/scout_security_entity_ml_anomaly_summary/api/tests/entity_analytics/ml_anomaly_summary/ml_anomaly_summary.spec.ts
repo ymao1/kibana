@@ -7,7 +7,7 @@
 
 import { apiTest, tags } from '@kbn/scout-security';
 import { expect } from '@kbn/scout-security/api';
-import type { AnomalySummaryEntry } from '../../../../../../common/api/entity_analytics/anomaly_summary';
+import type { AnomalySummaryResponse } from '../../../../../../common/api/entity_analytics/anomaly_summary';
 import { ENTITY_ANOMALY_SUMMARY_INTERNAL_URL } from '../../../../../../common/entity_analytics/anomalies/constants';
 import {
   CAROL_EUID,
@@ -196,8 +196,8 @@ apiTest.describe(
         });
 
         expect(response.statusCode).toBe(200);
-        const body = response.body as { entityId: string; anomalies: AnomalySummaryEntry[] };
-        expect(body.entityId).toBe(CAROL_EUID);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.entity_id).toBe(CAROL_EUID);
         expect(Array.isArray(body.anomalies)).toBe(true);
         expect(body.anomalies).toHaveLength(2);
 
@@ -240,8 +240,8 @@ apiTest.describe(
         });
 
         expect(response.statusCode).toBe(200);
-        const body = response.body as { entityId: string; anomalies: AnomalySummaryEntry[] };
-        expect(body.entityId).toBe(DAVID_EUID);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.entity_id).toBe(DAVID_EUID);
         expect(body.anomalies).toHaveLength(1);
 
         const anomaly = body.anomalies[0];
@@ -262,8 +262,8 @@ apiTest.describe(
         });
 
         expect(response.statusCode).toBe(200);
-        const body = response.body as { entityId: string; anomalies: AnomalySummaryEntry[] };
-        expect(body.entityId).toBe(NO_BEHAVIORS_EUID);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.entity_id).toBe(NO_BEHAVIORS_EUID);
         expect(body.anomalies).toHaveLength(0);
       }
     );
@@ -295,11 +295,11 @@ apiTest.describe(
       const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
         headers: { ...defaultHeaders, 'elastic-api-version': '1' },
         responseType: 'json',
-        body: { jobIds: ['auth_high_count_logon_events_ea'] },
+        body: { job_ids: ['auth_high_count_logon_events_ea'] },
       });
 
       expect(response.statusCode).toBe(200);
-      const body = response.body as { entityId: string; anomalies: AnomalySummaryEntry[] };
+      const body = response.body as AnomalySummaryResponse;
       expect(body.anomalies).toHaveLength(1);
       expect(body.anomalies[0].jobId).toBe('auth_high_count_logon_events_ea');
     });
@@ -308,20 +308,26 @@ apiTest.describe(
       const page1Response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
         headers: { ...defaultHeaders, 'elastic-api-version': '1' },
         responseType: 'json',
-        body: { pageSize: 1, page: 1 },
+        body: { page_size: 1, page: 1 },
       });
       expect(page1Response.statusCode).toBe(200);
-      const page1Body = page1Response.body as { anomalies: AnomalySummaryEntry[] };
+      const page1Body = page1Response.body as AnomalySummaryResponse;
       expect(page1Body.anomalies).toHaveLength(1);
+      expect(page1Body.total).toBe(2);
+      expect(page1Body.page).toBe(1);
+      expect(page1Body.page_size).toBe(1);
 
       const page2Response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
         headers: { ...defaultHeaders, 'elastic-api-version': '1' },
         responseType: 'json',
-        body: { pageSize: 1, page: 2 },
+        body: { page_size: 1, page: 2 },
       });
       expect(page2Response.statusCode).toBe(200);
-      const page2Body = page2Response.body as { anomalies: AnomalySummaryEntry[] };
+      const page2Body = page2Response.body as AnomalySummaryResponse;
       expect(page2Body.anomalies).toHaveLength(1);
+      expect(page2Body.total).toBe(2);
+      expect(page2Body.page).toBe(2);
+      expect(page2Body.page_size).toBe(1);
 
       expect(page1Body.anomalies[0].jobId).not.toBe(page2Body.anomalies[0].jobId);
     });
@@ -334,7 +340,7 @@ apiTest.describe(
       });
 
       expect(response.statusCode).toBe(200);
-      const body = response.body as { anomalies: AnomalySummaryEntry[] };
+      const body = response.body as AnomalySummaryResponse;
       expect(body.anomalies).toHaveLength(2);
       expect(body.anomalies[0].recordScore).toBeGreaterThanOrEqual(body.anomalies[1].recordScore);
     });
@@ -349,7 +355,7 @@ apiTest.describe(
         });
 
         expect(response.statusCode).toBe(200);
-        const body = response.body as { anomalies: AnomalySummaryEntry[] };
+        const body = response.body as AnomalySummaryResponse;
 
         const rareAnomaly = body.anomalies.find(
           (a) => a.jobId === 'pad_windows_rare_region_name_by_user_ea'

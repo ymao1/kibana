@@ -87,7 +87,11 @@ export const getJobConfig = async ({
       });
     }
   } catch (err) {
-    logger.error(`Failed to get job info for jobs [${jobIds.join(', ')}]: ${err}`);
+    logger.error(
+      `Failed to get job info for jobs [${jobIds.join(', ')}]: ${
+        err instanceof Error ? err.message : String(err)
+      }`
+    );
   }
 
   return result;

@@ -4,42 +4,6 @@ info:
   version: '2023-10-31'
 
 paths:
-  /internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_overview:
-    post:
-      x-labels: [ess, serverless]
-      x-codegen-enabled: true
-      operationId: GetAnomalyOverview
-      summary: Get a quick anomaly overview for an entity
-      description: Returns a compact list of anomaly records with MITRE threat tactic metadata and summary counts. Defaults to a 30-day lookback. Does not perform baseline enrichment.
-      parameters:
-        - name: entity_type
-          in: path
-          required: true
-          schema:
-            type: string
-            enum: [user, host]
-          description: Entity type — determines which EUID runtime mapping is used when searching the anomalies index
-        - name: entity_id
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
-            maxLength: 1000
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AnomalyOverviewRequestBody'
-      responses:
-        '200':
-          description: Anomaly overview retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AnomalyOverviewResponse'
-
   /internal/entity_analytics/entities/{entity_type}/{entity_id}/anomaly_summary:
     post:
       x-labels: [ess, serverless]
@@ -86,7 +50,7 @@ components:
           minimum: 1
           default: 1
           description: Page number (1-indexed)
-        pageSize:
+        page_size:
           type: integer
           minimum: 1
           maximum: 1000
@@ -102,7 +66,7 @@ components:
           format: int64
           minimum: 0
           description: End time as epoch milliseconds; only anomalies at or before this timestamp are returned
-        jobIds:
+        job_ids:
           type: array
           maxItems: 200
           items:
@@ -231,23 +195,28 @@ components:
     AnomalySummaryResponse:
       type: object
       required:
-        - entityId
+        - entity_id
         - anomalies
-        - totalAnomaliesCount
+        - total
+        - page
+        - page_size
       properties:
-        entityId:
+        entity_id:
           type: string
           maxLength: 200
-        entityType:
+        entity_type:
           type: string
           maxLength: 100
         anomalies:
           type: array
           items:
             $ref: '#/components/schemas/AnomalySummaryEntry'
-        totalAnomaliesCount:
+        total:
           type: integer
-          description: Total number of anomaly records matching the query (across all pages)
+        page:
+          type: integer
+        page_size:
+          type: integer
 
     AnomalyOverviewRequestBody:
       type: object

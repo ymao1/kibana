@@ -13,7 +13,7 @@ import type {
 } from '@elastic/elasticsearch/lib/api/types';
 import type { EntityType } from '@kbn/entity-store/common';
 import { euid } from '@kbn/entity-store/common/euid_helpers';
-import { ML_AD_LOOKBACK } from './constants';
+import { ENTITY_ANOMALY_DEFAULT_LOOKBACK } from '../../../../common/constants';
 import type { AnomalyHit, EnrichedAnomalyHit } from './types';
 import type { JobConfig } from './get_job_config';
 
@@ -113,6 +113,13 @@ const fetchRareBaselineForAnomaly = async ({
   runtimeMappings,
 }: QuerySharedOpts): Promise<EnrichedAnomalyHit> => {
   try {
+    if (!anomaly.byFieldName) {
+      logger.warn(
+        `Cannot fetch rare baseline for anomaly without by_field_name (job: ${jobId}, entity: ${entityId})`
+      );
+      return { ...anomaly, anomalousValue: anomaly.byFieldValue };
+    }
+
     const additionalFilters = anomaly.byFieldName
       ? [{ exists: { field: anomaly.byFieldName } }]
       : [];
@@ -135,7 +142,7 @@ const fetchRareBaselineForAnomaly = async ({
                     toMs !== undefined
                       ? Math.min(toMs, anomaly.timestamp + jobConfig.bucketSpanMs)
                       : anomaly.timestamp + jobConfig.bucketSpanMs,
-                  gte: fromMs ?? `now-${ML_AD_LOOKBACK}`,
+                  gte: fromMs ?? `now-${ENTITY_ANOMALY_DEFAULT_LOOKBACK}`,
                 },
               },
             },
@@ -248,7 +255,7 @@ const fetchTimeBaselineForAnomaly = async ({
                     toMs !== undefined
                       ? Math.min(toMs, anomaly.timestamp + jobConfig.bucketSpanMs)
                       : anomaly.timestamp + jobConfig.bucketSpanMs,
-                  gte: fromMs ?? `now-${ML_AD_LOOKBACK}`,
+                  gte: fromMs ?? `now-${ENTITY_ANOMALY_DEFAULT_LOOKBACK}`,
                 },
               },
             },

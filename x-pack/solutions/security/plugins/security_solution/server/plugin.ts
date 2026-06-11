@@ -102,6 +102,7 @@ import {
   createSecurityRuleTypeWrapper,
   securityRuleTypeFieldMap,
 } from './lib/detection_engine/rule_types/create_security_rule_type_wrapper';
+import type { CreateSecurityRuleTypeWrapperProps } from './lib/detection_engine/rule_types/types';
 
 import { RequestContextFactory } from './request_context_factory';
 
@@ -258,7 +259,9 @@ export class Plugin implements ISecuritySolutionPlugin {
   private registerAgentBuilderAttachmentsAndTools(
     plugins: SecuritySolutionPluginSetupDependencies,
     core: SecuritySolutionPluginCoreSetupDependencies,
-    logger: Logger
+    logger: Logger,
+    previewRuleDataClient: IRuleDataClient,
+    securityRuleTypeOptions: CreateSecurityRuleTypeWrapperProps
   ): void {
     if (!plugins.agentBuilder) {
       return;
@@ -269,13 +272,26 @@ export class Plugin implements ISecuritySolutionPlugin {
     const experimentalFeatures = this.config.experimentalFeatures;
     const endpointAppContextService = this.endpointAppContextService;
 
-    registerTools(agentBuilder, core, logger, experimentalFeatures, this.isServerless).catch(
-      (error) => {
-        this.logger.error(`Error registering security tools: ${error}`);
-      }
-    );
-
-    registerAttachments(agentBuilder, core, logger).catch((error) => {
+    registerTools(
+      agentBuilder,
+      core,
+      logger,
+      experimentalFeatures,
+      {
+        config: this.config,
+        ml: plugins.ml,
+        security: plugins.security,
+        securityRuleTypeOptions,
+        previewRuleDataClient,
+        getStartServices: core.getStartServices,
+        logger,
+        isServerless: this.isServerless,
+      },
+      this.isServerless
+    ).catch((error) => {
+      this.logger.error(`Error registering security tools: ${error}`);
+    });
+    registerAttachments(agentBuilder, core, logger, experimentalFeatures).catch((error) => {
       this.logger.error(`Error registering security attachments: ${error}`);
     });
 
@@ -820,7 +836,13 @@ export class Plugin implements ISecuritySolutionPlugin {
       this.logger.warn('Task Manager not available, health diagnostic task not registered.');
     }
 
-    this.registerAgentBuilderAttachmentsAndTools(plugins, core, this.logger);
+    this.registerAgentBuilderAttachmentsAndTools(
+      plugins,
+      core,
+      this.logger,
+      previewRuleDataClient,
+      securityRuleTypeOptions
+    );
 
     if (plugins.workflowsExtensions) {
       registerWorkflowSteps(plugins.workflowsExtensions, core);

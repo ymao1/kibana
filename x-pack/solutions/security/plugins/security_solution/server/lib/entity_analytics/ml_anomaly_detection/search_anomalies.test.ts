@@ -10,11 +10,6 @@ import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import { searchEntityAnomalies } from './search_anomalies';
 import { makeHit, makeResponse } from './test_helpers';
 
-jest.mock('./constants', () => ({
-  ...jest.requireActual('./constants'),
-  ML_AD_LOOKBACK: '30d',
-}));
-
 jest.mock('./get_security_ml_job_ids', () => ({
   getSecurityMlJobIds: jest.fn().mockResolvedValue(['security-job-1', 'security-job-2']),
 }));
@@ -48,7 +43,7 @@ beforeEach(() => {
 });
 
 describe('searchEntityAnomalies', () => {
-  it('returns empty array without querying ML when no security job IDs are known', async () => {
+  it('returns empty result without querying ML when no security job IDs are known', async () => {
     const { getSecurityMlJobIds } = jest.requireMock('./get_security_ml_job_ids');
     getSecurityMlJobIds.mockResolvedValueOnce([]);
 
@@ -59,7 +54,7 @@ describe('searchEntityAnomalies', () => {
     expect(mockMlAnomalySearch).not.toHaveBeenCalled();
   });
 
-  it('returns empty array when filterJobIds has no overlap with security job IDs', async () => {
+  it('returns empty result when filterJobIds has no overlap with security job IDs', async () => {
     const result = await searchEntityAnomalies({
       ...defaultOpts,
       jobIds: ['non-security-job'],
@@ -100,7 +95,7 @@ describe('searchEntityAnomalies', () => {
     );
   });
 
-  it('uses now-ML_AD_LOOKBACK as the timestamp lower bound when fromMs is not provided', async () => {
+  it('uses now-ENTITY_ANOMALY_DEFAULT_LOOKBACK as the timestamp lower bound when fromMs is not provided', async () => {
     await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
 
     const [body] = mockMlAnomalySearch.mock.calls[0];

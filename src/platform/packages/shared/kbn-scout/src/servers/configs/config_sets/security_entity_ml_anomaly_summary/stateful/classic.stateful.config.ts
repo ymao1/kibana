@@ -9,7 +9,7 @@
 
 import type { ScoutServerConfig } from '../../../../../types';
 import { servers as defaultConfig } from '../../default/stateful/classic.stateful.config';
-import { securityEntityMlBehaviorMaintainerServerArgs } from '../shared';
+import { securityEntityMlAnomalyDetailsServerArgs } from '../shared';
 
 export const servers: ScoutServerConfig = {
   ...defaultConfig,
@@ -17,7 +17,7 @@ export const servers: ScoutServerConfig = {
     ...defaultConfig.kbnTestServer,
     serverArgs: [
       ...defaultConfig.kbnTestServer.serverArgs,
-      ...securityEntityMlBehaviorMaintainerServerArgs,
+      ...securityEntityMlAnomalyDetailsServerArgs,
     ],
   },
 };

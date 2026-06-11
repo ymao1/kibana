@@ -12,8 +12,6 @@ import { getEntityAnomalies } from './get_anomaly_details';
 import type { AnomalyHit } from '../ml_anomaly_detection/types';
 import type { JobConfig } from '../ml_anomaly_detection/get_job_config';
 
-// Mock the barrel directly to avoid "Cannot redefine property: getJobConfig" caused by
-// the barrel exporting getJobConfig from two different source files.
 jest.mock('../ml_anomaly_detection', () => ({
   searchEntityAnomalies: jest.fn(),
   fetchBaselineBehavior: jest.fn(),
@@ -57,7 +55,6 @@ let mockMl: MlPluginSetup;
 const defaultParams = {
   entityId: 'user:alice',
   entityType: 'user' as const,
-  namespace: 'default',
 };
 
 beforeEach(() => {

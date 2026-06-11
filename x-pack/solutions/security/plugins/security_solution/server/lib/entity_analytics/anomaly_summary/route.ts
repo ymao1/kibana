@@ -125,7 +125,14 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
         const siemResponse = buildSiemResponse(response);
         try {
           const { entity_id: entityId, entity_type: entityType } = request.params;
-          const { page = 1, pageSize = 100, from, to, jobIds, sort } = request.body ?? {};
+          const {
+            page = 1,
+            page_size: pageSize = 100,
+            from,
+            to,
+            job_ids: jobIds,
+            sort,
+          } = request.body ?? {};
 
           // Validate that `from` is not older than 1 year ago
           if (from !== undefined && from < Date.now() - ONE_YEAR_MS) {
@@ -135,17 +142,21 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             });
           }
 
-          const secSol = await context.securitySolution;
           const core = await context.core;
           const esClient = core.elasticsearch.client.asCurrentUser;
           const soClient = core.savedObjects.client;
 
-          const namespace = secSol.getSpaceId();
-
           if (!ml) {
             logger.warn('ML plugin is unavailable; returning empty anomaly summary.');
             return response.ok({
-              body: { entityId, entityType, anomalies: [], totalAnomaliesCount: 0 },
+              body: {
+                entity_id: entityId,
+                entity_type: entityType,
+                anomalies: [],
+                total: 0,
+                page,
+                page_size: pageSize,
+              },
             });
           }
 
@@ -158,7 +169,6 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             jobIds,
             logger,
             ml,
-            namespace,
             offset: (page - 1) * pageSize,
             pageSize,
             sort,
@@ -167,10 +177,12 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
 
           return response.ok({
             body: {
-              entityId,
-              entityType,
+              entity_id: entityId,
+              entity_type: entityType,
               anomalies,
-              totalAnomaliesCount: total,
+              total,
+              page,
+              page_size: pageSize,
             },
           });
         } catch (err) {

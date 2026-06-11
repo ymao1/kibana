@@ -56,7 +56,6 @@ interface GetEntityAnomaliesParams {
   jobIds?: string[];
   logger: Logger;
   ml: MlPluginSetup;
-  namespace: string;
   offset?: number;
   pageSize?: number;
   sort?: Array<{ field: AnomalySortField; order: AnomalySortOrder }>;

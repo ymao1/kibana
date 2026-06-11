@@ -25,7 +25,7 @@ export const AnomalySummaryRequestBody = lazySchema(() =>
     /**
      * Number of results per page
      */
-    pageSize: z.number().int().min(1).max(1000).optional().default(100),
+    page_size: z.number().int().min(1).max(1000).optional().default(100),
     /**
      * Start time as epoch milliseconds; only anomalies at or after this timestamp are returned
      */
@@ -37,7 +37,7 @@ export const AnomalySummaryRequestBody = lazySchema(() =>
     /**
      * Filter results to the specified ML job IDs; returns all jobs when omitted
      */
-    jobIds: z.array(z.string().max(150)).max(200).optional(),
+    job_ids: z.array(z.string().max(150)).max(200).optional(),
     /**
      * Sort criteria applied in order.
      */
@@ -108,13 +108,12 @@ export type AnomalySummaryEntry = z.infer<typeof AnomalySummaryEntry>;
 
 export const AnomalySummaryResponse = lazySchema(() =>
   z.object({
-    entityId: z.string().max(200),
-    entityType: z.string().max(100).optional(),
+    entity_id: z.string().max(200),
+    entity_type: z.string().max(100).optional(),
     anomalies: z.array(AnomalySummaryEntry),
-    /**
-     * Total number of anomaly records matching the query (across all pages)
-     */
-    totalAnomaliesCount: z.number().int(),
+    total: z.number().int(),
+    page: z.number().int(),
+    page_size: z.number().int(),
   })
 );
 export type AnomalySummaryResponse = z.infer<typeof AnomalySummaryResponse>;

@@ -9,7 +9,7 @@ import type { KibanaRequest, Logger, SavedObjectsClientContract } from '@kbn/cor
 import type { EntityType } from '@kbn/entity-store/common';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
 import { euid } from '@kbn/entity-store/common/euid_helpers';
-import { ML_AD_LOOKBACK } from './constants';
+import { ENTITY_ANOMALY_DEFAULT_LOOKBACK } from '../../../../common/constants';
 import { getSecurityMlJobIds } from './get_security_ml_job_ids';
 import type { AnomalyHit } from './types';
 
@@ -143,7 +143,7 @@ export const searchEntityAnomalies = async ({
               {
                 range: {
                   timestamp: {
-                    gte: fromMs ?? `now-${ML_AD_LOOKBACK}`,
+                    gte: fromMs ?? `now-${ENTITY_ANOMALY_DEFAULT_LOOKBACK}`,
                     ...(toMs !== undefined ? { lte: toMs } : {}),
                   },
                 },
