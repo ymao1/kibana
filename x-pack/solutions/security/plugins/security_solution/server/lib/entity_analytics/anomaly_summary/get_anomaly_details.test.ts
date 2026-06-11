@@ -67,7 +67,7 @@ beforeEach(() => {
   mockMl = {
     mlSystemProvider: jest.fn().mockReturnValue({}),
   } as unknown as MlPluginSetup;
-  searchEntityAnomalies.mockResolvedValue([]);
+  searchEntityAnomalies.mockResolvedValue({ hits: [], total: 0 });
   getJobConfig.mockResolvedValue(new Map());
   fetchBaselineBehavior.mockImplementation(
     ({ anomaly }: { anomaly: ReturnType<typeof makeAnomaly> }) => Promise.resolve(anomaly)
@@ -76,7 +76,7 @@ beforeEach(() => {
 
 describe('getEntityAnomalies', () => {
   it('returns empty array when no anomalies are found', async () => {
-    searchEntityAnomalies.mockResolvedValue([]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [], total: 0 });
 
     const result = await getEntityAnomalies({
       ...defaultParams,
@@ -86,7 +86,8 @@ describe('getEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result).toEqual([]);
+    expect(result.anomalies).toEqual([]);
+    expect(result.total).toBe(0);
     expect(fetchBaselineBehavior).not.toHaveBeenCalled();
   });
 
@@ -100,7 +101,7 @@ describe('getEntityAnomalies', () => {
       byFieldName: 'source.ip',
       byFieldValue: 'evil-ip',
     });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     fetchBaselineBehavior.mockResolvedValue({
       ...anomaly,
       baselineValues: ['10.0.0.1', '10.0.0.2'],
@@ -116,8 +117,8 @@ describe('getEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result).toHaveLength(1);
-    expect(result[0]).toMatchObject({
+    expect(result.anomalies).toHaveLength(1);
+    expect(result.anomalies[0]).toMatchObject({
       jobId: 'security-job-1',
       detectorIndex: 0,
       detectorFunction: 'rare',
@@ -135,7 +136,7 @@ describe('getEntityAnomalies', () => {
 
   it('converts numeric anomalousValue to string', async () => {
     const anomaly = makeAnomaly({ _id: 'a1' });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     fetchBaselineBehavior.mockResolvedValue({ ...anomaly, anomalousValue: 42 });
 
     const result = await getEntityAnomalies({
@@ -146,12 +147,12 @@ describe('getEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result[0].anomalousValue).toBe('42');
+    expect(result.anomalies[0].anomalousValue).toBe('42');
   });
 
   it('converts baseline values to strings', async () => {
     const anomaly = makeAnomaly({ _id: 'a1' });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     fetchBaselineBehavior.mockResolvedValue({ ...anomaly, baselineValues: [1.5, 2.5] });
 
     const result = await getEntityAnomalies({
@@ -162,13 +163,13 @@ describe('getEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result[0].baselineValues).toEqual(['1.5', '2.5']);
+    expect(result.anomalies[0].baselineValues).toEqual(['1.5', '2.5']);
   });
 
   it('preserves the query-time order', async () => {
     const a1 = makeAnomaly({ _id: 'a1', jobId: 'job-A', timestamp: 2000, recordScore: 90 });
     const a2 = makeAnomaly({ _id: 'a2', jobId: 'job-B', timestamp: 1000, recordScore: 50 });
-    searchEntityAnomalies.mockResolvedValue([a1, a2]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [a1, a2], total: 2 });
 
     fetchBaselineBehavior.mockImplementation(
       ({ anomaly, jobId }: { anomaly: unknown; jobId: string }) =>
@@ -183,14 +184,14 @@ describe('getEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result).toHaveLength(2);
-    expect(result[0].jobId).toBe('job-A');
-    expect(result[1].jobId).toBe('job-B');
+    expect(result.anomalies).toHaveLength(2);
+    expect(result.anomalies[0].jobId).toBe('job-A');
+    expect(result.anomalies[1].jobId).toBe('job-B');
   });
 
   it('rejects when fetchBaselineBehavior throws', async () => {
     const anomaly = makeAnomaly({ _id: 'a1', actual: 5, typical: 1 });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     fetchBaselineBehavior.mockRejectedValue(new Error('source index unavailable'));
 
     await expect(
@@ -210,7 +211,7 @@ describe('getEntityAnomalies', () => {
       makeAnomaly({ _id: 'a2', jobId: 'job-A' }),
       makeAnomaly({ _id: 'a3', jobId: 'job-B' }),
     ];
-    searchEntityAnomalies.mockResolvedValue(anomalies);
+    searchEntityAnomalies.mockResolvedValue({ hits: anomalies, total: 3 });
     fetchBaselineBehavior.mockImplementation(({ anomaly }: { anomaly: unknown }) =>
       Promise.resolve(anomaly)
     );
@@ -229,7 +230,7 @@ describe('getEntityAnomalies', () => {
   it('passes the resolved jobConfig to fetchBaselineBehavior', async () => {
     const anomaly = makeAnomaly({ _id: 'a1', jobId: 'job-A' });
     const jobConfig = makeJobConfig({ sourceIndex: ['custom-index'] });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     getJobConfig.mockResolvedValue(new Map([['job-A', jobConfig]]));
 
     await getEntityAnomalies({
@@ -247,7 +248,7 @@ describe('getEntityAnomalies', () => {
 
   it('passes null jobConfig when the job is unknown', async () => {
     const anomaly = makeAnomaly({ _id: 'a1', jobId: 'unknown-job' });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     getJobConfig.mockResolvedValue(new Map()); // no entry for unknown-job
 
     await getEntityAnomalies({
@@ -265,7 +266,7 @@ describe('getEntityAnomalies', () => {
 
   it('populates jobName, threatTactics, and threatTechniques from getJobConfig result', async () => {
     const anomaly = makeAnomaly({ _id: 'a1', jobId: 'auth_high_count_ea' });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
     fetchBaselineBehavior.mockResolvedValue(anomaly);
     getJobConfig.mockResolvedValue(
       new Map([
@@ -288,9 +289,9 @@ describe('getEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result[0].jobName).toBe('Spike in Logon Events');
-    expect(result[0].threatTactics).toEqual(['Credential Access']);
-    expect(result[0].threatTechniques).toEqual(['Brute Force']);
+    expect(result.anomalies[0].jobName).toBe('Spike in Logon Events');
+    expect(result.anomalies[0].threatTactics).toEqual(['Credential Access']);
+    expect(result.anomalies[0].threatTechniques).toEqual(['Brute Force']);
   });
 
   it('calls getJobConfig with the unique job IDs from the page', async () => {
@@ -299,7 +300,7 @@ describe('getEntityAnomalies', () => {
       makeAnomaly({ _id: 'a2', jobId: 'job-A' }), // duplicate — should dedupe
       makeAnomaly({ _id: 'a3', jobId: 'job-B' }),
     ];
-    searchEntityAnomalies.mockResolvedValue(anomalies);
+    searchEntityAnomalies.mockResolvedValue({ hits: anomalies, total: 3 });
 
     await getEntityAnomalies({
       ...defaultParams,
@@ -316,7 +317,7 @@ describe('getEntityAnomalies', () => {
   });
 
   it('forwards fromMs, toMs, jobIds, sort, and pagination to searchEntityAnomalies', async () => {
-    searchEntityAnomalies.mockResolvedValue([]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [], total: 0 });
 
     await getEntityAnomalies({
       ...defaultParams,
@@ -348,7 +349,7 @@ describe('getEntityAnomalies', () => {
 
   it('forwards toMs to fetchBaselineBehavior', async () => {
     const anomaly = makeAnomaly({ _id: 'a1' });
-    searchEntityAnomalies.mockResolvedValue([anomaly]);
+    searchEntityAnomalies.mockResolvedValue({ hits: [anomaly], total: 1 });
 
     await getEntityAnomalies({
       ...defaultParams,

@@ -63,6 +63,11 @@ interface GetEntityAnomaliesParams {
   soClient: SavedObjectsClientContract;
 }
 
+export interface GetEntityAnomaliesResult {
+  anomalies: AnomalySummaryEntry[];
+  total: number;
+}
+
 export const getEntityAnomalies = async ({
   entityId,
   entityType,
@@ -76,9 +81,9 @@ export const getEntityAnomalies = async ({
   pageSize = 100,
   sort,
   soClient,
-}: GetEntityAnomaliesParams): Promise<AnomalySummaryEntry[]> => {
+}: GetEntityAnomaliesParams): Promise<GetEntityAnomaliesResult> => {
   // 1. Fetch a single sorted, paginated page from the anomalies index.
-  const page = await searchEntityAnomalies({
+  const { hits: page, total } = await searchEntityAnomalies({
     entityType,
     entityId,
     fromMs,
@@ -92,7 +97,7 @@ export const getEntityAnomalies = async ({
     soClient,
   });
 
-  if (page.length === 0) return [];
+  if (page.length === 0) return { anomalies: [], total };
 
   const uniqueJobIds = [...new Set(page.map((h) => h.jobId))];
 
@@ -117,5 +122,8 @@ export const getEntityAnomalies = async ({
     )
   );
 
-  return enriched.map((hit) => mapToAnomalySummaryEntry(hit, jobConfigs.get(hit.jobId)));
+  return {
+    anomalies: enriched.map((hit) => mapToAnomalySummaryEntry(hit, jobConfigs.get(hit.jobId))),
+    total,
+  };
 };

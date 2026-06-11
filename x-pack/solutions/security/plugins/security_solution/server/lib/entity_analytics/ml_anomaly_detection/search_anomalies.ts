@@ -92,6 +92,11 @@ export interface SearchEntityAnomaliesOpts {
   soClient: SavedObjectsClientContract;
 }
 
+export interface SearchEntityAnomaliesResult {
+  hits: AnomalyHit[];
+  total: number;
+}
+
 export const searchEntityAnomalies = async ({
   entityType,
   entityId,
@@ -104,24 +109,27 @@ export const searchEntityAnomalies = async ({
   logger,
   ml,
   soClient,
-}: SearchEntityAnomaliesOpts): Promise<AnomalyHit[]> => {
+}: SearchEntityAnomaliesOpts): Promise<SearchEntityAnomaliesResult> => {
   const mlSystem = ml.mlSystemProvider({} as KibanaRequest, soClient);
   const securityJobIds = await getSecurityMlJobIds({ ml, soClient });
 
-  if (securityJobIds.length === 0) return [];
+  const empty: SearchEntityAnomaliesResult = { hits: [], total: 0 };
+
+  if (securityJobIds.length === 0) return empty;
 
   // Intersect the caller-supplied job filter with the known security job IDs.
   const effectiveJobIds = filterJobIds?.length
     ? securityJobIds.filter((id) => filterJobIds.includes(id))
     : securityJobIds;
 
-  if (effectiveJobIds.length === 0) return [];
+  if (effectiveJobIds.length === 0) return empty;
 
   try {
     const resp = await mlSystem.mlAnomalySearch<RawAnomalyRecord>(
       {
         from,
         size,
+        track_total_hits: true,
         runtime_mappings: {
           entity_id: euid.painless.getEuidRuntimeMapping(entityType),
         },
@@ -150,7 +158,10 @@ export const searchEntityAnomalies = async ({
       []
     );
 
-    return resp.hits.hits
+    const rawTotal = resp.hits.total;
+    const total = rawTotal == null ? 0 : typeof rawTotal === 'number' ? rawTotal : rawTotal.value;
+
+    const hits = resp.hits.hits
       .filter(
         (hit): hit is typeof hit & RequiredHit =>
           hit._id != null &&
@@ -161,12 +172,14 @@ export const searchEntityAnomalies = async ({
       )
       .map(mapToAnomalyHit)
       .filter((hit): hit is AnomalyHit => hit != null);
+
+    return { hits, total };
   } catch (error) {
     logger.warn(
       `Error searching anomalies for entity "${entityId}" (type: ${entityType}): ${
         error instanceof Error ? error.message : String(error)
       }`
     );
-    return [];
+    return empty;
   }
 };

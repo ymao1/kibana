@@ -8,21 +8,98 @@
 import { buildSiemResponse } from '@kbn/lists-plugin/server/routes/utils';
 import { transformError } from '@kbn/securitysolution-es-utils';
 import {
+  GetAnomalyOverviewRequestBody,
+  GetAnomalyOverviewRequestParams,
   GetAnomalySummaryRequestBody,
   GetAnomalySummaryRequestParams,
 } from '../../../../common/api/entity_analytics';
 import {
   API_VERSIONS,
   APP_ID,
+  ENTITY_ANOMALY_OVERVIEW_INTERNAL_URL,
   ENTITY_ANOMALY_SUMMARY_INTERNAL_URL,
 } from '../../../../common/constants';
 import type { EntityAnalyticsRoutesDeps } from '../types';
 import { withMinimumLicense } from '../utils/with_minimum_license';
 import { getEntityAnomalies } from './get_anomaly_details';
+import { getEntityAnomalyOverview } from './get_anomaly_overview';
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnalyticsRoutesDeps) => {
+  router.versioned
+    .post({
+      access: 'internal',
+      path: ENTITY_ANOMALY_OVERVIEW_INTERNAL_URL,
+      security: {
+        authz: {
+          requiredPrivileges: ['securitySolution', `${APP_ID}-entity-analytics`],
+        },
+      },
+      enableQueryVersion: true,
+    })
+    .addVersion(
+      {
+        version: API_VERSIONS.internal.v1,
+        validate: {
+          request: {
+            params: GetAnomalyOverviewRequestParams,
+            body: GetAnomalyOverviewRequestBody,
+          },
+        },
+      },
+      withMinimumLicense(async (context, request, response) => {
+        const siemResponse = buildSiemResponse(response);
+        try {
+          const { entity_id: entityId, entity_type: entityType } = request.params;
+          const { from, to } = request.body ?? {};
+
+          if (from !== undefined && from < Date.now() - ONE_YEAR_MS) {
+            return siemResponse.error({
+              statusCode: 400,
+              body: '`from` must not be older than 1 year',
+            });
+          }
+
+          const core = await context.core;
+          const soClient = core.savedObjects.client;
+
+          if (!ml) {
+            logger.warn('ML plugin is unavailable; returning empty anomaly overview.');
+            const now = Date.now();
+            return response.ok({
+              body: {
+                entityId,
+                entityType,
+                anomalies: [],
+                tacticCounts: {},
+                totalAnomaliesCount: 0,
+                from: from ?? now - 30 * 24 * 60 * 60 * 1000,
+                to: to ?? now,
+              },
+            });
+          }
+
+          const overview = await getEntityAnomalyOverview({
+            entityId,
+            entityType,
+            fromMs: from,
+            toMs: to,
+            logger,
+            ml,
+            soClient,
+          });
+
+          return response.ok({ body: { entityId, entityType, ...overview } });
+        } catch (err) {
+          logger.error(`Error retrieving anomaly overview - ${err}`);
+
+          const error = transformError(err);
+          return siemResponse.error({ statusCode: error.statusCode, body: error.message });
+        }
+      }, 'platinum')
+    );
+
   router.versioned
     .post({
       access: 'internal',
@@ -67,10 +144,12 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
 
           if (!ml) {
             logger.warn('ML plugin is unavailable; returning empty anomaly summary.');
-            return response.ok({ body: { entityId, entityType, anomalies: [] } });
+            return response.ok({
+              body: { entityId, entityType, anomalies: [], totalAnomaliesCount: 0 },
+            });
           }
 
-          const anomalies = await getEntityAnomalies({
+          const { anomalies, total } = await getEntityAnomalies({
             entityId,
             entityType,
             esClient,
@@ -91,6 +170,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
               entityId,
               entityType,
               anomalies,
+              totalAnomaliesCount: total,
             },
           });
         } catch (err) {

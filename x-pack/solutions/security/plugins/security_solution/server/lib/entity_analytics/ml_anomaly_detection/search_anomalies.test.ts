@@ -54,7 +54,8 @@ describe('searchEntityAnomalies', () => {
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
 
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
+    expect(result.total).toBe(0);
     expect(mockMlAnomalySearch).not.toHaveBeenCalled();
   });
 
@@ -67,7 +68,8 @@ describe('searchEntityAnomalies', () => {
       soClient,
     });
 
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
+    expect(result.total).toBe(0);
     expect(mockMlAnomalySearch).not.toHaveBeenCalled();
   });
 
@@ -268,7 +270,7 @@ describe('searchEntityAnomalies', () => {
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
 
-    expect(result).toEqual([
+    expect(result.hits).toEqual([
       {
         _id: 'hit-abc',
         entityId: 'user:alice',
@@ -300,9 +302,9 @@ describe('searchEntityAnomalies', () => {
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
 
-    expect(result).toHaveLength(2);
-    expect(result[0]._id).toBe('h1');
-    expect(result[1]._id).toBe('h2');
+    expect(result.hits).toHaveLength(2);
+    expect(result.hits[0]._id).toBe('h1');
+    expect(result.hits[1]._id).toBe('h2');
   });
 
   it('skips hits where actual or typical is missing', async () => {
@@ -318,7 +320,7 @@ describe('searchEntityAnomalies', () => {
       mockMlAnomalySearch.mockResolvedValueOnce(makeResponse([hit]));
 
       const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
-      expect(result).toEqual([]);
+      expect(result.hits).toEqual([]);
     }
   });
 
@@ -328,36 +330,38 @@ describe('searchEntityAnomalies', () => {
     mockMlAnomalySearch.mockResolvedValueOnce(makeResponse([hit]));
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
   });
 
   it('skips hits where entity_id runtime field is missing', async () => {
     mockMlAnomalySearch.mockResolvedValueOnce(makeResponse([makeHit({ noEntityId: true })]));
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
   });
 
   it('skips hits where _source is missing', async () => {
     mockMlAnomalySearch.mockResolvedValueOnce(makeResponse([makeHit({ noSource: true })]));
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
   });
 
-  it('returns empty array and logs a warning when mlAnomalySearch throws', async () => {
+  it('returns empty result and logs a warning when mlAnomalySearch throws', async () => {
     mockMlAnomalySearch.mockRejectedValueOnce(new Error('ES cluster unavailable'));
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
 
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
+    expect(result.total).toBe(0);
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('ES cluster unavailable'));
   });
 
-  it('returns empty array when there are no matching hits', async () => {
+  it('returns empty result when there are no matching hits', async () => {
     mockMlAnomalySearch.mockResolvedValueOnce(makeResponse([]));
 
     const result = await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
-    expect(result).toEqual([]);
+    expect(result.hits).toEqual([]);
+    expect(result.total).toBe(0);
   });
 });

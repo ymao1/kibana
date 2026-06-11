@@ -92,8 +92,8 @@ export const makeHit = (
   };
 };
 
-export const makeResponse = (hits: ReturnType<typeof makeHit>[]) => ({
-  hits: { hits },
+export const makeResponse = (hits: ReturnType<typeof makeHit>[], total?: number) => ({
+  hits: { hits, total: { value: total ?? hits.length, relation: 'eq' as const } },
 });
 
 // ---------------------------------------------------------------------------
