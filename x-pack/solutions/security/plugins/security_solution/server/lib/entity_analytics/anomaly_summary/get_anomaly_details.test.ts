@@ -16,9 +16,10 @@ jest.mock('../ml_anomaly_detection', () => ({
   searchEntityAnomalies: jest.fn(),
   fetchBaselineBehavior: jest.fn(),
   getJobConfig: jest.fn(),
+  getSecurityMlJobIds: jest.fn(),
 }));
 
-const { searchEntityAnomalies, fetchBaselineBehavior, getJobConfig } =
+const { searchEntityAnomalies, fetchBaselineBehavior, getJobConfig, getSecurityMlJobIds } =
   jest.requireMock('../ml_anomaly_detection');
 
 const makeAnomaly = (overrides: Partial<AnomalyHit> = {}): AnomalyHit => ({
@@ -65,6 +66,7 @@ beforeEach(() => {
     mlSystemProvider: jest.fn().mockReturnValue({}),
   } as unknown as MlPluginSetup;
   searchEntityAnomalies.mockResolvedValue({ hits: [], total: 0 });
+  getSecurityMlJobIds.mockResolvedValue([]);
   getJobConfig.mockResolvedValue(new Map());
   fetchBaselineBehavior.mockImplementation(
     ({ anomaly }: { anomaly: ReturnType<typeof makeAnomaly> }) => Promise.resolve(anomaly)
@@ -291,13 +293,8 @@ describe('getEntityAnomalies', () => {
     expect(result.anomalies[0].threatTechniques).toEqual(['Brute Force']);
   });
 
-  it('calls getJobConfig with the unique job IDs from the page', async () => {
-    const anomalies = [
-      makeAnomaly({ _id: 'a1', jobId: 'job-A' }),
-      makeAnomaly({ _id: 'a2', jobId: 'job-A' }), // duplicate — should dedupe
-      makeAnomaly({ _id: 'a3', jobId: 'job-B' }),
-    ];
-    searchEntityAnomalies.mockResolvedValue({ hits: anomalies, total: 3 });
+  it('calls getJobConfig with the full set of security ML job IDs', async () => {
+    getSecurityMlJobIds.mockResolvedValue(['job-A', 'job-B', 'job-C']);
 
     await getEntityAnomalies({
       ...defaultParams,
@@ -308,9 +305,8 @@ describe('getEntityAnomalies', () => {
     });
 
     expect(getJobConfig).toHaveBeenCalledWith(
-      expect.objectContaining({ jobIds: expect.arrayContaining(['job-A', 'job-B']) })
+      expect.objectContaining({ jobIds: ['job-A', 'job-B', 'job-C'] })
     );
-    expect(getJobConfig.mock.calls[0][0].jobIds).toHaveLength(2);
   });
 
   it('forwards fromMs, toMs, jobIds, sort, and pagination to searchEntityAnomalies', async () => {
@@ -342,6 +338,92 @@ describe('getEntityAnomalies', () => {
         size: 20,
       })
     );
+  });
+
+  describe('threatTactics filtering', () => {
+    it('filters searchEntityAnomalies to jobs matching the given tactics', async () => {
+      getSecurityMlJobIds.mockResolvedValue(['job-A', 'job-B', 'job-C']);
+      getJobConfig.mockResolvedValue(
+        new Map([
+          ['job-A', makeJobConfig({ threatTactics: ['Credential Access'] })],
+          ['job-B', makeJobConfig({ threatTactics: ['Discovery'] })],
+          ['job-C', makeJobConfig({ threatTactics: [] })],
+        ])
+      );
+
+      await getEntityAnomalies({
+        ...defaultParams,
+        esClient,
+        logger,
+        ml: mockMl,
+        soClient,
+        threatTactics: ['Credential Access'],
+      });
+
+      expect(searchEntityAnomalies).toHaveBeenCalledWith(
+        expect.objectContaining({ jobIds: ['job-A'] })
+      );
+    });
+
+    it('returns empty results without calling searchEntityAnomalies when no jobs match', async () => {
+      getSecurityMlJobIds.mockResolvedValue(['job-A']);
+      getJobConfig.mockResolvedValue(
+        new Map([['job-A', makeJobConfig({ threatTactics: ['Discovery'] })]])
+      );
+
+      const result = await getEntityAnomalies({
+        ...defaultParams,
+        esClient,
+        logger,
+        ml: mockMl,
+        soClient,
+        threatTactics: ['Credential Access'],
+      });
+
+      expect(result).toEqual({ anomalies: [], total: 0 });
+      expect(searchEntityAnomalies).not.toHaveBeenCalled();
+    });
+
+    it('intersects threatTactics-matched jobs with an explicit jobIds filter', async () => {
+      getSecurityMlJobIds.mockResolvedValue(['job-A', 'job-B']);
+      getJobConfig.mockResolvedValue(
+        new Map([
+          ['job-A', makeJobConfig({ threatTactics: ['Credential Access'] })],
+          ['job-B', makeJobConfig({ threatTactics: ['Credential Access'] })],
+        ])
+      );
+
+      await getEntityAnomalies({
+        ...defaultParams,
+        esClient,
+        logger,
+        ml: mockMl,
+        soClient,
+        jobIds: ['job-B'],
+        threatTactics: ['Credential Access'],
+      });
+
+      expect(searchEntityAnomalies).toHaveBeenCalledWith(
+        expect.objectContaining({ jobIds: ['job-B'] })
+      );
+    });
+
+    it('does not filter jobs when threatTactics is an empty array', async () => {
+      getSecurityMlJobIds.mockResolvedValue(['job-A', 'job-B']);
+
+      await getEntityAnomalies({
+        ...defaultParams,
+        esClient,
+        logger,
+        ml: mockMl,
+        soClient,
+        threatTactics: [],
+      });
+
+      expect(searchEntityAnomalies).toHaveBeenCalledWith(
+        expect.objectContaining({ jobIds: undefined })
+      );
+    });
   });
 
   it('forwards toMs to fetchBaselineBehavior', async () => {

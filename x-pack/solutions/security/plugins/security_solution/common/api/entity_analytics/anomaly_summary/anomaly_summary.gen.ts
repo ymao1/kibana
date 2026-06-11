@@ -39,6 +39,13 @@ export const AnomalySummaryRequestBody = lazySchema(() =>
      */
     job_ids: z.array(z.string().max(150)).max(200).optional(),
     /**
+<<<<<<< HEAD
+=======
+     * Filter results to jobs associated with the specified MITRE ATT&CK tactic names; returns all jobs when omitted
+     */
+    threat_tactics: z.array(z.string().max(150)).max(100).optional(),
+    /**
+>>>>>>> ea/ad-job-maintainer-api-only
      * Sort criteria applied in order.
      */
     sort: z

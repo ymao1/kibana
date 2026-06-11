@@ -73,6 +73,13 @@ components:
             type: string
             maxLength: 150
           description: Filter results to the specified ML job IDs; returns all jobs when omitted
+        threat_tactics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: Filter results to jobs associated with the specified MITRE ATT&CK tactic names; returns all jobs when omitted
         sort:
           type: array
           items:

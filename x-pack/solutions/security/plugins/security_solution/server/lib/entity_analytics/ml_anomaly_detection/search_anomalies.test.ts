@@ -95,7 +95,7 @@ describe('searchEntityAnomalies', () => {
     );
   });
 
-  it('uses now-ENTITY_ANOMALY_DEFAULT_LOOKBACK as the timestamp lower bound when fromMs is not provided', async () => {
+  it('uses now-DEFAULT_ML_AD_LOOKBACK as the timestamp lower bound when fromMs is not provided', async () => {
     await searchEntityAnomalies({ ...defaultOpts, logger, ml: mockMl, soClient });
 
     const [body] = mockMlAnomalySearch.mock.calls[0];

@@ -18,6 +18,7 @@ import type {
 import {
   fetchBaselineBehavior,
   getJobConfig,
+  getSecurityMlJobIds,
   searchEntityAnomalies,
 } from '../ml_anomaly_detection';
 
@@ -54,6 +55,7 @@ interface GetEntityAnomaliesParams {
   fromMs?: number;
   toMs?: number;
   jobIds?: string[];
+  threatTactics?: string[];
   logger: Logger;
   ml: MlPluginSetup;
   offset?: number;
@@ -74,6 +76,7 @@ export const getEntityAnomalies = async ({
   fromMs,
   toMs,
   jobIds,
+  threatTactics,
   logger,
   ml,
   offset = 0,
@@ -81,13 +84,29 @@ export const getEntityAnomalies = async ({
   sort,
   soClient,
 }: GetEntityAnomaliesParams): Promise<GetEntityAnomaliesResult> => {
+  const allSecurityJobIds = await getSecurityMlJobIds({ ml, soClient });
+  const allConfigs = await getJobConfig({ jobIds: allSecurityJobIds, logger, ml, soClient });
+
+  let resolvedJobIds = jobIds;
+  if (threatTactics && threatTactics.length > 0) {
+    const tacticMatchedIds = allSecurityJobIds.filter((id) =>
+      allConfigs.get(id)?.threatTactics.some((t) => threatTactics.includes(t))
+    );
+
+    resolvedJobIds = jobIds?.length
+      ? jobIds.filter((id) => tacticMatchedIds.includes(id))
+      : tacticMatchedIds;
+
+    if (resolvedJobIds.length === 0) return { anomalies: [], total: 0 };
+  }
+
   // 1. Fetch a single sorted, paginated page from the anomalies index.
   const { hits: page, total } = await searchEntityAnomalies({
     entityType,
     entityId,
     fromMs,
     toMs,
-    jobIds,
+    jobIds: resolvedJobIds,
     sort,
     from: offset,
     size: pageSize,
@@ -98,12 +117,7 @@ export const getEntityAnomalies = async ({
 
   if (page.length === 0) return { anomalies: [], total };
 
-  const uniqueJobIds = [...new Set(page.map((h) => h.jobId))];
-
-  // 2. Fetch all job info
-  const jobConfigs = await getJobConfig({ jobIds: uniqueJobIds, logger, ml, soClient });
-
-  // 3. Enrich each anomaly with behavioral context information
+  // 2. Enrich each anomaly with behavioral context information
   //    Failures fall back to the un-enriched record.
   const enriched = await Promise.all(
     page.map((anomaly) =>
@@ -114,7 +128,7 @@ export const getEntityAnomalies = async ({
         esClient,
         fromMs,
         toMs,
-        jobConfig: jobConfigs.get(anomaly.jobId) ?? null,
+        jobConfig: allConfigs.get(anomaly.jobId) ?? null,
         jobId: anomaly.jobId,
         logger,
       })
@@ -122,7 +136,7 @@ export const getEntityAnomalies = async ({
   );
 
   return {
-    anomalies: enriched.map((hit) => mapToAnomalySummaryEntry(hit, jobConfigs.get(hit.jobId))),
+    anomalies: enriched.map((hit) => mapToAnomalySummaryEntry(hit, allConfigs.get(hit.jobId))),
     total,
   };
 };

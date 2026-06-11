@@ -131,6 +131,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             from,
             to,
             job_ids: jobIds,
+            threat_tactics: threatTactics,
             sort,
           } = request.body ?? {};
 
@@ -167,6 +168,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             fromMs: from,
             toMs: to,
             jobIds,
+            threatTactics,
             logger,
             ml,
             offset: (page - 1) * pageSize,

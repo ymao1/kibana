@@ -89,6 +89,7 @@ export interface SearchEntityAnomaliesOpts {
   size?: number;
   logger: Logger;
   ml: MlPluginSetup;
+  securityJobIds?: string[];
   soClient: SavedObjectsClientContract;
 }
 
@@ -108,19 +109,20 @@ export const searchEntityAnomalies = async ({
   size = 100,
   logger,
   ml,
+  securityJobIds,
   soClient,
 }: SearchEntityAnomaliesOpts): Promise<SearchEntityAnomaliesResult> => {
   const mlSystem = ml.mlSystemProvider({} as KibanaRequest, soClient);
-  const securityJobIds = await getSecurityMlJobIds({ ml, soClient });
+  const jobIds = securityJobIds ?? (await getSecurityMlJobIds({ ml, soClient }));
 
   const empty: SearchEntityAnomaliesResult = { hits: [], total: 0 };
 
-  if (securityJobIds.length === 0) return empty;
+  if (jobIds.length === 0) return empty;
 
   // Intersect the caller-supplied job filter with the known security job IDs.
   const effectiveJobIds = filterJobIds?.length
-    ? securityJobIds.filter((id) => filterJobIds.includes(id))
-    : securityJobIds;
+    ? jobIds.filter((id) => filterJobIds.includes(id))
+    : jobIds;
 
   if (effectiveJobIds.length === 0) return empty;
 

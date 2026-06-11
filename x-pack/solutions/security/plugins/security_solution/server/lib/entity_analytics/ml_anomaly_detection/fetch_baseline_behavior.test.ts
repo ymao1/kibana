@@ -138,7 +138,11 @@ describe('fetchBaselineBehavior', () => {
     });
 
     it('applies the timestamp range filter using bucketSpanMs as the upper bound', async () => {
-      const anomaly = makeAnomaly({ timestamp: 1_000_000 });
+      const anomaly = makeAnomaly({
+        timestamp: 1_000_000,
+        byFieldName: 'source.ip',
+        byFieldValue: 'evil-ip',
+      });
       mockEsSearch.mockResolvedValueOnce({ aggregations: {} });
 
       await fetchBaselineBehavior({ ...defaultOpts, anomaly, esClient, logger });
@@ -152,7 +156,11 @@ describe('fetchBaselineBehavior', () => {
     });
 
     it('uses fromMs as the timestamp lower bound when provided', async () => {
-      const anomaly = makeAnomaly({ timestamp: 1_000_000 });
+      const anomaly = makeAnomaly({
+        timestamp: 1_000_000,
+        byFieldName: 'source.ip',
+        byFieldValue: 'evil-ip',
+      });
       mockEsSearch.mockResolvedValueOnce({ aggregations: {} });
 
       await fetchBaselineBehavior({
@@ -173,7 +181,11 @@ describe('fetchBaselineBehavior', () => {
     it('uses toMs as the upper bound when toMs is before the bucket span end', async () => {
       // timestamp=1_000_000, bucketSpanMs=3_600_000 → bucket end = 4_600_000
       // toMs=2_000_000 < 4_600_000, so lte should be capped at toMs
-      const anomaly = makeAnomaly({ timestamp: 1_000_000 });
+      const anomaly = makeAnomaly({
+        timestamp: 1_000_000,
+        byFieldName: 'source.ip',
+        byFieldValue: 'evil-ip',
+      });
       mockEsSearch.mockResolvedValueOnce({ aggregations: {} });
 
       await fetchBaselineBehavior({ ...defaultOpts, anomaly, toMs: 2_000_000, esClient, logger });
@@ -188,7 +200,11 @@ describe('fetchBaselineBehavior', () => {
     it('uses the bucket span end as the upper bound when toMs is after the bucket span end', async () => {
       // timestamp=1_000_000, bucketSpanMs=3_600_000 → bucket end = 4_600_000
       // toMs=5_000_000 > 4_600_000, so lte should remain at the bucket end
-      const anomaly = makeAnomaly({ timestamp: 1_000_000 });
+      const anomaly = makeAnomaly({
+        timestamp: 1_000_000,
+        byFieldName: 'source.ip',
+        byFieldValue: 'evil-ip',
+      });
       mockEsSearch.mockResolvedValueOnce({ aggregations: {} });
 
       await fetchBaselineBehavior({ ...defaultOpts, anomaly, toMs: 5_000_000, esClient, logger });
@@ -201,7 +217,7 @@ describe('fetchBaselineBehavior', () => {
     });
 
     it('returns original anomaly (with anomalousValue) when search throws', async () => {
-      const anomaly = makeAnomaly({ byFieldValue: 'evil-ip' });
+      const anomaly = makeAnomaly({ byFieldName: 'source.ip', byFieldValue: 'evil-ip' });
       mockEsSearch.mockRejectedValueOnce(new Error('cluster unavailable'));
 
       const result = await fetchBaselineBehavior({ ...defaultOpts, anomaly, esClient, logger });
