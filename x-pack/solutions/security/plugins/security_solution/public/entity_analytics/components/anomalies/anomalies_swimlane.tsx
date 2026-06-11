@@ -67,29 +67,24 @@ interface AnomaliesSwimlaneProps {
   anomalyBands: AnomalyBand[];
   from: number;
   to: number;
-  entityNames: string[];
-  entityAccessor: string;
+  yAxisNames: string[];
+  yAxisAccessor: string;
   heatmapId: string;
   ySortPredicate?: Predicate;
+  showYAxisLabels?: boolean;
 }
 
-/**
- * Single-row anomaly swim lane covering the last 1 year (1 bucket per week).
- * Uses hard-coded prototype data; x-axis labels show dates.
- */
 export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
   records,
   from,
   to,
   anomalyBands,
-  entityNames,
-  entityAccessor,
+  yAxisNames,
+  yAxisAccessor,
   heatmapId,
   ySortPredicate = 'numDesc',
+  showYAxisLabels = false,
 }) => {
-  console.log(entityAccessor);
-  console.log(entityNames);
-  console.log(records);
   const xDomain = useMemo(() => ({ min: from, max: to }), [from, to]);
   const chartBands = useMemo(
     () => anomalyBands.map(({ start, end, color }) => ({ start, end, color })),
@@ -99,18 +94,25 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
   const styling = getAnomalyChartStyling(true);
   const baseTheme = useElasticChartsTheme();
 
+  const theme = useMemo(
+    () => ({
+      heatmap: {
+        ...heatmapComponentStyle,
+        yAxisLabel: { ...heatmapComponentStyle.yAxisLabel, visible: showYAxisLabels },
+      },
+    }),
+    [showYAxisLabels]
+  );
+
   return (
     <EuiFlexItem
       css={{
-        height: `${styling.heightOfHeatmap(entityNames.length)}px`,
+        height: `${styling.heightOfHeatmap(yAxisNames.length)}px`,
+        pointerEvents: 'none',
       }}
     >
       <Chart>
-        <Settings
-          baseTheme={baseTheme}
-          theme={{ heatmap: heatmapComponentStyle }}
-          xDomain={xDomain}
-        />
+        <Settings baseTheme={baseTheme} theme={theme} xDomain={xDomain} />
         <Heatmap
           id={heatmapId}
           xScale={{
@@ -132,8 +134,8 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
             { defaultMessage: 'Date' }
           )}
           xAxisLabelFormatter={formatDateTick}
-          yAccessor={entityAccessor}
-          yAxisLabelName={entityAccessor}
+          yAccessor={yAxisAccessor}
+          yAxisLabelName={yAxisAccessor}
           ySortPredicate={ySortPredicate}
           valueAccessor="record_score"
         />

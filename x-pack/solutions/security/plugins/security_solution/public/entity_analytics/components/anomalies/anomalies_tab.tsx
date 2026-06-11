@@ -5,7 +5,7 @@
  * 2.0.
  */
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   EuiButtonEmpty,
   EuiFlexGroup,
@@ -30,7 +30,12 @@ import { ANOMALY_TIMELINE_V2_MANAGE_ML_JOBS, ATTACK_CHAIN_V2_TITLE } from './tra
 import { useAnomalySummary } from '../../api/hooks/use_anomaly_summary';
 import { MitreAttackChain } from './mitre/components/mitre_attack_chain';
 import { AnomalyTabTimelineSection } from './anomalies_tab_timeline';
-import { AnomalyTabTableSection } from './anomalies_tab_table';
+import type { TableSortField, TableSortDirection, TableChangeEvent } from './anomalies_tab_table';
+import { AnomalyTabTableSection, PAGE_SIZE_OPTIONS } from './anomalies_tab_table';
+
+const DEFAULT_TABLE_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
+const DEFAULT_SORT_FIELD: TableSortField = 'timestamp';
+const DEFAULT_SORT_DIRECTION: TableSortDirection = 'desc';
 
 interface AnomaliesTabProps {
   entityId: string;
@@ -53,6 +58,29 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
     [start, end]
   );
 
+  // Table pagination + sort state — owned here so changes re-fetch via useAnomalySummary.
+  const [tablePageIndex, setTablePageIndex] = useState(0);
+  const [tablePageSize, setTablePageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
+  const [tableSortField, setTableSortField] = useState<TableSortField>(DEFAULT_SORT_FIELD);
+  const [tableSortDirection, setTableSortDirection] =
+    useState<TableSortDirection>(DEFAULT_SORT_DIRECTION);
+
+  // Reset to page 1 whenever the time range changes.
+  useEffect(() => {
+    setTablePageIndex(0);
+  }, [timeRangeMs]);
+
+  const handleTableChange = useCallback(({ page, sort }: TableChangeEvent) => {
+    if (page) {
+      setTablePageIndex(page.index);
+      setTablePageSize(page.size);
+    }
+    if (sort) {
+      setTableSortField(sort.field);
+      setTableSortDirection(sort.direction);
+    }
+  }, []);
+
   const anomalyOverview = useAnomalyOverview({
     entityId,
     entityType,
@@ -68,7 +96,13 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
   const anomalySummary = useAnomalySummary({
     entityId,
     entityType,
-    body: { from: timeRangeMs.from, to: timeRangeMs.to },
+    body: {
+      from: timeRangeMs.from,
+      to: timeRangeMs.to,
+      page: tablePageIndex + 1,
+      pageSize: tablePageSize,
+      sort: [{ field: tableSortField, order: tableSortDirection }],
+    },
   });
 
   const {
@@ -135,10 +169,18 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       <EuiSpacer size="l" />
       <AnomalyTabTimelineSection
         timeRangeMs={timeRangeMs}
-        anomalies={anomalySummary.data?.anomalies ?? []}
+        anomalies={anomalyOverview.data?.anomalies ?? []}
       />
       <EuiSpacer size="l" />
-      <AnomalyTabTableSection anomalies={anomalySummary.data?.anomalies ?? []} />
+      <AnomalyTabTableSection
+        anomalies={anomalySummary.data?.anomalies ?? []}
+        totalAnomaliesCount={anomalySummary.data?.totalAnomaliesCount ?? 0}
+        pageIndex={tablePageIndex}
+        pageSize={tablePageSize}
+        sortField={tableSortField}
+        sortDirection={tableSortDirection}
+        onTableChange={handleTableChange}
+      />
     </>
   );
 };

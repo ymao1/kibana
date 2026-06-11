@@ -6,17 +6,18 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { CriteriaWithPagination, EuiBasicTableColumn, PropertySort } from '@elastic/eui';
+import type { Criteria, EuiBasicTableColumn, EuiTableSortingType } from '@elastic/eui';
 import {
   EuiBadge,
+  EuiBasicTable,
   EuiButtonIcon,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiInMemoryTable,
   EuiSpacer,
   EuiText,
   EuiTitle,
   EuiToolTip,
+  useEuiTheme,
 } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
@@ -24,8 +25,10 @@ import { css } from '@emotion/react';
 import { PreferenceFormattedDate } from '../../../common/components/formatted_date';
 import type { AnomalySummaryEntry } from '../../../../common/api/entity_analytics';
 
-const DEFAULT_PAGE_SIZE = 10;
-const PAGE_SIZE_OPTIONS = [10, 25, 50];
+export const PAGE_SIZE_OPTIONS = [10, 25, 50];
+
+export type TableSortField = 'timestamp' | 'record_score' | 'job_id';
+export type TableSortDirection = 'asc' | 'desc';
 
 interface TableRow {
   id: string;
@@ -38,6 +41,19 @@ interface TableRow {
   anomalyScore: number;
   description: string;
 }
+
+// Maps API sort fields ↔ TableRow keys
+const SORT_FIELD_TO_TABLE: Record<TableSortField, keyof TableRow> = {
+  timestamp: 'timestamp',
+  record_score: 'anomalyScore',
+  job_id: 'jobDisplayName',
+};
+
+const SORT_FIELD_TO_API: Partial<Record<keyof TableRow, TableSortField>> = {
+  timestamp: 'timestamp',
+  anomalyScore: 'record_score',
+  jobDisplayName: 'job_id',
+};
 
 const mapToRow = (entry: AnomalySummaryEntry, index: number): TableRow => {
   const baseline =
@@ -79,13 +95,31 @@ const truncatedAnchorCss = css`
   white-space: nowrap;
 `;
 
-interface AnomalyTabTableSectionProps {
-  anomalies: AnomalySummaryEntry[];
+export interface TableChangeEvent {
+  page?: { index: number; size: number };
+  sort?: { field: TableSortField; direction: TableSortDirection };
 }
 
-export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({ anomalies }) => {
-  const [pageIndex, setPageIndex] = useState(0);
-  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+interface AnomalyTabTableSectionProps {
+  anomalies: AnomalySummaryEntry[];
+  totalAnomaliesCount: number;
+  pageIndex: number;
+  pageSize: number;
+  sortField: TableSortField;
+  sortDirection: TableSortDirection;
+  onTableChange: (event: TableChangeEvent) => void;
+}
+
+export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
+  anomalies,
+  totalAnomaliesCount,
+  pageIndex,
+  pageSize,
+  sortField,
+  sortDirection,
+  onTableChange,
+}) => {
+  const { euiTheme } = useEuiTheme();
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
 
   const rows = useMemo(() => anomalies.map(mapToRow), [anomalies]);
@@ -211,14 +245,23 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({ 
         field: 'anomalyScore',
         sortable: true,
         width: '120px',
-        render: (score: number) => (
-          <EuiBadge color={score >= 75 ? 'danger' : score >= 50 ? 'warning' : 'default'}>
-            {Math.round(score)}
-          </EuiBadge>
-        ),
+        render: (score: number) => {
+          const { severity } = euiTheme.colors;
+          const color =
+            score >= 75
+              ? severity.danger
+              : score >= 50
+              ? severity.risk
+              : score >= 25
+              ? severity.warning
+              : score >= 3
+              ? severity.neutral
+              : severity.unknown;
+          return <EuiBadge color={color}>{Math.round(score)}</EuiBadge>;
+        },
       },
     ],
-    [expandedRowIds, toggleRowExpanded]
+    [euiTheme, expandedRowIds, toggleRowExpanded]
   );
 
   const itemIdToExpandedRowMap = useMemo(() => {
@@ -242,23 +285,38 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({ 
     return map;
   }, [expandedRowIds, rows]);
 
-  const sorting = useMemo<{ sort: PropertySort }>(
-    () => ({ sort: { field: 'timestamp', direction: 'desc' } }),
-    []
-  );
-
   const pagination = useMemo(
-    () => ({ initialPageSize: DEFAULT_PAGE_SIZE, pageSizeOptions: PAGE_SIZE_OPTIONS }),
-    []
+    () => ({
+      pageIndex,
+      pageSize,
+      totalItemCount: totalAnomaliesCount,
+      pageSizeOptions: PAGE_SIZE_OPTIONS,
+    }),
+    [pageIndex, pageSize, totalAnomaliesCount]
   );
 
-  const handleTableChange = useCallback(({ page }: CriteriaWithPagination<TableRow>) => {
-    setPageIndex(page.index);
-    setPageSize(page.size);
-  }, []);
+  const sorting = useMemo<EuiTableSortingType<TableRow>>(
+    () => ({
+      sort: { field: SORT_FIELD_TO_TABLE[sortField], direction: sortDirection },
+    }),
+    [sortField, sortDirection]
+  );
 
-  const from = rows.length > 0 ? pageIndex * pageSize + 1 : 0;
-  const to = Math.min((pageIndex + 1) * pageSize, rows.length);
+  const handleChange = useCallback(
+    ({ page, sort }: Criteria<TableRow>) => {
+      const event: TableChangeEvent = {};
+      if (page) event.page = { index: page.index, size: page.size };
+      if (sort) {
+        const apiField = SORT_FIELD_TO_API[sort.field as keyof TableRow];
+        if (apiField) event.sort = { field: apiField, direction: sort.direction };
+      }
+      onTableChange(event);
+    },
+    [onTableChange]
+  );
+
+  const from = totalAnomaliesCount > 0 ? pageIndex * pageSize + 1 : 0;
+  const to = Math.min((pageIndex + 1) * pageSize, totalAnomaliesCount);
 
   return (
     <div>
@@ -277,12 +335,12 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({ 
           values={{
             from: <strong>{from}</strong>,
             to: <strong>{to}</strong>,
-            total: <strong>{rows.length}</strong>,
+            total: <strong>{totalAnomaliesCount}</strong>,
           }}
         />
       </EuiText>
       <EuiSpacer size="s" />
-      <EuiInMemoryTable
+      <EuiBasicTable
         tableCaption={i18n.translate(
           'xpack.securitySolution.entityAnalytics.anomaliesTable.caption',
           { defaultMessage: 'Anomaly records' }
@@ -292,7 +350,7 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({ 
         columns={columns}
         sorting={sorting}
         pagination={pagination}
-        onTableChange={handleTableChange}
+        onChange={handleChange}
         compressed
         itemIdToExpandedRowMap={itemIdToExpandedRowMap}
       />

@@ -79,6 +79,10 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
     [data.anomalies, entityId]
   );
 
+  console.log(`swimlaneRecords`);
+  console.log(swimlaneRecords);
+  console.log(`${data.from} - ${data.to}`);
+
   const goToBehavioralAnomaliesTab = useCallback(
     () => openDetailsPanel({ tab: EntityDetailsLeftPanelTab.ANOMALIES }),
     [openDetailsPanel]
@@ -159,8 +163,8 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
           from={data.from}
           to={data.to}
           anomalyBands={bands}
-          entityNames={[entityId]}
-          entityAccessor="entity_id"
+          yAxisNames={[entityId]}
+          yAxisAccessor="entity_id"
           heatmapId="entity-flyout-behavioral-anomalies-v2-heatmap"
         />
       </EuiFlexGroup>

@@ -36,13 +36,13 @@ const tacticNames = [...mitreTactics]
   .sort((a, b) => tacticOrder.indexOf(a.id) - tacticOrder.indexOf(b.id))
   .map(({ name }) => name);
 
-const ENTITY_ACCESSOR = 'mitre_tactic';
+const TACTIC_ACCESSOR = 'mitre_tactic';
 
 const tacticIndexByName = new Map(tacticNames.map((name, i) => [name, i]));
 
 interface AnomalyTabTimelineProps {
   timeRangeMs: { from: number; to: number };
-  anomalies: AnomalySummaryEntry[];
+  anomalies: Array<{ timestamp: string; maxScore: number; threatTactics?: string[] }>;
 }
 
 export const AnomalyTabTimelineSection: React.FC<AnomalyTabTimelineProps> = ({
@@ -51,27 +51,30 @@ export const AnomalyTabTimelineSection: React.FC<AnomalyTabTimelineProps> = ({
 }) => {
   const { bands } = useAnomalyBands();
 
-  // Expand each anomaly into one record per tactic, sorted in canonical ATT&CK
-  // kill-chain order so that `ySortPredicate="dataIndex"` preserves that order.
-  const records = useMemo(() => {
-    const expanded = anomalies.flatMap((entry) =>
-      (entry.threatTactics ?? []).map((tactic) => ({
-        '@timestamp': new Date(entry.timestamp).getTime(),
-        [ENTITY_ACCESSOR]: tactic,
-        record_score: entry.recordScore,
-      }))
-    );
-    return expanded.sort(
-      (a, b) =>
-        (tacticIndexByName.get(a[ENTITY_ACCESSOR]) ?? Number.MAX_SAFE_INTEGER) -
-        (tacticIndexByName.get(b[ENTITY_ACCESSOR]) ?? Number.MAX_SAFE_INTEGER)
-    );
-  }, [anomalies]);
+  const records = useMemo(
+    () =>
+      anomalies
+        .flatMap((a) =>
+          (a.threatTactics ?? []).map((tactic) => ({
+            '@timestamp': new Date(a.timestamp).getTime(),
+            [TACTIC_ACCESSOR]: tactic,
+            record_score: a.maxScore,
+          }))
+        )
+        .sort(
+          (a, b) =>
+            (tacticIndexByName.get(a[TACTIC_ACCESSOR]) ?? 999) -
+            (tacticIndexByName.get(b[TACTIC_ACCESSOR]) ?? 999)
+        ),
+    [anomalies]
+  );
 
+  console.log(`records`);
   console.log(records);
+  console.log(`${timeRangeMs.from} - ${timeRangeMs.to}`);
 
-  const entityNames = useMemo(() => {
-    const present = new Set(records.map((r) => r[ENTITY_ACCESSOR]));
+  const mitreTacticNames = useMemo(() => {
+    const present = new Set(records.map((r) => r[TACTIC_ACCESSOR]));
     return tacticNames.filter((name) => present.has(name));
   }, [records]);
 
@@ -98,9 +101,10 @@ export const AnomalyTabTimelineSection: React.FC<AnomalyTabTimelineProps> = ({
           anomalyBands={bands}
           from={timeRangeMs.from}
           to={timeRangeMs.to}
-          entityNames={entityNames}
-          entityAccessor={ENTITY_ACCESSOR}
+          yAxisNames={mitreTacticNames}
+          yAxisAccessor={TACTIC_ACCESSOR}
           heatmapId="entity-anomaly-tab-timeline-heatmap"
+          showYAxisLabels={true}
           ySortPredicate="dataIndex"
         />
       </EuiFlexGroup>
