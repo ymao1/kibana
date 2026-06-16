@@ -16,8 +16,8 @@ import {
 import { css } from '@emotion/react';
 import React from 'react';
 import {
-  BEHAVIORAL_ANOMALIES_SECTION_TITLE,
-  BEHAVIORAL_ANOMALIES_OVERVIEW_TIMEFRAME,
+  ENTITY_ANOMALIES_SECTION_TITLE,
+  ENTITY_ANOMALIES_OVERVIEW_TIMEFRAME,
 } from './translations';
 import type { GetAnomalyOverviewResponse } from '../../../../common/api/entity_analytics';
 import type { EntityDetailsPath } from '../../../flyout/entity_details/shared/components/left_panel/left_panel_header';
@@ -37,29 +37,29 @@ export const AnomaliesSection: React.FC<AnomaliesSectionProps> = (props) => {
   return (
     <>
       <EuiAccordion
-        id="anomalies_section"
+        id="entity_anomalies_section"
         initialIsOpen
-        data-test-subj="anomalies-section-data-test-subj"
+        data-test-subj="entity-anomalies-section-data-test-subj"
         buttonProps={{
-          'data-test-subj': 'behavioral-anomalies-accordion-button',
+          'data-test-subj': 'entity-anomalies-accordion-button',
           css: css`
             color: ${euiTheme.colors.primary};
           `,
         }}
         buttonContent={
           <EuiTitle size="xs">
-            <h3>{BEHAVIORAL_ANOMALIES_SECTION_TITLE}</h3>
+            <h3>{ENTITY_ANOMALIES_SECTION_TITLE}</h3>
           </EuiTitle>
         }
         extraAction={
           <span
-            data-test-subj="behavioral-anomalies-overview-timeframe"
+            data-test-subj="entity-anomalies-accordion-timeframe"
             css={css`
               font-size: ${xsFontSize};
               color: ${euiTheme.colors.textSubdued};
             `}
           >
-            {BEHAVIORAL_ANOMALIES_OVERVIEW_TIMEFRAME}
+            {ENTITY_ANOMALIES_OVERVIEW_TIMEFRAME}
           </span>
         }
       >

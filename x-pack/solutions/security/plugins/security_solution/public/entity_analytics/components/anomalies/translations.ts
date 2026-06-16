@@ -7,55 +7,77 @@
 
 import { i18n } from '@kbn/i18n';
 
-export const BEHAVIORAL_ANOMALIES_SECTION_TITLE = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomalies.sectionTitle',
+export const ENTITY_ANOMALIES_SECTION_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.sectionTitle',
   { defaultMessage: 'Behavioral anomalies' }
 );
 
-export const BEHAVIORAL_ANOMALIES_OVERVIEW_TIMEFRAME = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2Overview.timeframeLabel',
+export const ENTITY_ANOMALIES_OVERVIEW_TIMEFRAME = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.timeframeLabel',
   { defaultMessage: 'Last 30 days' }
 );
 
-export const BEHAVIORAL_ANOMALIES_ALL_LINK_TITLE = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomalies.allAnomaliesLink',
+export const ENTITY_ANOMALIES_ALL_LINK_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.allAnomaliesLink',
   { defaultMessage: 'All anomalies' }
 );
 
-export const BEHAVIORAL_ANOMALIES_ALL_LINK_TOOLTIP = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomalies.allAnomaliesTooltip',
+export const ENTITY_ANOMALIES_ALL_LINK_TOOLTIP = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.allAnomaliesTooltip',
   { defaultMessage: 'Show all behavioral anomalies' }
 );
 
-export const getBehavioralAnomaliesCountLabel = (count: number) =>
-  i18n.translate('xpack.securitySolution.entityAnalytics.behavioralAnomalies.anomaliesCountLabel', {
-    defaultMessage: '{count, plural, one {Anomaly} other {Anomalies}}',
-    values: { count },
-  });
-
-export const getBehavioralAnomaliesV2TacticsCountLabel = (count: number) =>
+export const getEntityAnomaliesCountLabel = (count: number) =>
   i18n.translate(
-    'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2Overview.tacticsCountLabel',
+    'xpack.securitySolution.entityAnalytics.entityAnomalies.overview.anomaliesCountLabel',
+    {
+      defaultMessage: '{count, plural, one {Anomaly} other {Anomalies}}',
+      values: { count },
+    }
+  );
+
+export const getEntityAnomaliesTacticsCountLabel = (count: number) =>
+  i18n.translate(
+    'xpack.securitySolution.entityAnalytics.entityAnomalies.overview.tacticsCountLabel',
     {
       defaultMessage: '{count, plural, one {Tactic} other {Tactics}}',
       values: { count },
     }
   );
 
-export const ANOMALY_TIMELINE_V2_MANAGE_ML_JOBS = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2.manageMlJobs',
+export const ENTITY_ANOMALIES_SWIMLANE_MAX_SCORE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.overview.swimlane.maxAnomalyScore',
+  { defaultMessage: 'Max anomaly score' }
+);
+
+export const ENTITY_ANOMALIES_SWIMLANE_X_AXIS_LABEL = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.overview.swimlane.xAxis',
+  { defaultMessage: 'Date' }
+);
+
+export const ENTITY_ANOMALIES_TAB_MANAGE_ML_JOBS = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.manageMlJobs',
   { defaultMessage: 'Manage ML jobs' }
 );
 
-export const TACTIC_FILTER_V2_CLEAR_LABEL = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2.tab.clearTacticFilterAria',
+export const ENTITY_ANOMALIES_CLEAR_TACTIC_LABEL = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.clearTactic',
   { defaultMessage: 'Clear tactic filter' }
 );
 
-export const ATTACK_CHAIN_V2_TITLE = i18n.translate(
-  'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2.attackChainTitle',
+export const ENTITY_ANOMALIES_TAB_ATTACK_CHAIN_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.attackChainTitle',
   { defaultMessage: 'Attack chain' }
 );
+
+export const getEntityAnomaliesFilteredByTacticLabel = (tactic: string) =>
+  i18n.translate(
+    'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.filteredByTacticLabel',
+    {
+      defaultMessage: 'Filtered by: {tactic}',
+      values: { tactic },
+    }
+  );
 
 // export const BEHAVIORAL_ANOMALIES_TAB_LABEL = i18n.translate(
 //   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.tabLabel',

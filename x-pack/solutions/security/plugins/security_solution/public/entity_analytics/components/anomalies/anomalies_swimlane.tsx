@@ -16,10 +16,16 @@ import {
 } from '@elastic/charts';
 import { EuiFlexItem } from '@elastic/eui';
 import { useElasticChartsTheme } from '@kbn/charts-theme';
-import { i18n } from '@kbn/i18n';
 import React, { useMemo } from 'react';
 import { getAnomalyChartStyling } from '../recent_anomalies/anomaly_chart_styling';
 import type { AnomalyBand } from '../recent_anomalies/anomaly_bands';
+import {
+  ENTITY_ANOMALIES_SWIMLANE_MAX_SCORE,
+  ENTITY_ANOMALIES_SWIMLANE_X_AXIS_LABEL,
+} from './translations';
+
+const SWIMLANE_X_ACCESSOR_KEY = '@timestamp';
+const SWIMLANE_Y_ACCESSOR_KEY = 'record_score';
 
 const heatmapComponentStyle: RecursivePartial<HeatmapStyle> = {
   brushTool: {
@@ -63,29 +69,31 @@ const formatDateTick = (value: string | number): string => {
 };
 
 interface AnomaliesSwimlaneProps {
-  records: Array<Record<string, unknown>>;
   anomalyBands: AnomalyBand[];
   from: number;
-  to: number;
-  yAxisNames: string[];
-  yAxisAccessor: string;
   heatmapId: string;
-  ySortPredicate?: Predicate;
+  records: Array<Record<string, unknown>>;
   showYAxisLabels?: boolean;
+  to: number;
+  yAxisAccessor: string;
+  yAxisNames: string[];
+  ySortPredicate?: Predicate;
 }
 
 export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
-  records,
-  from,
-  to,
   anomalyBands,
+  from,
+  heatmapId,
+  records,
+  showYAxisLabels = false,
+  to,
   yAxisNames,
   yAxisAccessor,
-  heatmapId,
   ySortPredicate = 'numDesc',
-  showYAxisLabels = false,
 }) => {
   const xDomain = useMemo(() => ({ min: from, max: to }), [from, to]);
+  // const bucketInterval = useMemo(() => deriveBucketInterval(timeRangeMs), [timeRangeMs]);
+
   const chartBands = useMemo(
     () => anomalyBands.map(({ start, end, color }) => ({ start, end, color })),
     [anomalyBands]
@@ -117,27 +125,21 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
           id={heatmapId}
           xScale={{
             type: ScaleType.Time,
-            interval: { type: 'fixed', value: 1, unit: 'd' },
+            interval: { type: 'fixed', value: 1, unit: 'd' }, // bucketInterval
           }}
           colorScale={{
             type: 'bands',
             bands: chartBands,
           }}
           data={records}
-          name={i18n.translate(
-            'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2Overview.heatmap.maxAnomalyScore',
-            { defaultMessage: 'Max anomaly score' }
-          )}
-          xAccessor="@timestamp"
-          xAxisLabelName={i18n.translate(
-            'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2Overview.heatmap.xAxis',
-            { defaultMessage: 'Date' }
-          )}
+          name={ENTITY_ANOMALIES_SWIMLANE_MAX_SCORE}
+          xAccessor={SWIMLANE_X_ACCESSOR_KEY}
+          xAxisLabelName={ENTITY_ANOMALIES_SWIMLANE_X_AXIS_LABEL}
           xAxisLabelFormatter={formatDateTick}
           yAccessor={yAxisAccessor}
           yAxisLabelName={yAxisAccessor}
           ySortPredicate={ySortPredicate}
-          valueAccessor="record_score"
+          valueAccessor={SWIMLANE_Y_ACCESSOR_KEY}
         />
       </Chart>
     </EuiFlexItem>

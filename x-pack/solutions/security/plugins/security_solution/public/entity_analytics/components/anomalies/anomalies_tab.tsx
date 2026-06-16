@@ -7,6 +7,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  EuiBadge,
   EuiButtonEmpty,
   EuiFlexGroup,
   EuiFlexItem,
@@ -26,7 +27,12 @@ import { useKibana } from '../../../common/lib/kibana';
 import { ENTITY_ANOMALY_DEFAULT_LOOKBACK } from '../../../../common/entity_analytics/anomalies/constants';
 
 import { useAnomalyOverview } from '../../api/hooks/use_anomaly_overview';
-import { ANOMALY_TIMELINE_V2_MANAGE_ML_JOBS, ATTACK_CHAIN_V2_TITLE } from './translations';
+import {
+  ENTITY_ANOMALIES_TAB_MANAGE_ML_JOBS,
+  ENTITY_ANOMALIES_TAB_ATTACK_CHAIN_TITLE,
+  ENTITY_ANOMALIES_CLEAR_TACTIC_LABEL,
+  getEntityAnomaliesFilteredByTacticLabel,
+} from './translations';
 import { useAnomalySummary } from '../../api/hooks/use_anomaly_summary';
 import { MitreAttackChain } from './mitre/components/mitre_attack_chain';
 import { AnomalyTabTimelineSection } from './anomalies_tab_timeline';
@@ -52,13 +58,17 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
 
   const timeRangeMs = useMemo(
     () => ({
-      from: parseDateWithDefault(start, moment().subtract(30, 'days')).valueOf(),
+      from: parseDateWithDefault(
+        start,
+        moment().subtract(ENTITY_ANOMALY_DEFAULT_LOOKBACK, 'days')
+      ).valueOf(),
       to: parseDateWithDefault(end, moment(), true).valueOf(),
     }),
     [start, end]
   );
 
-  // Table pagination + sort state — owned here so changes re-fetch via useAnomalySummary.
+  const bucketInterval = useMemo(() => deriveBucketInterval(timeRangeMs), [timeRangeMs]);
+
   const [tablePageIndex, setTablePageIndex] = useState(0);
   const [tablePageSize, setTablePageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
   const [tableSortField, setTableSortField] = useState<TableSortField>(DEFAULT_SORT_FIELD);
@@ -81,6 +91,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
     }
   }, []);
 
+  // TODO pass bucket interval to swimlane once supported, currently using fixed 1 day interval
   const anomalyOverview = useAnomalyOverview({
     entityId,
     entityType,
@@ -100,10 +111,26 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       from: timeRangeMs.from,
       to: timeRangeMs.to,
       page: tablePageIndex + 1,
-      pageSize: tablePageSize,
+      page_size: tablePageSize,
       sort: [{ field: tableSortField, order: tableSortDirection }],
     },
   });
+
+  const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
+
+  const handleSelectTactic = useCallback((tactic: string) => {
+    setSelectedTactic((current) => (current === tactic ? null : tactic));
+  }, []);
+
+  const handleClearTactic = useCallback(() => {
+    setSelectedTactic(null);
+  }, []);
+
+  useEffect(() => {
+    if (selectedTactic && !uniqueTactics.includes(selectedTactic)) {
+      setSelectedTactic(null);
+    }
+  }, [selectedTactic, uniqueTactics]);
 
   const {
     services: { ml },
@@ -140,14 +167,14 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
             target="_blank"
             isDisabled={!manageJobsHref}
           >
-            {ANOMALY_TIMELINE_V2_MANAGE_ML_JOBS}
+            {ENTITY_ANOMALIES_TAB_MANAGE_ML_JOBS}
           </EuiButtonEmpty>
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="m" />
       <>
         <EuiTitle size="xs">
-          <h3>{ATTACK_CHAIN_V2_TITLE}</h3>
+          <h3>{ENTITY_ANOMALIES_TAB_ATTACK_CHAIN_TITLE}</h3>
         </EuiTitle>
         <EuiSpacer size="m" />
         <EuiPanel
@@ -159,14 +186,36 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
           `}
         >
           <MitreAttackChain
-            triggeredTactics={uniqueTactics}
             anomalyCountByTactic={anomalyOverview?.data?.tacticCounts ?? {}}
+            onSelectTactic={handleSelectTactic}
+            selectedTactic={selectedTactic}
+            triggeredTactics={uniqueTactics}
             showLabels
           />
         </EuiPanel>
       </>
 
       <EuiSpacer size="l" />
+
+      {selectedTactic && (
+        <>
+          <EuiFlexGroup gutterSize="s" alignItems="center" responsive={false}>
+            <EuiFlexItem grow={false}>
+              <EuiBadge
+                color="hollow"
+                iconType="cross"
+                iconSide="right"
+                iconOnClick={handleClearTactic}
+                iconOnClickAriaLabel={ENTITY_ANOMALIES_CLEAR_TACTIC_LABEL}
+              >
+                {getEntityAnomaliesFilteredByTacticLabel(selectedTactic)}
+              </EuiBadge>
+            </EuiFlexItem>
+          </EuiFlexGroup>
+          <EuiSpacer size="m" />
+        </>
+      )}
+
       <AnomalyTabTimelineSection
         timeRangeMs={timeRangeMs}
         anomalies={anomalyOverview.data?.anomalies ?? []}
@@ -174,7 +223,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       <EuiSpacer size="l" />
       <AnomalyTabTableSection
         anomalies={anomalySummary.data?.anomalies ?? []}
-        totalAnomaliesCount={anomalySummary.data?.totalAnomaliesCount ?? 0}
+        totalAnomaliesCount={anomalySummary.data?.total ?? 0}
         pageIndex={tablePageIndex}
         pageSize={tablePageSize}
         sortField={tableSortField}

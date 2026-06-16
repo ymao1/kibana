@@ -6,7 +6,6 @@
  */
 
 import { useQuery } from '@kbn/react-query';
-import type { EntityType } from '../../../../common/entity_analytics/types';
 import type {
   AnomalySummaryRequestBody,
   GetAnomalySummaryRequestBodyInput,
@@ -22,9 +21,9 @@ interface UseAnomalySummaryParams {
   enabled?: boolean;
 }
 
-const DEFAULT_BODY: Required<Pick<AnomalySummaryRequestBody, 'page' | 'pageSize' | 'sort'>> = {
+const DEFAULT_BODY: Required<Pick<AnomalySummaryRequestBody, 'page' | 'page_size' | 'sort'>> = {
   page: 1,
-  pageSize: 10,
+  page_size: 10,
   sort: [{ field: 'timestamp', order: 'desc' }],
 };
 

@@ -17,23 +17,19 @@ import { useAnomalyBands } from '../recent_anomalies/anomaly_bands';
 import { AnomaliesSwimlane } from './anomalies_swimlane';
 import { MitreAttackChain } from './mitre/components/mitre_attack_chain';
 import {
-  BEHAVIORAL_ANOMALIES_ALL_LINK_TOOLTIP,
-  BEHAVIORAL_ANOMALIES_ALL_LINK_TITLE,
-  getBehavioralAnomaliesV2TacticsCountLabel,
-  getBehavioralAnomaliesCountLabel,
+  ENTITY_ANOMALIES_ALL_LINK_TOOLTIP,
+  ENTITY_ANOMALIES_ALL_LINK_TITLE,
+  getEntityAnomaliesTacticsCountLabel,
+  getEntityAnomaliesCountLabel,
 } from './translations';
 
-interface AnomaliesOverviewProps {
-  data: GetAnomalyOverviewResponse;
-  entityId: string;
-  isPreviewMode?: boolean;
-  openDetailsPanel: (path: EntityDetailsPath) => void;
-}
-
-const StatBlock: React.FC<{
+const ENTITY_ACCESSOR_KEY = 'entity_id';
+interface StatBlockProps {
   total: number;
   label: string;
-}> = ({ total, label }) => {
+}
+
+const StatBlock: React.FC<StatBlockProps> = ({ total, label }) => {
   const { euiTheme } = useEuiTheme();
   return (
     <EuiFlexGroup direction="column" gutterSize="none">
@@ -56,6 +52,13 @@ const StatBlock: React.FC<{
   );
 };
 
+interface AnomaliesOverviewProps {
+  data: GetAnomalyOverviewResponse;
+  entityId: string;
+  isPreviewMode?: boolean;
+  openDetailsPanel: (path: EntityDetailsPath) => void;
+}
+
 export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
   data,
   entityId,
@@ -73,43 +76,32 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
     () =>
       data.anomalies.map((a) => ({
         '@timestamp': new Date(a.timestamp).getTime(),
-        entity_id: entityId,
+        [ENTITY_ACCESSOR_KEY]: entityId,
         record_score: a.maxScore,
       })),
     [data.anomalies, entityId]
   );
 
-  console.log(`swimlaneRecords`);
-  console.log(swimlaneRecords);
-  console.log(`${data.from} - ${data.to}`);
-
-  const goToBehavioralAnomaliesTab = useCallback(
+  const goToAnomaliesTab = useCallback(
     () => openDetailsPanel({ tab: EntityDetailsLeftPanelTab.ANOMALIES }),
     [openDetailsPanel]
   );
 
   const link = useMemo(
     () => ({
-      callback: goToBehavioralAnomaliesTab,
-      tooltip: BEHAVIORAL_ANOMALIES_ALL_LINK_TOOLTIP,
+      callback: goToAnomaliesTab,
+      tooltip: ENTITY_ANOMALIES_ALL_LINK_TOOLTIP,
     }),
-    [goToBehavioralAnomaliesTab]
+    [goToAnomaliesTab]
   );
 
-  // Both rows use the same template: stat block on the left (`grow={false}`,
-  // fixed minimum width so the two stat blocks line up vertically) and the
-  // visualization on the right (stretches to fill remaining width).
   const statCellCss = css`
     min-width: 72px;
-  `;
-  const vizCellCss = css`
-    flex: 1;
-    min-width: 0;
   `;
 
   return (
     <ExpandablePanel
-      data-test-subj="anomalies-overview-expandable-panel"
+      data-test-subj="entity-anomalies-overview-expandable-panel"
       header={{
         iconType: !isPreviewMode ? 'chevronLimitLeft' : undefined,
         title: (
@@ -119,7 +111,7 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
               fontWeight: euiTheme.font.weight.bold,
             }}
           >
-            {BEHAVIORAL_ANOMALIES_ALL_LINK_TITLE}
+            {ENTITY_ANOMALIES_ALL_LINK_TITLE}
           </EuiText>
         ),
         link,
@@ -129,10 +121,15 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
         <EuiFlexItem grow={false} css={statCellCss}>
           <StatBlock
             total={uniqueTacticsCount}
-            label={getBehavioralAnomaliesV2TacticsCountLabel(uniqueTacticsCount)}
+            label={getEntityAnomaliesTacticsCountLabel(uniqueTacticsCount)}
           />
         </EuiFlexItem>
-        <EuiFlexItem css={vizCellCss}>
+        <EuiFlexItem
+          css={css`
+            flex: 1;
+            min-width: 0;
+          `}
+        >
           <MitreAttackChain
             triggeredTactics={uniqueTactics}
             anomalyCountByTactic={data.tacticCounts}
@@ -145,6 +142,7 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
         gutterSize="m"
         alignItems="center"
         responsive={false}
+        data-test-subj="entity-anomalies-overview-swimlane"
         css={css`
           & > .euiFlexItem:last-child {
             flex: 1;
@@ -155,7 +153,7 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
         <EuiFlexItem grow={false} css={statCellCss}>
           <StatBlock
             total={totalAnomaliesCount}
-            label={getBehavioralAnomaliesCountLabel(totalAnomaliesCount)}
+            label={getEntityAnomaliesCountLabel(totalAnomaliesCount)}
           />
         </EuiFlexItem>
         <AnomaliesSwimlane
@@ -164,8 +162,8 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
           to={data.to}
           anomalyBands={bands}
           yAxisNames={[entityId]}
-          yAxisAccessor="entity_id"
-          heatmapId="entity-flyout-behavioral-anomalies-v2-heatmap"
+          yAxisAccessor={ENTITY_ACCESSOR_KEY}
+          heatmapId="entity-anomalies-overview-heatmap"
         />
       </EuiFlexGroup>
       <EuiSpacer size="s" />

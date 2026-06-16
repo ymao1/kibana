@@ -34,21 +34,19 @@ const tacticNames = [...mitreTactics]
   .map(({ name }) => name);
 
 interface MitreAttackChainProps {
-  triggeredTactics: readonly string[];
-  /** When true, renders the tactic name under each dot (truncated + tooltip). */
-  showLabels?: boolean;
-  /**
-   * Optional per-tactic anomaly counts. When provided, each dot is wrapped in
-   * a chart-style tooltip showing "<tactic> — <N> anomalies" on hover. Pass
-   * `undefined` to disable hover tooltips on the dots.
-   */
   anomalyCountByTactic?: Readonly<Record<string, number>>;
+  onSelectTactic?: (tactic: string) => void;
+  selectedTactic?: string | null;
+  showLabels?: boolean;
+  triggeredTactics: readonly string[];
 }
 
 export const MitreAttackChain: React.FC<MitreAttackChainProps> = ({
-  triggeredTactics,
-  showLabels = false,
   anomalyCountByTactic,
+  onSelectTactic,
+  selectedTactic,
+  showLabels = false,
+  triggeredTactics,
 }) => {
   const triggeredSet = useMemo(() => new Set(triggeredTactics), [triggeredTactics]);
 
@@ -57,7 +55,6 @@ export const MitreAttackChain: React.FC<MitreAttackChainProps> = ({
       css={css`
         width: 100%;
         min-width: 0;
-        /* Outer halo of the leftmost dot extends 4px to the left of the cell. */
         padding-left: 4px;
         padding-right: 4px;
       `}
@@ -65,6 +62,7 @@ export const MitreAttackChain: React.FC<MitreAttackChainProps> = ({
       <EuiFlexGroup gutterSize="none" responsive={false} wrap={false} alignItems="flexStart">
         {tacticNames.map((tactic, index) => {
           const isDetected = triggeredSet.has(tactic);
+          const isClickable = !!onSelectTactic && isDetected;
           return (
             <EuiFlexItem
               key={tactic}
@@ -79,6 +77,9 @@ export const MitreAttackChain: React.FC<MitreAttackChainProps> = ({
                 showLabel={showLabels}
                 isLast={index === tacticNames.length - 1}
                 anomalyCount={anomalyCountByTactic?.[tactic]}
+                isSelected={selectedTactic === tactic}
+                isClickable={isClickable}
+                onClick={isClickable ? () => onSelectTactic?.(tactic) : undefined}
               />
             </EuiFlexItem>
           );

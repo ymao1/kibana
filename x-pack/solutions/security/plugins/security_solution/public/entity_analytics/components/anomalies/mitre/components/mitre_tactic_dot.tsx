@@ -11,48 +11,19 @@ import { css } from '@emotion/react';
 import { i18n } from '@kbn/i18n';
 
 interface MitreTacticDotProps {
-  /** Display name of the tactic (e.g. "Initial Access"). */
-  tactic: string;
-  /** Whether the tactic was triggered for the entity (drives color + halo). */
-  detected: boolean;
-  /** Whether to render the label below the dot. */
-  showLabel: boolean;
-  /**
-   * Last dot in the chain — when true, the connector line stops at the dot
-   * center instead of running to the right edge of the cell. Mid-chain dots
-   * keep their full-width line so adjacent cells stitch into a single line.
-   */
-  isLast?: boolean;
-  /**
-   * When provided, the dot row is wrapped in a tooltip that surfaces the
-   * tactic name + a short "<N> anomalies" line, matching the styling of
-   * `@elastic/charts` tooltips. Pass `undefined` to disable the dot tooltip
-   * entirely (the label tooltip stays).
-   */
   anomalyCount?: number;
-  /**
-   * Currently selected as the tab-level tactic filter. Renders the halo at
-   * full opacity and slightly larger so the selection reads against the rest
-   * of the chain. Independent of `detected` — a selected dot stays styled
-   * even if a time-range change makes its tactic non-triggered.
-   */
-  isSelected?: boolean;
-  /**
-   * When true (and `onClick` is provided), the column becomes a button:
-   * `cursor: pointer`, keyboard-accessible (Enter / Space), and announced as
-   * a button. Caller is expected to only pass this for triggered dots — the
-   * grayed-out tactics stay non-interactive per the design.
-   */
+  detected: boolean;
   isClickable?: boolean;
-  /** Click / keyboard activation handler (only fires when `isClickable`). */
+  isLast?: boolean;
+  isSelected?: boolean;
   onClick?: () => void;
-  /** Suffix for `data-test-subj` attributes. */
-  testSubjId?: string;
+  showLabel: boolean;
+  tactic: string;
 }
 
 const anomaliesCountText = (count: number): string =>
   i18n.translate(
-    'xpack.securitySolution.entityAnalytics.behavioralAnomaliesV2.mitre.anomalyCountTooltip',
+    'xpack.securitySolution.entityAnalytics.entityAnomalies.mitre.anomalyCountTooltip',
     {
       defaultMessage: '{count, plural, one {# anomaly} other {# anomalies}}',
       values: { count },
@@ -60,23 +31,18 @@ const anomaliesCountText = (count: number): string =>
   );
 
 export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
-  tactic,
-  detected,
-  showLabel,
-  isLast = false,
   anomalyCount,
-  isSelected = false,
+  detected,
   isClickable = false,
+  isLast = false,
+  isSelected = false,
   onClick,
-  testSubjId,
+  showLabel,
+  tactic,
 }) => {
   const { euiTheme } = useEuiTheme();
   const color = detected ? euiTheme.colors.danger : euiTheme.colors.subduedText;
-  const dotTestSubj = testSubjId ? `mitreTacticDot-${testSubjId}` : 'mitreTacticDot';
 
-  // Selected halo: grows from 16x16 (left/top -4px) to 20x20 (left/top -6px)
-  // and goes from 25% to 100% opacity. Non-selected detected dots keep the
-  // 25% halo; non-detected dots have no halo (opacity 0).
   const haloOpacity = isSelected ? 1 : detected ? 0.25 : 0;
   const haloSize = isSelected ? 20 : 16;
   const haloOffset = isSelected ? -6 : -4;
@@ -90,7 +56,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
         height: 8px;
       `}
     >
-      {/* Inner circle */}
       <div
         data-test-subj="mitreInnerCircle"
         css={css`
@@ -105,7 +70,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
           z-index: 2;
         `}
       />
-      {/* Outer halo — only fully visible when detected; expands + 100% opacity when selected. */}
       <div
         data-test-subj="mitreOuterCircle"
         css={css`
@@ -123,9 +87,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
             top 120ms ease;
         `}
       />
-      {/* Connector line. For the last dot we render only a 4px stub so the
-          chain visually terminates at the dot center; mid-chain dots fill
-          the whole cell so consecutive cells join into one continuous line. */}
       <div
         css={
           isLast
@@ -150,8 +111,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
     </div>
   );
 
-  // The dot row is the hover target. The tooltip mirrors `@elastic/charts`
-  // styling (compact, dark surface) by relying on the EuiToolTip defaults.
   const dotRowWithTooltip =
     typeof anomalyCount === 'number' ? (
       <EuiToolTip
@@ -175,10 +134,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
       dotRow
     );
 
-  // The dot column becomes a button-like target when the parent enables
-  // click-to-filter. Native `<button>` styling would inject browser defaults
-  // (background, padding, focus ring) that fight the dot layout, so we use a
-  // div with `role="button"` and our own focus-visible outline.
   const interactiveProps = handleActivate
     ? {
         role: 'button' as const,
@@ -198,8 +153,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
       }
     : {};
 
-  // Cursor + focus outline only apply when the dot is interactive. The
-  // outline uses focus-visible so mouse-click selection stays clean.
   const interactiveCss = handleActivate
     ? css`
         cursor: pointer;
@@ -215,7 +168,6 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
 
   return (
     <div
-      data-test-subj={dotTestSubj}
       css={css`
         position: relative;
         width: 100%;
