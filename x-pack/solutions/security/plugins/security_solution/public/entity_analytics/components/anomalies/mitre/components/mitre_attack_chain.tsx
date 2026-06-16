@@ -8,29 +8,12 @@
 import React, { useMemo } from 'react';
 import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { MitreTacticDot } from './mitre_tactic_dot';
+import { tacticOrder as mitreTacticOrder } from '../../../../../../common/detection_engine/mitre/mitre_tactics_order';
 import { tactics as mitreTactics } from '../../../../../../common/detection_engine/mitre/mitre_tactics_techniques';
+import { MitreTacticDot } from './mitre_tactic_dot';
 
-// Copied from x-pack/solutions/security/plugins/security_solution/public/detection_engine/rule_management/logic/coverage_overview/build_coverage_overview_mitre_graph.ts
-// Move to a shared location.
-const tacticOrder = [
-  'TA0043',
-  'TA0042',
-  'TA0001',
-  'TA0002',
-  'TA0003',
-  'TA0004',
-  'TA0005',
-  'TA0006',
-  'TA0007',
-  'TA0008',
-  'TA0009',
-  'TA0011',
-  'TA0010',
-  'TA0040',
-];
 const tacticNames = [...mitreTactics]
-  .sort((a, b) => tacticOrder.indexOf(a.id) - tacticOrder.indexOf(b.id))
+  .sort((a, b) => mitreTacticOrder.indexOf(a.id) - mitreTacticOrder.indexOf(b.id))
   .map(({ name }) => name);
 
 interface MitreAttackChainProps {

@@ -32,6 +32,7 @@ interface GetEntityAnomalyOverviewParams {
   entityType: EntityType;
   fromMs?: number;
   toMs?: number;
+  threatTactics?: string[];
   logger: Logger;
   ml: MlPluginSetup;
   soClient: SavedObjectsClientContract;
@@ -50,6 +51,7 @@ export const getEntityAnomalyOverview = async ({
   entityType,
   fromMs,
   toMs,
+  threatTactics,
   logger,
   ml,
   soClient,
@@ -65,9 +67,19 @@ export const getEntityAnomalyOverview = async ({
   };
 
   const mlSystem = ml.mlSystemProvider({} as KibanaRequest, soClient);
-  const securityJobIds = await getSecurityMlJobIds({ ml, soClient });
+  const allSecurityJobIds = await getSecurityMlJobIds({ ml, soClient });
 
-  if (securityJobIds.length === 0) return empty;
+  if (allSecurityJobIds.length === 0) return empty;
+
+  const allConfigs = await getJobConfig({ jobIds: allSecurityJobIds, logger, ml, soClient });
+
+  let resolvedJobIds = allSecurityJobIds;
+  if (threatTactics && threatTactics.length > 0) {
+    const tacticMatchedIds = allSecurityJobIds.filter((id) =>
+      allConfigs.get(id)?.threatTactics.some((t) => threatTactics.includes(t))
+    );
+    resolvedJobIds = tacticMatchedIds;
+  }
 
   let aggs: OverviewAggs | undefined;
   let totalAnomaliesCount = 0;
@@ -87,7 +99,7 @@ export const getEntityAnomalyOverview = async ({
               { range: { record_score: { gte: 1 } } },
               { range: { timestamp: { gte: effectiveFromMs, lte: effectiveToMs } } },
               { term: { entity_id: entityId } },
-              { terms: { job_id: securityJobIds } },
+              ...(resolvedJobIds.length > 0 ? [{ terms: { job_id: resolvedJobIds } }] : []),
             ],
           },
         },
@@ -132,11 +144,11 @@ export const getEntityAnomalyOverview = async ({
     .filter((b) => b.doc_count > 0 && b.max_score.value !== null)
     .map((b) => {
       const bucketJobIds = b.jobs.buckets.map((j) => j.key);
-      const threatTactics = [...new Set(bucketJobIds.flatMap((id) => tacticsByJob.get(id) ?? []))];
+      const tactics = [...new Set(bucketJobIds.flatMap((id) => tacticsByJob.get(id) ?? []))];
       return {
         timestamp: new Date(b.key).toISOString(),
         maxScore: b.max_score.value as number,
-        threatTactics,
+        threatTactics: tactics,
       };
     });
 

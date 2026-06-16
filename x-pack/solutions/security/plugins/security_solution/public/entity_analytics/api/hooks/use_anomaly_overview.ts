@@ -6,7 +6,6 @@
  */
 
 import { useQuery } from '@kbn/react-query';
-import type { EntityType } from '../../../../common/entity_analytics/types';
 import { useEntityAnalyticsRoutes } from '../api';
 
 export const ANOMALY_OVERVIEW_QUERY_KEY = ['POST', 'FETCH_ANOMALY_OVERVIEW'] as const;
@@ -16,6 +15,7 @@ interface UseAnomalyOverviewParams {
   entityType: string;
   from?: number;
   to?: number;
+  threatTactics?: string[];
   enabled?: boolean;
 }
 
@@ -24,14 +24,17 @@ export const useAnomalyOverview = ({
   entityType,
   from,
   to,
+  threatTactics,
   enabled = true,
 }: UseAnomalyOverviewParams) => {
   const { fetchAnomalyOverview } = useEntityAnalyticsRoutes();
 
-  const body = from !== undefined || to !== undefined ? { from, to } : undefined;
+  const hasBody =
+    from !== undefined || to !== undefined || (threatTactics && threatTactics.length > 0);
+  const body = hasBody ? { from, to, threat_tactics: threatTactics } : undefined;
 
   return useQuery(
-    [...ANOMALY_OVERVIEW_QUERY_KEY, entityType, entityId, from, to],
+    [...ANOMALY_OVERVIEW_QUERY_KEY, entityType, entityId, from, to, threatTactics],
     ({ signal }) => fetchAnomalyOverview({ entityType, entityId, body, signal }),
     { enabled: enabled && !!entityId }
   );

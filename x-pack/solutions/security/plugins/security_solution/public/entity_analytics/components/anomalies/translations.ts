@@ -79,15 +79,10 @@ export const getEntityAnomaliesFilteredByTacticLabel = (tactic: string) =>
     }
   );
 
-// export const BEHAVIORAL_ANOMALIES_TAB_LABEL = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.tabLabel',
-//   { defaultMessage: 'BA-v.1' }
-// );
-
-// export const ANOMALY_TIMELINE_TITLE = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.anomalyTimelineTitle',
-//   { defaultMessage: 'Anomaly timeline' }
-// );
+export const ENTITY_ANOMALY_TIMELINE_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTimelineTitle',
+  { defaultMessage: 'Anomaly timeline' }
+);
 
 // export const ANOMALY_TIMELINE_MANAGE_ML_JOBS = i18n.translate(
 //   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.manageMlJobs',

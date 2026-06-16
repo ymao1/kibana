@@ -21,6 +21,7 @@ import {
 } from './translations';
 import type { GetAnomalyOverviewResponse } from '../../../../common/api/entity_analytics';
 import type { EntityDetailsPath } from '../../../flyout/entity_details/shared/components/left_panel/left_panel_header';
+import { useAnomalyBands } from '../recent_anomalies/anomaly_bands';
 import { AnomaliesOverview } from './anomalies_overview';
 
 interface AnomaliesSectionProps {
@@ -33,6 +34,7 @@ interface AnomaliesSectionProps {
 export const AnomaliesSection: React.FC<AnomaliesSectionProps> = (props) => {
   const { euiTheme } = useEuiTheme();
   const xsFontSize = useEuiFontSize('xs').fontSize;
+  const { bands } = useAnomalyBands();
 
   return (
     <>
@@ -64,7 +66,7 @@ export const AnomaliesSection: React.FC<AnomaliesSectionProps> = (props) => {
         }
       >
         <EuiSpacer size="m" />
-        <AnomaliesOverview {...props} />
+        <AnomaliesOverview {...props} anomalyBands={bands} />
       </EuiAccordion>
       <EuiHorizontalRule />
     </>

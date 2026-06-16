@@ -6,105 +6,127 @@
  */
 
 import React, { useMemo } from 'react';
-import { EuiFlexGroup, EuiSpacer, EuiTitle } from '@elastic/eui';
+import { EuiFlexGroup, EuiFlexItem, EuiSpacer, EuiText, EuiTitle, EuiToolTip } from '@elastic/eui';
 import { css } from '@emotion/react';
-import { i18n } from '@kbn/i18n';
-import type { AnomalySummaryEntry } from '../../../../common/api/entity_analytics';
+import { tacticOrder as mitreTacticOrder } from '../../../../common/detection_engine/mitre/mitre_tactics_order';
 import { tactics as mitreTactics } from '../../../../common/detection_engine/mitre/mitre_tactics_techniques';
 import { AnomaliesSwimlane } from './anomalies_swimlane';
-import { useAnomalyBands } from '../recent_anomalies';
+import { ENTITY_ANOMALY_TIMELINE_TITLE } from './translations';
+import { useAnomalyBands } from '../recent_anomalies/anomaly_bands';
+import { AnomalySeverityFilter } from '../recent_anomalies/anomaly_severity_filter';
+import { getAnomalyChartStyling } from '../recent_anomalies';
 
-// Copied from x-pack/solutions/security/plugins/security_solution/public/detection_engine/rule_management/logic/coverage_overview/build_coverage_overview_mitre_graph.ts
-// Move to a shared location.
-const tacticOrder = [
-  'TA0043',
-  'TA0042',
-  'TA0001',
-  'TA0002',
-  'TA0003',
-  'TA0004',
-  'TA0005',
-  'TA0006',
-  'TA0007',
-  'TA0008',
-  'TA0009',
-  'TA0011',
-  'TA0010',
-  'TA0040',
-];
 const tacticNames = [...mitreTactics]
-  .sort((a, b) => tacticOrder.indexOf(a.id) - tacticOrder.indexOf(b.id))
+  .sort((a, b) => mitreTacticOrder.indexOf(a.id) - mitreTacticOrder.indexOf(b.id))
   .map(({ name }) => name);
 
 const TACTIC_ACCESSOR = 'mitre_tactic';
 
-const tacticIndexByName = new Map(tacticNames.map((name, i) => [name, i]));
-
 interface AnomalyTabTimelineProps {
-  timeRangeMs: { from: number; to: number };
   anomalies: Array<{ timestamp: string; maxScore: number; threatTactics?: string[] }>;
+  selectedTactic?: string | null;
+  timeRangeMs: { from: number; to: number };
 }
 
 export const AnomalyTabTimelineSection: React.FC<AnomalyTabTimelineProps> = ({
-  timeRangeMs,
   anomalies,
+  selectedTactic,
+  timeRangeMs,
 }) => {
-  const { bands } = useAnomalyBands();
+  const { bands, toggleHiddenBand } = useAnomalyBands();
+  const styling = getAnomalyChartStyling(true);
 
-  const records = useMemo(
+  // Show all MITRE ATT&CK tactics, even if there are no anomalies for some of them, to provide better context to users and allow filtering by all tactics from the swimlane.
+  const mitreTacticNames = useMemo(() => {
+    if (selectedTactic && tacticNames.includes(selectedTactic)) {
+      return [selectedTactic];
+    }
+    return tacticNames;
+  }, [selectedTactic]);
+  const mitreTacticLabels = useMemo(
     () =>
-      anomalies
-        .flatMap((a) =>
-          (a.threatTactics ?? []).map((tactic) => ({
-            '@timestamp': new Date(a.timestamp).getTime(),
-            [TACTIC_ACCESSOR]: tactic,
-            record_score: a.maxScore,
-          }))
-        )
-        .sort(
-          (a, b) =>
-            (tacticIndexByName.get(a[TACTIC_ACCESSOR]) ?? 999) -
-            (tacticIndexByName.get(b[TACTIC_ACCESSOR]) ?? 999)
-        ),
-    [anomalies]
+      mitreTacticNames.map((mitreTacticName) => ({ id: mitreTacticName, label: mitreTacticName })),
+    [mitreTacticNames]
   );
 
-  console.log(`records`);
-  console.log(records);
-  console.log(`${timeRangeMs.from} - ${timeRangeMs.to}`);
+  const records = useMemo(() => {
+    const byTactic = new Map<string, Array<{ '@timestamp': number; record_score: number }>>();
+    for (const a of anomalies) {
+      for (const tactic of a.threatTactics ?? []) {
+        const entry = { '@timestamp': new Date(a.timestamp).getTime(), record_score: a.maxScore };
+        const existing = byTactic.get(tactic);
+        if (existing) {
+          existing.push(entry);
+        } else {
+          byTactic.set(tactic, [entry]);
+        }
+      }
+    }
 
-  const mitreTacticNames = useMemo(() => {
-    const present = new Set(records.map((r) => r[TACTIC_ACCESSOR]));
-    return tacticNames.filter((name) => present.has(name));
-  }, [records]);
+    return mitreTacticNames.flatMap((tactic) => {
+      const entries = byTactic.get(tactic);
+      if (entries) {
+        return entries.map((e) => ({ ...e, [TACTIC_ACCESSOR]: tactic }));
+      }
+      return [{ '@timestamp': timeRangeMs.from, [TACTIC_ACCESSOR]: tactic, record_score: 0 }];
+    });
+  }, [anomalies, mitreTacticNames, timeRangeMs.from]);
 
   return (
     <div>
       <EuiTitle size="xs">
-        <h3>
-          {i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTab.timelineTitle', {
-            defaultMessage: 'Anomaly timeline',
-          })}
-        </h3>
+        <h3>{ENTITY_ANOMALY_TIMELINE_TITLE}</h3>
       </EuiTitle>
       <EuiSpacer size="m" />
-      <EuiFlexGroup
-        css={css`
-          & > .euiFlexItem {
-            flex: 1;
-            min-width: 0;
-          }
-        `}
-      >
+      <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false} wrap>
+        <EuiFlexItem grow={false}>
+          <AnomalySeverityFilter anomalyBands={bands} toggleHiddenBand={toggleHiddenBand} />
+        </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiSpacer size="m" />
+      <EuiFlexGroup>
+        <EuiFlexItem
+          css={css`
+            height: ${styling.heightOfEntityNamesList(mitreTacticLabels.length)}px;
+          `}
+          grow={false}
+        >
+          <EuiFlexGroup gutterSize="none" direction="column" justifyContent="center">
+            {mitreTacticLabels.map((row) => (
+              <EuiFlexItem
+                key={row.id}
+                css={css`
+                  justify-content: center;
+                  height: ${styling.heightOfEachCell}px;
+                `}
+                grow={false}
+              >
+                <EuiToolTip content={row.label}>
+                  <EuiText
+                    textAlign="right"
+                    size="xs"
+                    css={css`
+                      max-width: 140px;
+                      overflow: hidden;
+                      text-overflow: ellipsis;
+                      white-space: nowrap;
+                    `}
+                  >
+                    {row.label}
+                  </EuiText>
+                </EuiToolTip>
+              </EuiFlexItem>
+            ))}
+          </EuiFlexGroup>
+        </EuiFlexItem>
         <AnomaliesSwimlane
-          records={records}
           anomalyBands={bands}
+          records={records}
           from={timeRangeMs.from}
           to={timeRangeMs.to}
           yAxisNames={mitreTacticNames}
           yAxisAccessor={TACTIC_ACCESSOR}
           heatmapId="entity-anomaly-tab-timeline-heatmap"
-          showYAxisLabels={true}
           ySortPredicate="dataIndex"
         />
       </EuiFlexGroup>

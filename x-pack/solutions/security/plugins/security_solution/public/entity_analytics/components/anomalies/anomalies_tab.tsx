@@ -67,7 +67,8 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
     [start, end]
   );
 
-  const bucketInterval = useMemo(() => deriveBucketInterval(timeRangeMs), [timeRangeMs]);
+  // TODO derive bucket interval based on time range and entity anomaly count once swimlane supports it
+  // const bucketInterval = useMemo(() => deriveBucketInterval(timeRangeMs), [timeRangeMs]);
 
   const [tablePageIndex, setTablePageIndex] = useState(0);
   const [tablePageSize, setTablePageSize] = useState(DEFAULT_TABLE_PAGE_SIZE);
@@ -91,12 +92,26 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
     }
   }, []);
 
+  const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
+
+  const handleSelectTactic = useCallback(
+    (tactic: string) => {
+      setSelectedTactic((current) => (current === tactic ? null : tactic));
+    },
+    [setSelectedTactic]
+  );
+
+  const handleClearTactic = useCallback(() => {
+    setSelectedTactic(null);
+  }, [setSelectedTactic]);
+
   // TODO pass bucket interval to swimlane once supported, currently using fixed 1 day interval
   const anomalyOverview = useAnomalyOverview({
     entityId,
     entityType,
     from: timeRangeMs.from,
     to: timeRangeMs.to,
+    threatTactics: selectedTactic ? [selectedTactic] : undefined,
   });
 
   const uniqueTactics = useMemo(
@@ -110,27 +125,19 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
     body: {
       from: timeRangeMs.from,
       to: timeRangeMs.to,
+      threat_tactics: selectedTactic ? [selectedTactic] : undefined,
       page: tablePageIndex + 1,
       page_size: tablePageSize,
       sort: [{ field: tableSortField, order: tableSortDirection }],
     },
   });
 
-  const [selectedTactic, setSelectedTactic] = useState<string | null>(null);
-
-  const handleSelectTactic = useCallback((tactic: string) => {
-    setSelectedTactic((current) => (current === tactic ? null : tactic));
-  }, []);
-
-  const handleClearTactic = useCallback(() => {
-    setSelectedTactic(null);
-  }, []);
-
   useEffect(() => {
+    if (anomalyOverview.isFetching) return;
     if (selectedTactic && !uniqueTactics.includes(selectedTactic)) {
       setSelectedTactic(null);
     }
-  }, [selectedTactic, uniqueTactics]);
+  }, [anomalyOverview.isFetching, selectedTactic, uniqueTactics]);
 
   const {
     services: { ml },
@@ -217,8 +224,9 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       )}
 
       <AnomalyTabTimelineSection
-        timeRangeMs={timeRangeMs}
         anomalies={anomalyOverview.data?.anomalies ?? []}
+        selectedTactic={selectedTactic}
+        timeRangeMs={timeRangeMs}
       />
       <EuiSpacer size="l" />
       <AnomalyTabTableSection

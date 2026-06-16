@@ -132,6 +132,10 @@ export const AnomalyOverviewRequestBody = lazySchema(() =>
      * End time as epoch milliseconds; defaults to now when omitted
      */
     to: z.number().int().min(0).optional(),
+    /**
+     * Filter results to jobs associated with the specified MITRE ATT&CK tactic names; returns all tactics when omitted
+     */
+    threat_tactics: z.array(z.string().max(150)).max(100).optional(),
   })
 );
 export type AnomalyOverviewRequestBody = z.infer<typeof AnomalyOverviewRequestBody>;

@@ -238,6 +238,13 @@ components:
           format: int64
           minimum: 0
           description: End time as epoch milliseconds; defaults to now when omitted
+        threat_tactics:
+          type: array
+          maxItems: 100
+          items:
+            type: string
+            maxLength: 150
+          description: Filter results to jobs associated with the specified MITRE ATT&CK tactic names; returns all tactics when omitted
 
     AnomalyOverviewEntry:
       type: object

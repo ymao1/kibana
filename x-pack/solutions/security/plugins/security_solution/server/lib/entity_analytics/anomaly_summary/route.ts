@@ -52,7 +52,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
         const siemResponse = buildSiemResponse(response);
         try {
           const { entity_id: entityId, entity_type: entityType } = request.params;
-          const { from, to } = request.body ?? {};
+          const { from, to, threat_tactics: threatTactics } = request.body ?? {};
 
           if (from !== undefined && from < Date.now() - ONE_YEAR_MS) {
             return siemResponse.error({
@@ -85,6 +85,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             entityType,
             fromMs: from,
             toMs: to,
+            threatTactics,
             logger,
             ml,
             soClient,

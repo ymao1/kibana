@@ -13,7 +13,7 @@ import type { GetAnomalyOverviewResponse } from '../../../../common/api/entity_a
 import type { EntityDetailsPath } from '../../../flyout/entity_details/shared/components/left_panel/left_panel_header';
 import { EntityDetailsLeftPanelTab } from '../../../flyout/entity_details/shared/components/left_panel/left_panel_header';
 import { ExpandablePanel } from '../../../flyout_v2/shared/components/expandable_panel';
-import { useAnomalyBands } from '../recent_anomalies/anomaly_bands';
+import type { AnomalyBand } from '../recent_anomalies/anomaly_bands';
 import { AnomaliesSwimlane } from './anomalies_swimlane';
 import { MitreAttackChain } from './mitre/components/mitre_attack_chain';
 import {
@@ -53,6 +53,7 @@ const StatBlock: React.FC<StatBlockProps> = ({ total, label }) => {
 };
 
 interface AnomaliesOverviewProps {
+  anomalyBands: AnomalyBand[];
   data: GetAnomalyOverviewResponse;
   entityId: string;
   isPreviewMode?: boolean;
@@ -60,13 +61,13 @@ interface AnomaliesOverviewProps {
 }
 
 export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
+  anomalyBands,
   data,
   entityId,
   isPreviewMode,
   openDetailsPanel,
 }) => {
   const { euiTheme } = useEuiTheme();
-  const { bands } = useAnomalyBands();
 
   const uniqueTactics = useMemo(() => Object.keys(data.tacticCounts), [data.tacticCounts]);
   const uniqueTacticsCount = uniqueTactics.length;
@@ -117,6 +118,7 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
         link,
       }}
     >
+      {/* MITRE ATT&CK Tactics */}
       <EuiFlexGroup gutterSize="m" alignItems="center" responsive={false}>
         <EuiFlexItem grow={false} css={statCellCss}>
           <StatBlock
@@ -157,10 +159,10 @@ export const AnomaliesOverview: React.FC<AnomaliesOverviewProps> = ({
           />
         </EuiFlexItem>
         <AnomaliesSwimlane
+          anomalyBands={anomalyBands}
           records={swimlaneRecords}
           from={data.from}
           to={data.to}
-          anomalyBands={bands}
           yAxisNames={[entityId]}
           yAxisAccessor={ENTITY_ACCESSOR_KEY}
           heatmapId="entity-anomalies-overview-heatmap"

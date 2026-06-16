@@ -31,7 +31,7 @@ const anomaliesCountText = (count: number): string =>
   );
 
 export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
-  anomalyCount,
+  anomalyCount = 0,
   detected,
   isClickable = false,
   isLast = false,
@@ -56,6 +56,7 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
         height: 8px;
       `}
     >
+      {/* Inner circle */}
       <div
         data-test-subj="mitreInnerCircle"
         css={css`
@@ -70,6 +71,7 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
           z-index: 2;
         `}
       />
+      {/* Outer halo — only fully visible when detected */}
       <div
         data-test-subj="mitreOuterCircle"
         css={css`
@@ -87,6 +89,7 @@ export const MitreTacticDot: React.FC<MitreTacticDotProps> = ({
             top 120ms ease;
         `}
       />
+      {/* Connector line */}
       <div
         css={
           isLast

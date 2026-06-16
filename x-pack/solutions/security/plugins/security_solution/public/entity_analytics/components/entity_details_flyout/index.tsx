@@ -129,8 +129,8 @@ export const getAnomaliesTab = ({
   'data-test-subj': ANOMALIES_TAB_TEST_ID,
   name: (
     <FormattedMessage
-      id="xpack.securitySolution.flyout.entityDetails.resolutionGroupTab.tabLabel"
-      defaultMessage="Anomalies"
+      id="xpack.securitySolution.flyout.entityDetails.anomalyTab.tabLabel"
+      defaultMessage="Behavioral anomalies"
     />
   ),
   content: <AnomaliesTab entityId={entityId} entityType={entityType} />,

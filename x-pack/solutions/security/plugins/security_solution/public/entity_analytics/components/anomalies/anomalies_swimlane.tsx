@@ -73,7 +73,6 @@ interface AnomaliesSwimlaneProps {
   from: number;
   heatmapId: string;
   records: Array<Record<string, unknown>>;
-  showYAxisLabels?: boolean;
   to: number;
   yAxisAccessor: string;
   yAxisNames: string[];
@@ -85,7 +84,6 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
   from,
   heatmapId,
   records,
-  showYAxisLabels = false,
   to,
   yAxisNames,
   yAxisAccessor,
@@ -102,30 +100,23 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
   const styling = getAnomalyChartStyling(true);
   const baseTheme = useElasticChartsTheme();
 
-  const theme = useMemo(
-    () => ({
-      heatmap: {
-        ...heatmapComponentStyle,
-        yAxisLabel: { ...heatmapComponentStyle.yAxisLabel, visible: showYAxisLabels },
-      },
-    }),
-    [showYAxisLabels]
-  );
-
   return (
     <EuiFlexItem
       css={{
         height: `${styling.heightOfHeatmap(yAxisNames.length)}px`,
-        pointerEvents: 'none',
       }}
     >
       <Chart>
-        <Settings baseTheme={baseTheme} theme={theme} xDomain={xDomain} />
+        <Settings
+          baseTheme={baseTheme}
+          theme={{ heatmap: heatmapComponentStyle }}
+          xDomain={xDomain}
+        />
         <Heatmap
           id={heatmapId}
           xScale={{
             type: ScaleType.Time,
-            interval: { type: 'fixed', value: 1, unit: 'd' }, // bucketInterval
+            interval: { type: 'fixed', value: 1, unit: 'd' }, // TODO bucketInterval
           }}
           colorScale={{
             type: 'bands',
