@@ -59039,6 +59039,7 @@ paths:
           name: product_name
   /api/streams/{name}/queries:
     get:
+      deprecated: true
       description: |-
         **Spaces method and path for this operation:**
 
@@ -59098,6 +59099,7 @@ paths:
           name: product_name
   /api/streams/{name}/queries/_bulk:
     post:
+      deprecated: true
       description: |-
         **Spaces method and path for this operation:**
 
@@ -59204,6 +59206,7 @@ paths:
           name: product_name
   /api/streams/{name}/queries/{queryId}:
     delete:
+      deprecated: true
       description: |-
         **Spaces method and path for this operation:**
 
@@ -59255,6 +59258,7 @@ paths:
         - content: Kibana, Elastic Cloud Serverless
           name: product_name
     put:
+      deprecated: true
       description: |-
         **Spaces method and path for this operation:**
 
@@ -59334,6 +59338,7 @@ paths:
           name: product_name
   /api/streams/{name}/significant_events:
     get:
+      deprecated: true
       description: |-
         **Spaces method and path for this operation:**
 
@@ -82825,6 +82830,15 @@ components:
         - operation
       title: Unique Count Metric Operation
       type: object
+    Kibana_HTTP_APIs_legendPosition:
+      description: Legend Position.
+      enum:
+        - top
+        - bottom
+        - left
+        - right
+      title: Legend Position
+      type: string
     Kibana_HTTP_APIs_legendSize:
       description: Legend size.
       enum:
@@ -88285,6 +88299,8 @@ components:
         nested:
           description: Show nested legend with hierarchical breakdown levels
           type: boolean
+        position:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_legendPosition'
         size:
           $ref: '#/components/schemas/Kibana_HTTP_APIs_legendSize'
         truncate_after_lines:
@@ -92454,6 +92470,8 @@ components:
         nested:
           description: Show nested legend with hierarchical breakdown levels
           type: boolean
+        position:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_legendPosition'
         size:
           $ref: '#/components/schemas/Kibana_HTTP_APIs_legendSize'
         truncate_after_lines:
@@ -98622,6 +98640,8 @@ components:
         nested:
           description: Show nested legend with hierarchical breakdown levels
           type: boolean
+        position:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_legendPosition'
         size:
           $ref: '#/components/schemas/Kibana_HTTP_APIs_legendSize'
         truncate_after_lines:
@@ -101108,6 +101128,8 @@ components:
       additionalProperties: false
       description: Legend configuration for waffle chart
       properties:
+        position:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_legendPosition'
         size:
           $ref: '#/components/schemas/Kibana_HTTP_APIs_legendSize'
         truncate_after_lines:
