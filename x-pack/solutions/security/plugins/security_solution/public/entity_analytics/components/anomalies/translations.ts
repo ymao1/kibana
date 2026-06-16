@@ -84,59 +84,69 @@ export const ENTITY_ANOMALY_TIMELINE_TITLE = i18n.translate(
   { defaultMessage: 'Anomaly timeline' }
 );
 
-// export const ANOMALY_TIMELINE_MANAGE_ML_JOBS = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.manageMlJobs',
-//   { defaultMessage: 'Manage ML jobs' }
-// );
+export const ENTITY_ANOMALY_TABLE_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTableTitle',
+  { defaultMessage: 'Anomalies' }
+);
 
-// export const ANOMALIES_TABLE_TITLE = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.anomaliesTableTitle',
-//   { defaultMessage: 'Anomalies' }
-// );
+export const ENTITY_ANOMALY_TABLE_CAPTION = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTableCaption',
+  { defaultMessage: 'Anomaly records' }
+);
 
-// export const ANOMALIES_TABLE_JOB_COLUMN = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.jobColumn',
-//   { defaultMessage: 'ML job' }
-// );
+export const ENTITY_ANOMALY_TABLE_EXPAND_ROW_TOOLTIP = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.expandRowTooltip',
+  { defaultMessage: 'Expand row' }
+);
 
-// export const ANOMALIES_TABLE_TIMESTAMP_COLUMN = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.timestampColumn',
-//   { defaultMessage: 'Timestamp' }
-// );
+export const ENTITY_ANOMALY_TABLE_COLLAPSE_ROW_TOOLTIP = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.collapseRowTooltip',
+  { defaultMessage: 'Collapse row' }
+);
 
-// export const ANOMALIES_TABLE_BASELINE_COLUMN = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.baselineColumn',
-//   { defaultMessage: 'Baseline' }
-// );
+export const ENTITY_ANOMALY_TABLE_JOB_COLUMN = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.jobColumn',
+  { defaultMessage: 'ML job' }
+);
 
-// export const ANOMALIES_TABLE_ANOMALY_COLUMN = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.anomalyColumn',
-//   { defaultMessage: 'Anomaly' }
-// );
+export const ENTITY_ANOMALY_TABLE_TACTIC_COLUMN = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.tacticColumn',
+  { defaultMessage: 'Tactic' }
+);
 
-// export const ANOMALIES_TABLE_SPIKE_COLUMN = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.spikeColumn',
-//   { defaultMessage: 'Spike' }
-// );
+export const ENTITY_ANOMALY_TABLE_TACTIC_POPOVER_TITLE = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.tacticPopoverTitle',
+  { defaultMessage: 'Tactics' }
+);
 
-// export const ANOMALIES_TABLE_SCORE_COLUMN = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.scoreColumn',
-//   { defaultMessage: 'Anomaly score' }
-// );
+export const ENTITY_ANOMALY_TABLE_TIMESTAMP_COLUMN = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.timestampColumn',
+  { defaultMessage: 'Timestamp' }
+);
+
+export const ENTITY_ANOMALY_TABLE_BASELINE_COLUMN = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.baselineColumn',
+  { defaultMessage: 'Baseline' }
+);
+
+export const ENTITY_ANOMALY_TABLE_ANOMALY_COLUMN = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.anomalyColumn',
+  { defaultMessage: 'Anomaly' }
+);
+
+export const ENTITY_ANOMALY_TABLE_SCORE_COLUMN = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.scoreColumn',
+  { defaultMessage: 'Anomaly score' }
+);
+
+export const ENTITY_ANOMALY_TABLE_DESCRIPTION = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.anomalyTable.description',
+  { defaultMessage: 'Description' }
+);
 
 // export const ANOMALIES_TABLE_ACTIONS_COLUMN = i18n.translate(
 //   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.actionsColumn',
 //   { defaultMessage: 'Actions' }
-// );
-
-// export const ANOMALIES_TABLE_ROW_ACTIONS_ARIA_LABEL = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.rowActionsAriaLabel',
-//   { defaultMessage: 'Row actions' }
-// );
-
-// export const ANOMALIES_TABLE_ROW_ACTION_ADD_TO_CASE = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.rowActions.addToCase',
-//   { defaultMessage: 'Add to case' }
 // );
 
 // export const ANOMALIES_TABLE_ROW_ACTION_ADD_TO_TIMELINE = i18n.translate(
@@ -152,9 +162,4 @@ export const ENTITY_ANOMALY_TIMELINE_TITLE = i18n.translate(
 // export const ANOMALIES_TABLE_ROW_ACTION_VIEW_IN_SMV = i18n.translate(
 //   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.rowActions.viewInSingleMetricViewer',
 //   { defaultMessage: 'View in Single metric viewer' }
-// );
-
-// export const ANOMALIES_TABLE_ROW_ACTION_ADD_TO_CHAT = i18n.translate(
-//   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.rowActions.addToChat',
-//   { defaultMessage: 'Add to chat' }
 // );

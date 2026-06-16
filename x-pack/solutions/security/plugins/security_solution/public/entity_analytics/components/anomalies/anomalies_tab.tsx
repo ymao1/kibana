@@ -36,12 +36,14 @@ import {
 import { useAnomalySummary } from '../../api/hooks/use_anomaly_summary';
 import { MitreAttackChain } from './mitre/components/mitre_attack_chain';
 import { AnomalyTabTimelineSection } from './anomalies_tab_timeline';
-import type { TableSortField, TableSortDirection, TableChangeEvent } from './anomalies_tab_table';
-import { AnomalyTabTableSection, PAGE_SIZE_OPTIONS } from './anomalies_tab_table';
-
-const DEFAULT_TABLE_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
-const DEFAULT_SORT_FIELD: TableSortField = 'timestamp';
-const DEFAULT_SORT_DIRECTION: TableSortDirection = 'desc';
+import type { TableChangeEvent } from './anomalies_tab_table';
+import { AnomalyTabTableSection } from './anomalies_tab_table';
+import type { TableSortDirection, TableSortField } from './table/constants';
+import {
+  DEFAULT_SORT_DIRECTION,
+  DEFAULT_SORT_FIELD,
+  DEFAULT_TABLE_PAGE_SIZE,
+} from './table/constants';
 
 interface AnomaliesTabProps {
   entityId: string;
@@ -231,12 +233,13 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       <EuiSpacer size="l" />
       <AnomalyTabTableSection
         anomalies={anomalySummary.data?.anomalies ?? []}
-        totalAnomaliesCount={anomalySummary.data?.total ?? 0}
-        pageIndex={tablePageIndex}
-        pageSize={tablePageSize}
+        onTableChange={handleTableChange}
+        page={anomalySummary.data?.page ?? tablePageIndex + 1}
+        pageSize={anomalySummary.data?.page_size ?? tablePageSize}
         sortField={tableSortField}
         sortDirection={tableSortDirection}
-        onTableChange={handleTableChange}
+        timeRange={{ from: start, to: end }}
+        total={anomalySummary.data?.total ?? 0}
       />
     </>
   );

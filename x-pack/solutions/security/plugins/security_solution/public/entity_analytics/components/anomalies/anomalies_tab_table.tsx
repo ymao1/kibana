@@ -11,89 +11,39 @@ import {
   EuiBadge,
   EuiBasicTable,
   EuiButtonIcon,
-  EuiFlexGroup,
-  EuiFlexItem,
   EuiSpacer,
   EuiText,
   EuiTitle,
   EuiToolTip,
   useEuiTheme,
 } from '@elastic/eui';
-import { i18n } from '@kbn/i18n';
 import { FormattedMessage } from '@kbn/i18n-react';
-import { css } from '@emotion/react';
+import type { TableSortDirection, TableSortField } from './table/constants';
+import {
+  PAGE_SIZE_OPTIONS,
+  SORT_FIELD_TO_API,
+  SORT_FIELD_TO_TABLE,
+  truncatedAnchorCss,
+} from './table/constants';
 import { PreferenceFormattedDate } from '../../../common/components/formatted_date';
 import type { AnomalySummaryEntry } from '../../../../common/api/entity_analytics';
-
-export const PAGE_SIZE_OPTIONS = [10, 25, 50];
-
-export type TableSortField = 'timestamp' | 'record_score' | 'job_id';
-export type TableSortDirection = 'asc' | 'desc';
-
-interface TableRow {
-  id: string;
-  jobId: string;
-  jobDisplayName: string;
-  mitreTactics: string[];
-  timestamp: number;
-  baseline: string;
-  anomaly: string;
-  anomalyScore: number;
-  description: string;
-}
-
-// Maps API sort fields ↔ TableRow keys
-const SORT_FIELD_TO_TABLE: Record<TableSortField, keyof TableRow> = {
-  timestamp: 'timestamp',
-  record_score: 'anomalyScore',
-  job_id: 'jobDisplayName',
-};
-
-const SORT_FIELD_TO_API: Partial<Record<keyof TableRow, TableSortField>> = {
-  timestamp: 'timestamp',
-  anomalyScore: 'record_score',
-  jobDisplayName: 'job_id',
-};
-
-const mapToRow = (entry: AnomalySummaryEntry, index: number): TableRow => {
-  const baseline =
-    entry.baselineValues.length > 0
-      ? entry.baselineValues.slice(0, 3).join(', ')
-      : entry.typical.length > 0
-      ? String(entry.typical[0])
-      : '—';
-
-  const anomaly = entry.anomalousValue ?? (entry.actual.length > 0 ? String(entry.actual[0]) : '—');
-
-  const fieldParts = [entry.byFieldValue, entry.overFieldValue, entry.partitionFieldValue].filter(
-    Boolean
-  );
-  const description = `${entry.detectorFunction}${
-    fieldParts.length > 0 ? `: ${fieldParts.join(', ')}` : ''
-  }`;
-
-  return {
-    id: `${entry.jobId}-${entry.timestamp}-${index}`,
-    jobId: entry.jobId,
-    jobDisplayName: entry.jobName ?? entry.jobId,
-    mitreTactics: entry.threatTactics ?? [],
-    timestamp: new Date(entry.timestamp).getTime(),
-    baseline,
-    anomaly,
-    anomalyScore: entry.recordScore,
-    description,
-  };
-};
-
-const truncatedAnchorCss = css`
-  display: block;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
+import {
+  ENTITY_ANOMALY_TABLE_ANOMALY_COLUMN,
+  ENTITY_ANOMALY_TABLE_BASELINE_COLUMN,
+  ENTITY_ANOMALY_TABLE_CAPTION,
+  ENTITY_ANOMALY_TABLE_COLLAPSE_ROW_TOOLTIP,
+  ENTITY_ANOMALY_TABLE_DESCRIPTION,
+  ENTITY_ANOMALY_TABLE_EXPAND_ROW_TOOLTIP,
+  ENTITY_ANOMALY_TABLE_JOB_COLUMN,
+  ENTITY_ANOMALY_TABLE_SCORE_COLUMN,
+  ENTITY_ANOMALY_TABLE_TACTIC_COLUMN,
+  ENTITY_ANOMALY_TABLE_TIMESTAMP_COLUMN,
+  ENTITY_ANOMALY_TABLE_TITLE,
+} from './translations';
+import type { TableRow } from './table/types';
+import { AnomalyJobName } from './table/anomaly_job_name';
+import { AnomalyTacticBadges } from './table/anomaly_tactic_badges';
+import { mapSummaryToRow } from './table/map_summary_to_row';
 
 export interface TableChangeEvent {
   page?: { index: number; size: number };
@@ -102,27 +52,29 @@ export interface TableChangeEvent {
 
 interface AnomalyTabTableSectionProps {
   anomalies: AnomalySummaryEntry[];
-  totalAnomaliesCount: number;
-  pageIndex: number;
+  onTableChange: (event: TableChangeEvent) => void;
+  page: number;
   pageSize: number;
   sortField: TableSortField;
   sortDirection: TableSortDirection;
-  onTableChange: (event: TableChangeEvent) => void;
+  timeRange: { from: string; to: string };
+  total: number;
 }
 
 export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
   anomalies,
-  totalAnomaliesCount,
-  pageIndex,
+  onTableChange,
+  page,
   pageSize,
   sortField,
   sortDirection,
-  onTableChange,
+  timeRange,
+  total,
 }) => {
   const { euiTheme } = useEuiTheme();
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
 
-  const rows = useMemo(() => anomalies.map(mapToRow), [anomalies]);
+  const rows = useMemo(() => anomalies.map(mapSummaryToRow), [anomalies]);
 
   const toggleRowExpanded = useCallback((id: string) => {
     setExpandedRowIds((prev) => {
@@ -138,6 +90,7 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
 
   const columns: Array<EuiBasicTableColumn<TableRow>> = useMemo(
     () => [
+      // Expander column
       {
         align: 'center' as const,
         width: '32px',
@@ -146,12 +99,8 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
         render: (item: TableRow) => {
           const isExpanded = expandedRowIds.has(item.id);
           const label = isExpanded
-            ? i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTable.collapseRow', {
-                defaultMessage: 'Collapse row',
-              })
-            : i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTable.expandRow', {
-                defaultMessage: 'Expand row',
-              });
+            ? ENTITY_ANOMALY_TABLE_COLLAPSE_ROW_TOOLTIP
+            : ENTITY_ANOMALY_TABLE_EXPAND_ROW_TOOLTIP;
           return (
             <EuiToolTip content={label} disableScreenReaderOutput>
               <EuiButtonIcon
@@ -165,40 +114,22 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
           );
         },
       },
+      // ML job column
       {
-        name: i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTable.jobColumn', {
-          defaultMessage: 'ML job',
-        }),
+        name: ENTITY_ANOMALY_TABLE_JOB_COLUMN,
         field: 'jobDisplayName',
         sortable: true,
-        render: (jobDisplayName: string) => (
-          <EuiToolTip content={jobDisplayName} anchorProps={{ css: truncatedAnchorCss }}>
-            <EuiText size="xs" component="span" tabIndex={0}>
-              {jobDisplayName}
-            </EuiText>
-          </EuiToolTip>
-        ),
+        render: (_: string, item: TableRow) => <AnomalyJobName row={item} timeRange={timeRange} />,
       },
+      // Tactic column
       {
-        name: i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTable.tacticColumn', {
-          defaultMessage: 'Tactic',
-        }),
+        name: ENTITY_ANOMALY_TABLE_TACTIC_COLUMN,
         field: 'mitreTactics',
-        render: (tactics: string[]) => (
-          <EuiFlexGroup gutterSize="xs" wrap responsive={false}>
-            {tactics.map((tactic) => (
-              <EuiFlexItem key={tactic} grow={false}>
-                <EuiBadge color="hollow">{tactic}</EuiBadge>
-              </EuiFlexItem>
-            ))}
-          </EuiFlexGroup>
-        ),
+        render: (tactics: string[]) => <AnomalyTacticBadges tactics={tactics} />,
       },
+      // Timestamp column
       {
-        name: i18n.translate(
-          'xpack.securitySolution.entityAnalytics.anomaliesTable.timestampColumn',
-          { defaultMessage: 'Timestamp' }
-        ),
+        name: ENTITY_ANOMALY_TABLE_TIMESTAMP_COLUMN,
         field: 'timestamp',
         sortable: true,
         render: (timestamp: number) => (
@@ -212,11 +143,9 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
           </EuiToolTip>
         ),
       },
+      // Baseline column
       {
-        name: i18n.translate(
-          'xpack.securitySolution.entityAnalytics.anomaliesTable.baselineColumn',
-          { defaultMessage: 'Baseline' }
-        ),
+        name: ENTITY_ANOMALY_TABLE_BASELINE_COLUMN,
         render: (item: TableRow) => (
           <EuiToolTip content={item.baseline} anchorProps={{ css: truncatedAnchorCss }}>
             <EuiText size="xs" component="span" tabIndex={0}>
@@ -225,11 +154,9 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
           </EuiToolTip>
         ),
       },
+      // Anomaly column
       {
-        name: i18n.translate(
-          'xpack.securitySolution.entityAnalytics.anomaliesTable.anomalyColumn',
-          { defaultMessage: 'Anomaly' }
-        ),
+        name: ENTITY_ANOMALY_TABLE_ANOMALY_COLUMN,
         render: (item: TableRow) => (
           <EuiToolTip content={item.anomaly} anchorProps={{ css: truncatedAnchorCss }}>
             <EuiText size="xs" component="span" tabIndex={0}>
@@ -238,10 +165,9 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
           </EuiToolTip>
         ),
       },
+      // Anomaly score column
       {
-        name: i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTable.scoreColumn', {
-          defaultMessage: 'Anomaly score',
-        }),
+        name: ENTITY_ANOMALY_TABLE_SCORE_COLUMN,
         field: 'anomalyScore',
         sortable: true,
         width: '120px',
@@ -261,7 +187,7 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
         },
       },
     ],
-    [euiTheme, expandedRowIds, toggleRowExpanded]
+    [euiTheme, expandedRowIds, timeRange, toggleRowExpanded]
   );
 
   const itemIdToExpandedRowMap = useMemo(() => {
@@ -270,12 +196,7 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
       map[row.id] = (
         <div>
           <EuiText size="xs">
-            <strong>
-              {i18n.translate(
-                'xpack.securitySolution.entityAnalytics.anomaliesTable.descriptionHeading',
-                { defaultMessage: 'Description' }
-              )}
-            </strong>
+            <strong>{ENTITY_ANOMALY_TABLE_DESCRIPTION}</strong>
           </EuiText>
           <EuiSpacer size="xs" />
           <EuiText size="xs">{row.description}</EuiText>
@@ -287,12 +208,12 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
 
   const pagination = useMemo(
     () => ({
-      pageIndex,
+      pageIndex: page - 1,
       pageSize,
-      totalItemCount: totalAnomaliesCount,
+      totalItemCount: total,
       pageSizeOptions: PAGE_SIZE_OPTIONS,
     }),
-    [pageIndex, pageSize, totalAnomaliesCount]
+    [page, pageSize, total]
   );
 
   const sorting = useMemo<EuiTableSortingType<TableRow>>(
@@ -303,9 +224,9 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
   );
 
   const handleChange = useCallback(
-    ({ page, sort }: Criteria<TableRow>) => {
+    ({ page: pageChange, sort }: Criteria<TableRow>) => {
       const event: TableChangeEvent = {};
-      if (page) event.page = { index: page.index, size: page.size };
+      if (pageChange) event.page = { index: pageChange.index, size: pageChange.size };
       if (sort) {
         const apiField = SORT_FIELD_TO_API[sort.field as keyof TableRow];
         if (apiField) event.sort = { field: apiField, direction: sort.direction };
@@ -315,36 +236,29 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
     [onTableChange]
   );
 
-  const from = totalAnomaliesCount > 0 ? pageIndex * pageSize + 1 : 0;
-  const to = Math.min((pageIndex + 1) * pageSize, totalAnomaliesCount);
+  const from = total > 0 ? (page - 1) * pageSize + 1 : 0;
+  const to = Math.min(page * pageSize, total);
 
   return (
     <div>
       <EuiTitle size="xs">
-        <h3>
-          {i18n.translate('xpack.securitySolution.entityAnalytics.anomaliesTable.title', {
-            defaultMessage: 'Anomalies',
-          })}
-        </h3>
+        <h3>{ENTITY_ANOMALY_TABLE_TITLE}</h3>
       </EuiTitle>
       <EuiSpacer size="m" />
       <EuiText size="xs">
         <FormattedMessage
-          id="xpack.securitySolution.entityAnalytics.anomaliesTable.showing"
+          id="xpack.securitySolution.entityAnalytics.entityAnomalies.tab.page"
           defaultMessage="Showing {from}-{to} of {total} anomalies"
           values={{
             from: <strong>{from}</strong>,
             to: <strong>{to}</strong>,
-            total: <strong>{totalAnomaliesCount}</strong>,
+            total: <strong>{total}</strong>,
           }}
         />
       </EuiText>
       <EuiSpacer size="s" />
       <EuiBasicTable
-        tableCaption={i18n.translate(
-          'xpack.securitySolution.entityAnalytics.anomaliesTable.caption',
-          { defaultMessage: 'Anomaly records' }
-        )}
+        tableCaption={ENTITY_ANOMALY_TABLE_CAPTION}
         items={rows}
         itemId="id"
         columns={columns}
