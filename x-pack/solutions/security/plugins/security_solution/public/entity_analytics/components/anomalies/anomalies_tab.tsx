@@ -9,6 +9,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   EuiBadge,
   EuiButtonEmpty,
+  EuiCallOut,
   EuiFlexGroup,
   EuiFlexItem,
   EuiPanel,
@@ -31,6 +32,7 @@ import {
   ENTITY_ANOMALIES_TAB_MANAGE_ML_JOBS,
   ENTITY_ANOMALIES_TAB_ATTACK_CHAIN_TITLE,
   ENTITY_ANOMALIES_CLEAR_TACTIC_LABEL,
+  ENTITY_ANOMALY_DATE_RANGE_TOO_OLD_ERROR,
   getEntityAnomaliesFilteredByTacticLabel,
 } from './translations';
 import { useAnomalySummary } from '../../api/hooks/use_anomaly_summary';
@@ -141,6 +143,17 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
     }
   }, [anomalyOverview.isFetching, selectedTactic, uniqueTactics]);
 
+  const isDateRangeTooOld = useMemo(() => {
+    const err = (anomalyOverview.error ?? anomalySummary.error) as
+      | { response?: { status?: number }; body?: { message?: string } }
+      | null
+      | undefined;
+    return (
+      err?.response?.status === 400 &&
+      err?.body?.message?.includes('`from` must not be older than 1 year')
+    );
+  }, [anomalyOverview.error, anomalySummary.error]);
+
   const {
     services: { ml },
   } = useKibana();
@@ -181,6 +194,17 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="m" />
+      {isDateRangeTooOld && (
+        <>
+          <EuiCallOut
+            announceOnMount
+            color="warning"
+            iconType="warning"
+            title={ENTITY_ANOMALY_DATE_RANGE_TOO_OLD_ERROR}
+          />
+          <EuiSpacer size="m" />
+        </>
+      )}
       <>
         <EuiTitle size="xs">
           <h3>{ENTITY_ANOMALIES_TAB_ATTACK_CHAIN_TITLE}</h3>

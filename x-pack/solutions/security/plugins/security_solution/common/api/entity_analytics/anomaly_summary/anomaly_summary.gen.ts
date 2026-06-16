@@ -143,7 +143,7 @@ export type AnomalyOverviewRequestBody = z.infer<typeof AnomalyOverviewRequestBo
 export const AnomalyOverviewEntry = lazySchema(() =>
   z.object({
     /**
-     * ISO-8601 start of the 1-day time bucket
+     * ISO-8601 start of the time bucket
      */
     timestamp: z.string().max(100),
     /**

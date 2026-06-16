@@ -17,6 +17,7 @@ import {
 import { EuiFlexItem } from '@elastic/eui';
 import { useElasticChartsTheme } from '@kbn/charts-theme';
 import React, { useMemo } from 'react';
+import { deriveBucketInterval } from '../../../../common/entity_analytics/anomalies/derive_bucket_interval';
 import { getAnomalyChartStyling } from '../recent_anomalies/anomaly_chart_styling';
 import type { AnomalyBand } from '../recent_anomalies/anomaly_bands';
 import {
@@ -90,7 +91,7 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
   ySortPredicate = 'numDesc',
 }) => {
   const xDomain = useMemo(() => ({ min: from, max: to }), [from, to]);
-  // const bucketInterval = useMemo(() => deriveBucketInterval(timeRangeMs), [timeRangeMs]);
+  const bucketInterval = useMemo(() => deriveBucketInterval(from, to), [from, to]);
 
   const chartBands = useMemo(
     () => anomalyBands.map(({ start, end, color }) => ({ start, end, color })),
@@ -116,7 +117,7 @@ export const AnomaliesSwimlane: React.FC<AnomaliesSwimlaneProps> = ({
           id={heatmapId}
           xScale={{
             type: ScaleType.Time,
-            interval: { type: 'fixed', value: 1, unit: 'd' }, // TODO bucketInterval
+            interval: { type: 'fixed', value: bucketInterval.value, unit: bucketInterval.unit },
           }}
           colorScale={{
             type: 'bands',

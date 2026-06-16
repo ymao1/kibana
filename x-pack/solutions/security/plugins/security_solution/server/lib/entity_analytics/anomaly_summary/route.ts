@@ -26,6 +26,12 @@ import { getEntityAnomalyOverview } from './get_anomaly_overview';
 
 const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
+const getStartOfDayOneYearAgo = (): number => {
+  const d = new Date(Date.now() - ONE_YEAR_MS);
+  d.setUTCHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
 export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnalyticsRoutesDeps) => {
   router.versioned
     .post({
@@ -54,7 +60,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
           const { entity_id: entityId, entity_type: entityType } = request.params;
           const { from, to, threat_tactics: threatTactics } = request.body ?? {};
 
-          if (from !== undefined && from < Date.now() - ONE_YEAR_MS) {
+          if (from !== undefined && from < getStartOfDayOneYearAgo()) {
             return siemResponse.error({
               statusCode: 400,
               body: '`from` must not be older than 1 year',
@@ -136,8 +142,7 @@ export const registerAnomalySummaryRoutes = ({ router, logger, ml }: EntityAnaly
             sort,
           } = request.body ?? {};
 
-          // Validate that `from` is not older than 1 year ago
-          if (from !== undefined && from < Date.now() - ONE_YEAR_MS) {
+          if (from !== undefined && from < getStartOfDayOneYearAgo()) {
             return siemResponse.error({
               statusCode: 400,
               body: '`from` must not be older than 1 year',

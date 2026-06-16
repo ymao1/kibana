@@ -256,7 +256,7 @@ components:
         timestamp:
           type: string
           maxLength: 100
-          description: ISO-8601 start of the 1-day time bucket
+          description: ISO-8601 start of the time bucket
         maxScore:
           type: number
           description: Highest anomaly record_score within this time bucket

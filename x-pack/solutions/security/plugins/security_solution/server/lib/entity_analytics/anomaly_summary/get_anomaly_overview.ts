@@ -9,6 +9,7 @@ import type { KibanaRequest, Logger, SavedObjectsClientContract } from '@kbn/cor
 import type { EntityType } from '@kbn/entity-store/common';
 import { euid } from '@kbn/entity-store/common/euid_helpers';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
+import { deriveBucketInterval } from '../../../../common/entity_analytics/anomalies/derive_bucket_interval';
 import type { AnomalyOverviewEntry } from '../../../../common/api/entity_analytics';
 import { getJobConfig, getSecurityMlJobIds } from '../ml_anomaly_detection';
 
@@ -38,6 +39,20 @@ interface GetEntityAnomalyOverviewParams {
   soClient: SavedObjectsClientContract;
 }
 
+const buildTacticCounts = (
+  buckets: TimeBucket[],
+  tacticsByJob: Map<string, string[]>
+): Record<string, number> =>
+  buckets
+    .flatMap((b) => b.jobs.buckets)
+    .flatMap(({ key, doc_count }) =>
+      (tacticsByJob.get(key) ?? []).map((tactic) => ({ tactic, doc_count }))
+    )
+    .reduce<Record<string, number>>((acc, { tactic, doc_count }) => {
+      acc[tactic] = (acc[tactic] ?? 0) + doc_count;
+      return acc;
+    }, {});
+
 interface AnomalyOverview {
   anomalies: AnomalyOverviewEntry[];
   tacticCounts: Record<string, number>;
@@ -58,6 +73,7 @@ export const getEntityAnomalyOverview = async ({
 }: GetEntityAnomalyOverviewParams): Promise<AnomalyOverview> => {
   const effectiveToMs = toMs ?? Date.now();
   const effectiveFromMs = fromMs ?? effectiveToMs - DEFAULT_OVERVIEW_LOOKBACK_MS;
+  const bucketInterval = deriveBucketInterval(effectiveFromMs, effectiveToMs);
   const empty = {
     anomalies: [],
     tacticCounts: {},
@@ -107,7 +123,7 @@ export const getEntityAnomalyOverview = async ({
           by_time: {
             date_histogram: {
               field: 'timestamp',
-              calendar_interval: '1d',
+              fixed_interval: `${bucketInterval.value}${bucketInterval.unit}`,
             },
             aggs: {
               max_score: { max: { field: 'record_score' } },
@@ -152,14 +168,7 @@ export const getEntityAnomalyOverview = async ({
       };
     });
 
-  const tacticCounts: Record<string, number> = {};
-  for (const bucket of aggs?.by_time?.buckets ?? []) {
-    for (const jobBucket of bucket.jobs.buckets) {
-      for (const tactic of tacticsByJob.get(jobBucket.key) ?? []) {
-        tacticCounts[tactic] = (tacticCounts[tactic] ?? 0) + jobBucket.doc_count;
-      }
-    }
-  }
+  const tacticCounts = buildTacticCounts(aggs?.by_time?.buckets ?? [], tacticsByJob);
 
   return { anomalies, tacticCounts, totalAnomaliesCount, from: effectiveFromMs, to: effectiveToMs };
 };
