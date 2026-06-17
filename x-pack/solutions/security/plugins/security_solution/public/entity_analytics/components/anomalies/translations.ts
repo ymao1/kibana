@@ -163,3 +163,11 @@ export const ENTITY_ANOMALY_TABLE_DESCRIPTION = i18n.translate(
 //   'xpack.securitySolution.entityAnalytics.behavioralAnomalies.table.rowActions.viewInSingleMetricViewer',
 //   { defaultMessage: 'View in Single metric viewer' }
 // );
+
+export const ENTITY_ANOMALY_DATE_RANGE_TOO_OLD_ERROR = i18n.translate(
+  'xpack.securitySolution.entityAnalytics.entityAnomalies.tab.dateRangeTooOld',
+  {
+    defaultMessage:
+      'Anomaly data is only available for the past year. Select a more recent start date.',
+  }
+);
