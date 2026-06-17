@@ -6,7 +6,6 @@
  */
 
 import type { AnomalySummaryEntry } from '../../../../../common/api/entity_analytics';
-import { MOCK_ANOMALIES } from '../mock_anomaly_summary_entries';
 import { formatBaselineAndAnomaly, buildDescription } from './map_summary_to_row';
 
 const makeEntry = (overrides: Partial<AnomalySummaryEntry> = {}): AnomalySummaryEntry => ({
