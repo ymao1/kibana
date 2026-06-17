@@ -257,6 +257,7 @@ export const AnomaliesTab: React.FC<AnomaliesTabProps> = ({ entityId, entityType
       <EuiSpacer size="l" />
       <AnomalyTabTableSection
         anomalies={anomalySummary.data?.anomalies ?? []}
+        entityType={entityType}
         onTableChange={handleTableChange}
         page={anomalySummary.data?.page ?? tablePageIndex + 1}
         pageSize={anomalySummary.data?.page_size ?? tablePageSize}

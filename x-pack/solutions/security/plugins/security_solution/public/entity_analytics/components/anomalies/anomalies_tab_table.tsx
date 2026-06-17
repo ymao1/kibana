@@ -18,6 +18,7 @@ import {
   useEuiTheme,
 } from '@elastic/eui';
 import { FormattedMessage } from '@kbn/i18n-react';
+import type { EntityType } from '@kbn/entity-store/common';
 import type { TableSortDirection, TableSortField } from './table/constants';
 import {
   PAGE_SIZE_OPTIONS,
@@ -27,6 +28,7 @@ import {
 } from './table/constants';
 import { PreferenceFormattedDate } from '../../../common/components/formatted_date';
 import type { AnomalySummaryEntry } from '../../../../common/api/entity_analytics';
+import { useGetInstalledJob } from '../../../common/components/ml/hooks/use_get_jobs';
 import {
   ENTITY_ANOMALY_TABLE_ANOMALY_COLUMN,
   ENTITY_ANOMALY_TABLE_BASELINE_COLUMN,
@@ -52,6 +54,7 @@ export interface TableChangeEvent {
 
 interface AnomalyTabTableSectionProps {
   anomalies: AnomalySummaryEntry[];
+  entityType: EntityType;
   onTableChange: (event: TableChangeEvent) => void;
   page: number;
   pageSize: number;
@@ -63,6 +66,7 @@ interface AnomalyTabTableSectionProps {
 
 export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
   anomalies,
+  entityType,
   onTableChange,
   page,
   pageSize,
@@ -74,7 +78,28 @@ export const AnomalyTabTableSection: React.FC<AnomalyTabTableSectionProps> = ({
   const { euiTheme } = useEuiTheme();
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(() => new Set());
 
-  const rows = useMemo(() => anomalies.map(mapSummaryToRow), [anomalies]);
+  const jobIds = useMemo(() => [...new Set(anomalies.map((a) => a.jobId))], [anomalies]);
+  const { jobs } = useGetInstalledJob(jobIds);
+
+  const detectorDescriptionsByJob = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    for (const job of jobs) {
+      map[job.job_id] = (job.analysis_config.detectors ?? []).map(
+        (d) => d.detector_description ?? ''
+      );
+    }
+    return map;
+  }, [jobs]);
+
+  const rows = useMemo(
+    () =>
+      anomalies.map((entry, i) => {
+        const detectorDescription =
+          detectorDescriptionsByJob[entry.jobId]?.[entry.detectorIndex] || undefined;
+        return mapSummaryToRow(entityType, entry, i, detectorDescription);
+      }),
+    [anomalies, entityType, detectorDescriptionsByJob]
+  );
 
   const toggleRowExpanded = useCallback((id: string) => {
     setExpandedRowIds((prev) => {
