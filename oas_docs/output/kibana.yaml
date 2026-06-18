@@ -22152,6 +22152,7 @@ paths:
               properties:
                 description:
                   description: Description of the watchlist
+                  maxLength: 1000
                   type: string
                 entitySources:
                   description: Optional entity sources to create and link to the watchlist
@@ -22165,20 +22166,26 @@ paths:
                         $ref: '#/components/schemas/Security_Entity_Analytics_API_Filter'
                       identifierField:
                         description: Field used to query the entity store for index-type sources
+                        maxLength: 256
                         type: string
                       indexPattern:
+                        maxLength: 1000
                         type: string
                       integrationName:
                         description: Required when type is entity_analytics_integration. One of entityanalytics_okta, entityanalytics_ad.
+                        maxLength: 256
                         type: string
                       matchers:
                         items:
                           $ref: '#/components/schemas/Security_Entity_Analytics_API_Matcher'
+                        maxItems: 100
                         type: array
                       name:
+                        maxLength: 256
                         type: string
                       queryRule:
                         description: KQL query used to filter data from the provided index patterns
+                        maxLength: 4096
                         type: string
                       range:
                         $ref: '#/components/schemas/Security_Entity_Analytics_API_DateRange'
@@ -22187,12 +22194,14 @@ paths:
                     required:
                       - type
                       - name
+                  maxItems: 100
                   type: array
                 managed:
                   description: Indicates if the watchlist is managed by the system
                   type: boolean
                 name:
                   description: Unique name for the watchlist
+                  maxLength: 256
                   type: string
                 riskModifier:
                   description: Risk score modifier associated with the watchlist
@@ -22294,6 +22303,7 @@ paths:
           name: id
           required: true
           schema:
+            maxLength: 256
             type: string
       requestBody:
         content:
@@ -22311,12 +22321,14 @@ paths:
               properties:
                 description:
                   description: Description of the watchlist
+                  maxLength: 1000
                   type: string
                 managed:
                   description: Indicates if the watchlist is managed by the system
                   type: boolean
                 name:
                   description: Unique name of the watchlist
+                  maxLength: 256
                   type: string
                 riskModifier:
                   description: Risk score modifier associated with the watchlist
@@ -68569,6 +68581,24 @@ paths:
               - managed
               - unmanaged
             type: string
+        - description: Field to sort by.
+          in: query
+          name: sortField
+          required: false
+          schema:
+            enum:
+              - name
+              - enabled
+            type: string
+        - description: Sort direction.
+          in: query
+          name: sortOrder
+          required: false
+          schema:
+            enum:
+              - asc
+              - desc
+            type: string
       responses:
         '200':
           content:
@@ -68620,11 +68650,11 @@ paths:
         - lang: curl
           source: |
             curl \
-              -X GET "${KIBANA_URL}/api/workflows?size=20&page=1" \
+              -X GET "${KIBANA_URL}/api/workflows?size=20&page=1&sortField=name&sortOrder=asc" \
               -H "Authorization: ApiKey ${API_KEY}"
         - lang: Console
           source: |
-            GET kbn://api/workflows?size=20&page=1
+            GET kbn://api/workflows?size=20&page=1&sortField=name&sortOrder=asc
       x-state: Generally available; added in 9.4.0
       x-metaTags:
         - content: Kibana
@@ -92253,6 +92283,7 @@ components:
                   - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-options_list_control'
                   - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-aiops_pattern_analysis'
                   - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-range_slider_control'
+                  - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-ml_single_metric_viewer'
                   - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_alerts'
                   - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_burn_rate'
                   - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_error_budget'
@@ -93241,6 +93272,26 @@ components:
         - config
       title: Anomaly swim lane
       type: object
+    Kibana_HTTP_APIs_kbn-dashboard-panel-type-ml_single_metric_viewer:
+      additionalProperties: false
+      properties:
+        config:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_ml_single_metric_viewer'
+        grid:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-grid'
+        id:
+          description: The unique ID of the panel.
+          type: string
+        type:
+          enum:
+            - ml_single_metric_viewer
+          type: string
+      required:
+        - grid
+        - type
+        - config
+      title: Single metric viewer
+      type: object
     Kibana_HTTP_APIs_kbn-dashboard-panel-type-options_list_control:
       additionalProperties: false
       properties:
@@ -94024,6 +94075,7 @@ components:
                 links: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-links'
                 markdown: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-markdown'
                 ml_anomaly_swimlane: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-ml_anomaly_swimlane'
+                ml_single_metric_viewer: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-ml_single_metric_viewer'
                 options_list_control: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-options_list_control'
                 range_slider_control: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-range_slider_control'
                 slo_alerts: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_alerts'
@@ -94048,6 +94100,7 @@ components:
               - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-options_list_control'
               - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-aiops_pattern_analysis'
               - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-range_slider_control'
+              - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-ml_single_metric_viewer'
               - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_alerts'
               - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_burn_rate'
               - $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-dashboard-panel-type-slo_error_budget'
@@ -98497,6 +98550,53 @@ components:
             - view_by
       description: Anomaly Swim Lane embeddable
       title: ml_anomaly_swimlane
+    Kibana_HTTP_APIs_ml_single_metric_viewer:
+      additionalProperties: false
+      description: Single Metric Viewer embeddable
+      properties:
+        description:
+          type: string
+        forecast_id:
+          description: Identifier of a forecast to overlay on the chart.
+          maxLength: 1000
+          type: string
+        function_description:
+          description: 'For detectors that use the `metric` function, selects which value to plot: `min`, `max`, or `mean`. Ignored for other detector functions. When omitted, the viewer derives a default from the highest-scoring anomaly record.'
+          maxLength: 1000
+          type: string
+        hide_border:
+          type: boolean
+        hide_title:
+          type: boolean
+        job_ids:
+          description: Anomaly detection job ID whose results are shown in the single metric viewer.
+          items:
+            maxLength: 1000
+            minLength: 1
+            type: string
+          maxItems: 1
+          minItems: 1
+          type: array
+        selected_detector_index:
+          default: 0
+          description: Zero-based index of the detector (the Elasticsearch detector_index) within the job whose results are shown.
+          minimum: 0
+          type: number
+        selected_entities:
+          additionalProperties:
+            anyOf:
+              - type: string
+              - type: number
+          description: Values of the partition, by, or over fields that identify the single time series to display.
+          type: object
+        time_range:
+          $ref: '#/components/schemas/Kibana_HTTP_APIs_kbn-es-query-server-timeRangeSchema'
+        title:
+          type: string
+      required:
+        - job_ids
+      title: ml_single_metric_viewer
+      type: object
     Kibana_HTTP_APIs_monitoring-alert-cluster-health-create-rule-body-alerting:
       additionalProperties: false
       properties:
@@ -130376,9 +130476,11 @@ components:
       properties:
         end:
           description: End of the lookback period (date math or ISO string, e.g. "now")
+          maxLength: 256
           type: string
         start:
           description: Start of the lookback period (date math or ISO string, e.g. "now-10d")
+          maxLength: 256
           type: string
       required:
         - start
@@ -130892,8 +130994,10 @@ components:
       properties:
         kuery:
           oneOf:
-            - type: string
-            - type: object
+            - maxLength: 4096
+              type: string
+            - additionalProperties: false
+              type: object
     Security_Entity_Analytics_API_GenericEntity:
       additionalProperties: false
       description: A generic entity record. Maps only the `entity` and `asset` namespaces. Add additional field mappings here as needed.
@@ -131062,6 +131166,7 @@ components:
               type: string
         syncMarkerIndex:
           description: Index to read latest sync markers from
+          maxLength: 1000
           type: string
     Security_Entity_Analytics_API_Interval:
       description: Interval in which enrich policy runs. For example, `"1h"` means the rule runs every hour. Must be less than or equal to half the duration of the lookback period,
@@ -131073,17 +131178,22 @@ components:
       properties:
         fields:
           items:
+            maxLength: 256
             type: string
+          maxItems: 100
           type: array
         values:
           description: |
             Matcher values. Must be either an array of strings (e.g. group or role names) or an array of booleans (e.g. integration-derived flags like privileged_group_member). Mixed types are intentionally not supported for simplicity and predictability.
           oneOf:
             - items:
+                maxLength: 256
                 type: string
+              maxItems: 1000
               type: array
             - items:
                 type: boolean
+              maxItems: 1000
               type: array
       required:
         - fields
@@ -131135,17 +131245,22 @@ components:
                 $ref: '#/components/schemas/Security_Entity_Analytics_API_MonitoringLabel'
               type: array
         id:
+          maxLength: 256
           type: string
         labels:
           type: object
           properties:
             source_ids:
               items:
+                maxLength: 256
                 type: string
+              maxItems: 100
               type: array
             source_integrations:
               items:
+                maxLength: 256
                 type: string
+              maxItems: 100
               type: array
             sources:
               items:
@@ -131153,6 +131268,7 @@ components:
                   - csv
                   - index_sync
                   - api
+              maxItems: 100
               type: array
         user:
           type: object
@@ -131161,6 +131277,7 @@ components:
               description: Indicates if the user is privileged.
               type: boolean
             name:
+              maxLength: 512
               type: string
     Security_Entity_Analytics_API_MonitoringEngineDescriptor:
       type: object
@@ -131180,6 +131297,11 @@ components:
         - $ref: '#/components/schemas/Security_Entity_Analytics_API_MonitoringEntitySourceProperties'
         - type: object
           properties:
+            apiKeyId:
+              description: ID of the API key used for scoped reads from the source index. Only present for index-type sources.
+              maxLength: 64
+              nullable: true
+              type: string
             id:
               type: string
           required:
@@ -131198,10 +131320,12 @@ components:
       type: object
       properties:
         field:
+          maxLength: 256
           type: string
         source:
           type: string
         value:
+          maxLength: 256
           type: string
       required:
         - field
@@ -131489,21 +131613,27 @@ components:
           $ref: '#/components/schemas/Security_Entity_Analytics_API_Filter'
         identifierField:
           description: Field used to query the entity store for index-type sources
+          maxLength: 256
           type: string
         indexPattern:
+          maxLength: 1000
           type: string
         integrationName:
+          maxLength: 256
           type: string
         integrations:
           $ref: '#/components/schemas/Security_Entity_Analytics_API_Integrations'
         matchers:
           items:
             $ref: '#/components/schemas/Security_Entity_Analytics_API_Matcher'
+          maxItems: 100
           type: array
         name:
+          maxLength: 256
           type: string
         queryRule:
           description: KQL query used to filter data from the provided index patterns
+          maxLength: 4096
           type: string
         range:
           $ref: '#/components/schemas/Security_Entity_Analytics_API_DateRange'
@@ -131590,6 +131720,7 @@ components:
                 properties:
                   field:
                     description: The field name for the label
+                    maxLength: 256
                     type: string
                   source:
                     description: The source where this label was created (api, csv, or index_sync)
@@ -131600,13 +131731,16 @@ components:
                     type: string
                   value:
                     description: The value of the label
+                    maxLength: 256
                     type: string
+              maxItems: 100
               type: array
         user:
           type: object
           properties:
             name:
               description: The name of the user.
+              maxLength: 512
               type: string
     Security_Entity_Analytics_API_WatchlistCsvUploadResponseItem:
       example:

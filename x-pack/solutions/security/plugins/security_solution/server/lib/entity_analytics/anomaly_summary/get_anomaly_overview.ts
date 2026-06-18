@@ -9,11 +9,13 @@ import type { KibanaRequest, Logger, SavedObjectsClientContract } from '@kbn/cor
 import type { EntityType } from '@kbn/entity-store/common';
 import { euid } from '@kbn/entity-store/common/euid_helpers';
 import type { MlPluginSetup } from '@kbn/ml-plugin/server';
+import { ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS } from '../../../../common/constants';
 import { deriveBucketInterval } from '../../../../common/entity_analytics/anomalies/derive_bucket_interval';
 import type { AnomalyOverviewEntry } from '../../../../common/api/entity_analytics';
 import { getJobConfig, getSecurityMlJobIds } from '../ml_anomaly_detection';
 
-const DEFAULT_OVERVIEW_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
+export const DEFAULT_OVERVIEW_LOOKBACK_MS =
+  ENTITY_ANOMALY_DEFAULT_LOOKBACK_DAYS * 24 * 60 * 60 * 1000;
 
 interface TimeBucket {
   key_as_string: string;
@@ -87,15 +89,17 @@ export const getEntityAnomalyOverview = async ({
 
   if (allSecurityJobIds.length === 0) return empty;
 
-  const allConfigs = await getJobConfig({ jobIds: allSecurityJobIds, logger, ml, soClient });
+  const allJobConfigs = await getJobConfig({ jobIds: allSecurityJobIds, logger, ml, soClient });
 
   let resolvedJobIds = allSecurityJobIds;
   if (threatTactics && threatTactics.length > 0) {
     const tacticMatchedIds = allSecurityJobIds.filter((id) =>
-      allConfigs.get(id)?.threatTactics.some((t) => threatTactics.includes(t))
+      allJobConfigs.get(id)?.threatTactics.some((t) => threatTactics.includes(t))
     );
     resolvedJobIds = tacticMatchedIds;
   }
+
+  if (threatTactics && threatTactics.length > 0 && resolvedJobIds.length === 0) return empty;
 
   let aggs: OverviewAggs | undefined;
   let totalAnomaliesCount = 0;
@@ -146,14 +150,12 @@ export const getEntityAnomalyOverview = async ({
     return empty;
   }
 
-  const allJobIds = (aggs?.all_jobs?.buckets ?? []).map((b) => b.key);
-  if (allJobIds.length === 0) return empty;
-
-  const jobConfigs = await getJobConfig({ jobIds: allJobIds, logger, ml, soClient });
+  const presentJobIds = (aggs?.all_jobs?.buckets ?? []).map((b) => b.key);
+  if (presentJobIds.length === 0) return empty;
 
   // Build jobId → tactics lookup once, reused per bucket.
   const tacticsByJob = new Map(
-    allJobIds.map((id) => [id, jobConfigs.get(id)?.threatTactics ?? []])
+    presentJobIds.map((id) => [id, allJobConfigs.get(id)?.threatTactics ?? []])
   );
 
   const anomalies: AnomalyOverviewEntry[] = (aggs?.by_time?.buckets ?? [])

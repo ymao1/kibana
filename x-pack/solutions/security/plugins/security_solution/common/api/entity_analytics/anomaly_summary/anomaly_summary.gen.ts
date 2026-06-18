@@ -166,7 +166,7 @@ export const AnomalyOverviewResponse = lazySchema(() =>
     /**
      * Number of anomaly records associated with each MITRE ATT&CK tactic
      */
-    tacticCounts: z.record(z.string(), z.number().int()),
+    tacticCounts: z.object({}).catchall(z.number().int()),
     /**
      * Total number of anomaly records returned
      */
@@ -182,25 +182,6 @@ export const AnomalyOverviewResponse = lazySchema(() =>
   })
 );
 export type AnomalyOverviewResponse = z.infer<typeof AnomalyOverviewResponse>;
-
-export const GetAnomalyOverviewRequestParams = lazySchema(() =>
-  z.object({
-    /**
-     * Entity type — determines which EUID runtime mapping is used when searching the anomalies index
-     */
-    entity_type: z.enum(['user', 'host']),
-    entity_id: z.string().min(1).max(1000),
-  })
-);
-export type GetAnomalyOverviewRequestParams = z.infer<typeof GetAnomalyOverviewRequestParams>;
-export type GetAnomalyOverviewRequestParamsInput = z.input<typeof GetAnomalyOverviewRequestParams>;
-
-export const GetAnomalyOverviewRequestBody = lazySchema(() => AnomalyOverviewRequestBody);
-export type GetAnomalyOverviewRequestBody = z.infer<typeof GetAnomalyOverviewRequestBody>;
-export type GetAnomalyOverviewRequestBodyInput = z.input<typeof GetAnomalyOverviewRequestBody>;
-
-export const GetAnomalyOverviewResponse = lazySchema(() => AnomalyOverviewResponse);
-export type GetAnomalyOverviewResponse = z.infer<typeof GetAnomalyOverviewResponse>;
 
 export const GetAnomalySummaryRequestParams = lazySchema(() =>
   z.object({
