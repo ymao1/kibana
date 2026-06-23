@@ -399,29 +399,116 @@ apiTest.describe(
     );
 
     apiTest(
-      'Anomaly overview API: returns 200 with correct response shape for entity with anomaly records',
+      'Anomaly summary API: min_score filters out anomalies below the threshold',
       async ({ apiClient }) => {
-        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
+        // WIN_APP01 has two anomalies: scores 5.65 and 31.06. min_score=10 should exclude 5.65.
+        const response = await apiClient.post(buildUrl(WIN_APP01_EUID, 'host'), {
           headers: { ...defaultHeaders, 'elastic-api-version': '1' },
           responseType: 'json',
-          body: {},
+          body: { min_score: 10 },
         });
 
-        expect(response).toHaveStatusCode(200);
-        const body = response.body as AnomalyOverviewResponse;
-        expect(body.entityId).toBe(CAROL_EUID);
-        expect(body.entityType).toBe('user');
-        expect(Array.isArray(body.anomalies)).toBe(true);
-        expect(typeof body.totalAnomaliesCount).toBe('number');
-        expect(typeof body.tacticCounts).toBe('object');
-        expect(typeof body.from).toBe('number');
-        expect(typeof body.to).toBe('number');
-        expect(body.to).toBeGreaterThan(body.from);
+        expect(response.statusCode).toBe(200);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.anomalies).toHaveLength(1);
+        expect(body.anomalies[0].recordScore).toBeGreaterThanOrEqual(10);
       }
     );
 
     apiTest(
-      'Anomaly overview API: returns anomaly entries with correct shape for each time bucket',
+      'Anomaly summary API: max_score filters out anomalies above the threshold',
+      async ({ apiClient }) => {
+        // WIN_APP01 has two anomalies: scores 5.65 and 31.06. max_score=10 should exclude 31.06.
+        const response = await apiClient.post(buildUrl(WIN_APP01_EUID, 'host'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { max_score: 10 },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.anomalies).toHaveLength(1);
+        expect(body.anomalies[0].recordScore).toBeLessThanOrEqual(10);
+      }
+    );
+
+    apiTest(
+      'Anomaly summary API: min_score and max_score together narrow results to range',
+      async ({ apiClient }) => {
+        // Carol has scores 24.37 and 25.44. Range [24, 25] includes only 24.37.
+        const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: 24, max_score: 25 },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.anomalies).toHaveLength(1);
+        expect(body.anomalies[0].jobId).toBe('auth_high_count_logon_events_ea');
+        expect(body.anomalies[0].recordScore).toBeGreaterThanOrEqual(24);
+        expect(body.anomalies[0].recordScore).toBeLessThanOrEqual(25);
+      }
+    );
+
+    apiTest(
+      'Anomaly summary API: min_score that excludes all anomalies returns empty results',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: 50 },
+        });
+
+        expect(response.statusCode).toBe(200);
+        const body = response.body as AnomalySummaryResponse;
+        expect(body.anomalies).toHaveLength(0);
+        expect(body.total).toBe(0);
+      }
+    );
+
+    apiTest(
+      'Anomaly summary API: returns 400 when min_score is negative',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: -1 },
+        });
+
+        expect(response.statusCode).toBe(400);
+      }
+    );
+
+    apiTest(
+      'Anomaly summary API: returns 400 when max_score exceeds 100',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { max_score: 101 },
+        });
+
+        expect(response.statusCode).toBe(400);
+      }
+    );
+
+    apiTest(
+      'Anomaly summary API: returns 400 when min_score is greater than max_score',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: 50, max_score: 25 },
+        });
+
+        expect(response.statusCode).toBe(400);
+        expect(response.body.message).toContain('`min_score` must not be greater than `max_score`');
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: returns expected response for entity with anomaly records',
       async ({ apiClient }) => {
         const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
           headers: { ...defaultHeaders, 'elastic-api-version': '1' },
@@ -431,50 +518,31 @@ apiTest.describe(
 
         expect(response).toHaveStatusCode(200);
         const body = response.body as AnomalyOverviewResponse;
-        expect(body.anomalies.length).toBeGreaterThanOrEqual(1);
 
-        for (const entry of body.anomalies) {
+        // Response shape
+        expect(body.entityId).toBe(CAROL_EUID);
+        expect(body.entityType).toBe('user');
+        expect(Array.isArray(body.anomalyByTimeBucket)).toBe(true);
+        expect(typeof body.from).toBe('number');
+        expect(typeof body.to).toBe('number');
+        expect(body.to).toBeGreaterThan(body.from);
+
+        // Carol has 2 indexed anomaly records: pad_windows_rare_region_name_by_user_ea and auth_high_count_logon_events_ea
+        expect(body.totalAnomaliesCount).toBe(2);
+
+        // Per-bucket entry shape
+        expect(body.anomalyByTimeBucket.length).toBeGreaterThanOrEqual(1);
+        for (const entry of body.anomalyByTimeBucket) {
           expect(typeof entry.timestamp).toBe('string');
           expect(new Date(entry.timestamp).toISOString()).toBe(entry.timestamp);
           expect(typeof entry.maxScore).toBe('number');
           expect(entry.maxScore).toBeGreaterThan(0);
           expect(Array.isArray(entry.threatTactics)).toBe(true);
         }
-      }
-    );
-
-    apiTest(
-      'Anomaly overview API: reflects the total anomaly record count across all buckets',
-      async ({ apiClient }) => {
-        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
-          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
-          responseType: 'json',
-          body: {},
-        });
-
-        expect(response).toHaveStatusCode(200);
-        const body = response.body as AnomalyOverviewResponse;
-        // Carol has 2 indexed anomaly records: pad_windows_rare_region_name_by_user_ea and auth_high_count_logon_events_ea
-        expect(body.totalAnomaliesCount).toBe(2);
-      }
-    );
-
-    apiTest(
-      'Anomaly overview API: tacticCounts reflects tactic distribution from jobs that fired',
-      async ({ apiClient }) => {
-        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
-          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
-          responseType: 'json',
-          body: {},
-        });
-
-        expect(response).toHaveStatusCode(200);
-        const body = response.body as AnomalyOverviewResponse;
         // auth_high_count_logon_events_ea contributes 'Credential Access' and 'Initial Access'
         expect(Object.keys(body.tacticCounts)).toContain('Credential Access');
         expect(Object.keys(body.tacticCounts)).toContain('Initial Access');
         for (const count of Object.values(body.tacticCounts)) {
-          expect(typeof count).toBe('number');
           expect(count).toBeGreaterThan(0);
         }
       }
@@ -493,8 +561,8 @@ apiTest.describe(
 
         expect(response).toHaveStatusCode(200);
         const body = response.body as AnomalyOverviewResponse;
-        expect(body.anomalies.length).toBeGreaterThanOrEqual(1);
-        const highestBucketMax = Math.max(...body.anomalies.map((a) => a.maxScore));
+        expect(body.anomalyByTimeBucket.length).toBeGreaterThanOrEqual(1);
+        const highestBucketMax = Math.max(...body.anomalyByTimeBucket.map((a) => a.maxScore));
         expect(highestBucketMax).toBeGreaterThanOrEqual(31);
       }
     );
@@ -511,7 +579,7 @@ apiTest.describe(
         expect(response).toHaveStatusCode(200);
         const body = response.body as AnomalyOverviewResponse;
         expect(body.entityId).toBe(NO_BEHAVIORS_EUID);
-        expect(body.anomalies).toHaveLength(0);
+        expect(body.anomalyByTimeBucket).toHaveLength(0);
         expect(body.totalAnomaliesCount).toBe(0);
         expect(body.tacticCounts).toStrictEqual({});
       }
@@ -578,8 +646,105 @@ apiTest.describe(
 
         expect(response).toHaveStatusCode(200);
         const body = response.body as AnomalyOverviewResponse;
-        expect(body.anomalies).toHaveLength(0);
+        expect(body.anomalyByTimeBucket).toHaveLength(0);
         expect(body.totalAnomaliesCount).toBe(0);
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: min_score reduces totalAnomaliesCount to matching records',
+      async ({ apiClient }) => {
+        // WIN_APP01 has two anomalies: scores 5.65 and 31.06. min_score=10 excludes 5.65.
+        const response = await apiClient.post(buildOverviewUrl(WIN_APP01_EUID, 'host'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: 10 },
+        });
+
+        expect(response).toHaveStatusCode(200);
+        const body = response.body as AnomalyOverviewResponse;
+        expect(body.totalAnomaliesCount).toBe(1);
+        expect(body.anomalyByTimeBucket.length).toBeGreaterThanOrEqual(1);
+        for (const entry of body.anomalyByTimeBucket) {
+          expect(entry.maxScore).toBeGreaterThanOrEqual(10);
+        }
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: max_score reduces totalAnomaliesCount to matching records',
+      async ({ apiClient }) => {
+        // WIN_APP01 has two anomalies: scores 5.65 and 31.06. max_score=10 excludes 31.06.
+        const response = await apiClient.post(buildOverviewUrl(WIN_APP01_EUID, 'host'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { max_score: 10 },
+        });
+
+        expect(response).toHaveStatusCode(200);
+        const body = response.body as AnomalyOverviewResponse;
+        expect(body.totalAnomaliesCount).toBe(1);
+        expect(body.anomalyByTimeBucket.length).toBeGreaterThanOrEqual(1);
+        for (const entry of body.anomalyByTimeBucket) {
+          expect(entry.maxScore).toBeLessThanOrEqual(10);
+        }
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: min_score that excludes all anomalies returns empty response',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: 50 },
+        });
+
+        expect(response).toHaveStatusCode(200);
+        const body = response.body as AnomalyOverviewResponse;
+        expect(body.anomalyByTimeBucket).toHaveLength(0);
+        expect(body.totalAnomaliesCount).toBe(0);
+        expect(body.tacticCounts).toStrictEqual({});
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: returns 400 when min_score is negative',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: -1 },
+        });
+
+        expect(response).toHaveStatusCode(400);
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: returns 400 when max_score exceeds 100',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { max_score: 101 },
+        });
+
+        expect(response).toHaveStatusCode(400);
+      }
+    );
+
+    apiTest(
+      'Anomaly overview API: returns 400 when min_score is greater than max_score',
+      async ({ apiClient }) => {
+        const response = await apiClient.post(buildOverviewUrl(CAROL_EUID, 'user'), {
+          headers: { ...defaultHeaders, 'elastic-api-version': '1' },
+          responseType: 'json',
+          body: { min_score: 50, max_score: 25 },
+        });
+
+        expect(response).toHaveStatusCode(400);
+        expect(response.body.message).toContain('`min_score` must not be greater than `max_score`');
       }
     );
   }

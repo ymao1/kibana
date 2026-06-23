@@ -48,7 +48,8 @@ const baseParams = {
 };
 
 const emptyResult = {
-  anomalies: [],
+  anomalyByTimeBucket: [],
+  recentAnomalies: [],
   tacticCounts: {},
   totalAnomaliesCount: 0,
   from: FROM_MS,
@@ -65,7 +66,7 @@ const makeSearchResponse = (
   allJobKeys: string[] = [],
   total: number = 0
 ) => ({
-  hits: { total: { value: total } },
+  hits: { hits: [], total: { value: total } },
   aggregations: {
     by_time: {
       buckets: timeBuckets.map((b) => ({
@@ -165,12 +166,12 @@ describe('getEntityAnomalyOverview', () => {
     it('returns anomaly entries for each non-empty time bucket', async () => {
       const result = await getEntityAnomalyOverview(baseParams);
 
-      expect(result.anomalies).toHaveLength(2);
-      expect(result.anomalies[0]).toMatchObject({
+      expect(result.anomalyByTimeBucket).toHaveLength(2);
+      expect(result.anomalyByTimeBucket[0]).toMatchObject({
         timestamp: new Date(bucket1Key).toISOString(),
         maxScore: 75.5,
       });
-      expect(result.anomalies[1]).toMatchObject({
+      expect(result.anomalyByTimeBucket[1]).toMatchObject({
         timestamp: new Date(bucket2Key).toISOString(),
         maxScore: 50,
       });
@@ -179,10 +180,10 @@ describe('getEntityAnomalyOverview', () => {
     it('aggregates tactics per bucket from job configs', async () => {
       const result = await getEntityAnomalyOverview(baseParams);
 
-      expect(result.anomalies[0].threatTactics).toEqual(
+      expect(result.anomalyByTimeBucket[0].threatTactics).toEqual(
         expect.arrayContaining(['Execution', 'Discovery', 'Persistence'])
       );
-      expect(result.anomalies[1].threatTactics).toEqual(
+      expect(result.anomalyByTimeBucket[1].threatTactics).toEqual(
         expect.arrayContaining(['Execution', 'Discovery'])
       );
     });
@@ -196,7 +197,7 @@ describe('getEntityAnomalyOverview', () => {
 
       const result = await getEntityAnomalyOverview(baseParams);
 
-      expect(result.anomalies[0].threatTactics).toEqual(['Execution']);
+      expect(result.anomalyByTimeBucket[0].threatTactics).toEqual(['Execution']);
     });
 
     it('counts tactic occurrences across all buckets', async () => {
@@ -294,8 +295,8 @@ describe('getEntityAnomalyOverview', () => {
 
       const result = await getEntityAnomalyOverview(baseParams);
 
-      expect(result.anomalies).toHaveLength(1);
-      expect(result.anomalies[0].maxScore).toBe(42);
+      expect(result.anomalyByTimeBucket).toHaveLength(1);
+      expect(result.anomalyByTimeBucket[0].maxScore).toBe(42);
     });
   });
 
