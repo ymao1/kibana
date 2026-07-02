@@ -5,13 +5,17 @@
  * 2.0.
  */
 
-import { createServerStepDefinition } from '@kbn/workflows-extensions/server';
+import {
+  createServerStepDefinition,
+  type WorkflowsExtensionsServerPluginStart,
+} from '@kbn/workflows-extensions/server';
 import { ExecutionError } from '@kbn/workflows/server';
 import type { EntityStoreStartContract } from '@kbn/entity-store/server';
 import { updateAssetCriticalityStepCommonDefinition } from '../../../../common/workflows/step_types/update_asset_criticality_step/update_asset_criticality_step_common';
 
 export const getUpdateAssetCriticalityStepDefinition = (
-  getEntityStoreStart: () => Promise<EntityStoreStartContract>
+  getEntityStoreStart: () => Promise<EntityStoreStartContract>,
+  getWorkflowsExtensionsStart: () => Promise<WorkflowsExtensionsServerPluginStart | undefined>
 ) =>
   createServerStepDefinition({
     ...updateAssetCriticalityStepCommonDefinition,
@@ -26,7 +30,14 @@ export const getUpdateAssetCriticalityStepDefinition = (
         const entityStore = await getEntityStoreStart();
         const esClient = context.contextManager.getScopedEsClient();
         const { workflow } = context.contextManager.getContext();
-        const crudClient = entityStore.createCRUDClient(esClient, workflow.spaceId);
+        const workflowsExtensions = await getWorkflowsExtensionsStart();
+        const crudClient = entityStore.createCRUDClient(
+          esClient,
+          workflow.spaceId,
+          workflowsExtensions
+            ? () => workflowsExtensions.getClient(context.contextManager.getFakeRequest())
+            : undefined
+        );
 
         // `force: true` is required because `asset.criticality` is not marked
         // `allowAPIUpdate` in the Entity Store field retention definitions.

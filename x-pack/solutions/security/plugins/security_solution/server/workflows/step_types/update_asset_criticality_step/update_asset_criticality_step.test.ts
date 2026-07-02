@@ -7,8 +7,13 @@
 
 import { getUpdateAssetCriticalityStepDefinition } from './update_asset_criticality_step';
 import { ExecutionError } from '@kbn/workflows/server';
-import type { StepHandlerContext } from '@kbn/workflows-extensions/server';
+import type {
+  StepHandlerContext,
+  WorkflowsExtensionsServerPluginStart,
+} from '@kbn/workflows-extensions/server';
 import type { EntityStoreStartContract } from '@kbn/entity-store/server';
+
+const fakeRequest = { fake: true };
 
 const createMockContext = (input: Record<string, unknown>, esClient: unknown = {}) => {
   return {
@@ -19,7 +24,7 @@ const createMockContext = (input: Record<string, unknown>, esClient: unknown = {
       getContext: jest.fn().mockReturnValue({ workflow: { spaceId: 'default' } }),
       getScopedEsClient: jest.fn().mockReturnValue(esClient),
       renderInputTemplate: jest.fn(),
-      getFakeRequest: jest.fn(),
+      getFakeRequest: jest.fn().mockReturnValue(fakeRequest),
       callKibanaApi: jest.fn(),
     },
     logger: {
@@ -43,9 +48,18 @@ describe('updateAssetCriticalityStepDefinition', () => {
         createCRUDClient,
       } as unknown as EntityStoreStartContract)
   );
+  const getClient = jest.fn();
+  const getWorkflowsExtensionsStart = jest.fn(
+    async () =>
+      ({
+        getClient,
+      } as unknown as WorkflowsExtensionsServerPluginStart)
+  );
 
-  const updateAssetCriticalityStepDefinition =
-    getUpdateAssetCriticalityStepDefinition(getEntityStoreStart);
+  const updateAssetCriticalityStepDefinition = getUpdateAssetCriticalityStepDefinition(
+    getEntityStoreStart,
+    getWorkflowsExtensionsStart
+  );
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -67,7 +81,7 @@ describe('updateAssetCriticalityStepDefinition', () => {
 
       const result = await updateAssetCriticalityStepDefinition.handler(mockContext);
 
-      expect(createCRUDClient).toHaveBeenCalledWith(esClient, 'default');
+      expect(createCRUDClient).toHaveBeenCalledWith(esClient, 'default', expect.any(Function));
       expect(updateEntity).toHaveBeenCalledWith(
         'host',
         { entity: { id: 'host:my-host' }, asset: { criticality: 'high_impact' } },
@@ -79,6 +93,38 @@ describe('updateAssetCriticalityStepDefinition', () => {
           message: 'Successfully set criticality level to "high_impact" for entity host:my-host',
         },
       });
+    });
+
+    it('wires up a workflows client so the update emits a workflow trigger event', async () => {
+      const mockContext = createMockContext({
+        entity_type: 'host',
+        entity_id: 'host:my-host',
+        criticality_level: 'high_impact',
+      });
+
+      await updateAssetCriticalityStepDefinition.handler(mockContext);
+
+      const getWorkflowsClient = createCRUDClient.mock.calls[0][2];
+      await getWorkflowsClient();
+
+      expect(getClient).toHaveBeenCalledWith(fakeRequest);
+    });
+
+    it('does not pass a workflows client getter when workflowsExtensions is unavailable', async () => {
+      getWorkflowsExtensionsStart.mockResolvedValueOnce(undefined);
+      const esClient = {};
+      const mockContext = createMockContext(
+        {
+          entity_type: 'host',
+          entity_id: 'host:my-host',
+          criticality_level: 'high_impact',
+        },
+        esClient
+      );
+
+      await updateAssetCriticalityStepDefinition.handler(mockContext);
+
+      expect(createCRUDClient).toHaveBeenCalledWith(esClient, 'default', undefined);
     });
 
     it('should throw ExecutionError if the CRUD client throws', async () => {
