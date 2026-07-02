@@ -36,6 +36,7 @@ pageLoadAssetSize:
   dashboard: 20000
   dashboardMarkdown: 8661
   data: 496646
+  dataFederation: 7106
   dataQuality: 11469
   datasetQuality: 49315
   dataUsage: 8743
@@ -44,7 +45,7 @@ pageLoadAssetSize:
   dataViewManagement: 6250
   dataViews: 66000
   dataVisualizer: 32727
-  developerToolbar: 5758
+  developerToolbar: 6043
   devTools: 8107
   discover: 30501
   discoverEnhanced: 5353
@@ -55,7 +56,7 @@ pageLoadAssetSize:
   embeddable: 19587
   embeddableAlertsTable: 6524
   enterpriseSearch: 37565
-  entityStore: 9746
+  entityStore: 9842
   esql: 29469
   esqlDataGrid: 10209
   esUiShared: 101220
@@ -176,6 +177,7 @@ pageLoadAssetSize:
   serverlessWorkplaceAI: 4855
   sessionView: 47912
   share: 64059
+  significant_events: 15000
   slo: 40437
   snapshotRestore: 22068
   spaces: 28871

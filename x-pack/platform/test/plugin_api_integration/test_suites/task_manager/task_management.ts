@@ -677,7 +677,6 @@ export default function ({ getService }: FtrProviderContext) {
             },
           },
         });
-        log.info(`api_key_to_invalidate saved object search result: ${JSON.stringify(response)}`);
 
         expect(response.hits.hits.length).to.eql(1);
         expect((response.hits?.hits?.[0]._source as any).api_key_to_invalidate?.apiKeyId).to.eql(
@@ -696,15 +695,12 @@ export default function ({ getService }: FtrProviderContext) {
         .expect(200);
 
       // api key should be invalidated
-      await retry.tryForTime(5 * 60 * 1000, async () => {
+      await retry.try(async () => {
         queryResult = await supertest
           .post('/internal/security/api_key/_query')
           .send({})
           .set('kbn-xsrf', 'xxx')
           .expect(200);
-
-        log.info(`result.userScope?.apiKeyId: ${result.userScope?.apiKeyId}`);
-        log.info(`queryResult.body.apiKeys: ${JSON.stringify(queryResult.body.apiKeys)}`);
 
         expect(
           queryResult.body.apiKeys.filter((apiKey: { id: string }) => {
