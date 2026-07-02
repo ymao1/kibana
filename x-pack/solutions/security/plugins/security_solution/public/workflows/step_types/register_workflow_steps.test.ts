@@ -14,6 +14,7 @@ import { buildAlertEntityGraphStepDefinition } from './build_alert_entity_graph_
 import { setAlertStatusStepDefinition } from './set_alert_status_step/set_alert_status_step';
 import { setAlertTagsStepDefinition } from './set_alert_tags_step/set_alert_tags_step';
 import { assignAlertStepDefinition } from './assign_alert_step/assign_alert_step';
+import { updateAssetCriticalityStepDefinition } from './update_asset_criticality_step/update_asset_criticality_step';
 import {
   REGISTER_ALERT_VALIDATION_STEPS_FEATURE_FLAG,
   REGISTER_ALERT_VALIDATION_STEP_FEATURE_FLAG_DEFAULT,
@@ -38,7 +39,7 @@ describe('registerWorkflowSteps (public)', () => {
 
     registerWorkflowSteps(workflowsExtensions, core);
 
-    expect(workflowsExtensions.registerStepDefinition).toHaveBeenCalledTimes(5);
+    expect(workflowsExtensions.registerStepDefinition).toHaveBeenCalledTimes(6);
     // getStartServices is called once eagerly to create the shared memoized promise
     expect(core.getStartServices).toHaveBeenCalledTimes(1);
   });
@@ -49,7 +50,7 @@ describe('registerWorkflowSteps (public)', () => {
 
     registerWorkflowSteps(workflowsExtensions, core);
 
-    const [loader1, loader2, loader3, loader4, loader5] =
+    const [loader1, loader2, loader3, loader4, loader5, loader6] =
       workflowsExtensions.registerStepDefinition.mock.calls.map(([arg]) => arg as StepLoader);
 
     await expect(loader1()).resolves.toBe(renderAlertNarrativeStepDefinition);
@@ -57,6 +58,7 @@ describe('registerWorkflowSteps (public)', () => {
     await expect(loader3()).resolves.toBe(setAlertStatusStepDefinition);
     await expect(loader4()).resolves.toBe(setAlertTagsStepDefinition);
     await expect(loader5()).resolves.toBe(assignAlertStepDefinition);
+    await expect(loader6()).resolves.toBe(updateAssetCriticalityStepDefinition);
   });
 
   it('async loader returns undefined when feature flag is disabled', async () => {
@@ -65,7 +67,7 @@ describe('registerWorkflowSteps (public)', () => {
 
     registerWorkflowSteps(workflowsExtensions, core);
 
-    const [loader1, loader2, loader3, loader4, loader5] =
+    const [loader1, loader2, loader3, loader4, loader5, loader6] =
       workflowsExtensions.registerStepDefinition.mock.calls.map(([arg]) => arg as StepLoader);
 
     await expect(loader1()).resolves.toBeUndefined();
@@ -73,6 +75,7 @@ describe('registerWorkflowSteps (public)', () => {
     await expect(loader3()).resolves.toBe(setAlertStatusStepDefinition);
     await expect(loader4()).resolves.toBe(setAlertTagsStepDefinition);
     await expect(loader5()).resolves.toBe(assignAlertStepDefinition);
+    await expect(loader6()).resolves.toBe(updateAssetCriticalityStepDefinition);
   });
 
   it('checks the feature flag exactly once even when both loaders resolve', async () => {

@@ -25,3 +25,10 @@ export const MAX_WORKFLOW_MESSAGE_LENGTH = 1000;
  * We use 256 here to safely accommodate them while preventing unbounded string input (DoS).
  */
 export const MAX_USER_ID_LENGTH = 256;
+
+/**
+ * Maximum length for entity identifier values (e.g. a host or user name, or an entity.id).
+ * Matches the limit enforced by the asset criticality CSV importer, to safely accommodate
+ * real-world identifiers while preventing unbounded string input (DoS).
+ */
+export const MAX_ENTITY_ID_VALUE_LENGTH = 1000;

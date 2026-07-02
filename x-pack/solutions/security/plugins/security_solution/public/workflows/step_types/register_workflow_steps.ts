@@ -57,4 +57,10 @@ export const registerWorkflowSteps = (
   workflowsExtensions.registerStepDefinition(() =>
     import('./assign_alert_step/assign_alert_step').then((m) => m.assignAlertStepDefinition)
   );
+
+  workflowsExtensions.registerStepDefinition(() =>
+    import('./update_asset_criticality_step/update_asset_criticality_step').then(
+      (m) => m.updateAssetCriticalityStepDefinition
+    )
+  );
 };
