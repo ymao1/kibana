@@ -11,6 +11,7 @@ import type {
 } from '@kbn/workflows-extensions/server';
 import type { CoreSetup } from '@kbn/core/server';
 import type { EntityStoreStartContract } from '@kbn/entity-store/server';
+import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
 import type { ExperimentalFeatures } from '../../../common/experimental_features';
 import { renderAlertNarrativeStepDefinition } from './render_alert_narrative_step';
 import { buildAlertEntityGraphStepDefinition } from './build_alert_entity_graph_step';
@@ -53,6 +54,9 @@ export const registerWorkflowSteps = (
     WorkflowsExtensionsServerPluginStart | undefined
   > => startServices.then(([, pluginsStart]) => (pluginsStart as StartPlugins).workflowsExtensions);
 
+  const getLicensingStart = (): Promise<LicensingPluginStart> =>
+    startServices.then(([, pluginsStart]) => (pluginsStart as StartPlugins).licensing);
+
   workflowsExtensions.registerStepDefinition(async () => {
     if (!(await isEnabled)) return undefined;
     return renderAlertNarrativeStepDefinition;
@@ -67,7 +71,12 @@ export const registerWorkflowSteps = (
   workflowsExtensions.registerStepDefinition(setAlertStatusStepDefinition);
   workflowsExtensions.registerStepDefinition(setAlertTagsStepDefinition);
   workflowsExtensions.registerStepDefinition(
-    getUpdateAssetCriticalityStepDefinition(getEntityStoreStart, getWorkflowsExtensionsStart)
+    getUpdateAssetCriticalityStepDefinition(
+      getEntityStoreStart,
+      getWorkflowsExtensionsStart,
+      getLicensingStart,
+      experimentalFeatures.entityAnalyticsEntityStoreV2
+    )
   );
 
   if (experimentalFeatures.publicAttacksApiEnabled) {

@@ -11,11 +11,14 @@ import {
 } from '@kbn/workflows-extensions/server';
 import { ExecutionError } from '@kbn/workflows/server';
 import type { EntityStoreStartContract } from '@kbn/entity-store/server';
+import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
 import { updateAssetCriticalityStepCommonDefinition } from '../../../../common/workflows/step_types/update_asset_criticality_step/update_asset_criticality_step_common';
 
 export const getUpdateAssetCriticalityStepDefinition = (
   getEntityStoreStart: () => Promise<EntityStoreStartContract>,
-  getWorkflowsExtensionsStart: () => Promise<WorkflowsExtensionsServerPluginStart | undefined>
+  getWorkflowsExtensionsStart: () => Promise<WorkflowsExtensionsServerPluginStart | undefined>,
+  getLicensingStart: () => Promise<LicensingPluginStart>,
+  isEntityStoreV2Enabled: boolean
 ) =>
   createServerStepDefinition({
     ...updateAssetCriticalityStepCommonDefinition,
@@ -25,6 +28,7 @@ export const getUpdateAssetCriticalityStepDefinition = (
         entity_id: entityId,
         criticality_level: criticalityLevel,
       } = context.input;
+      const { 'recalculate-risk-score': recalculateRiskScore } = context.config;
 
       try {
         const entityStore = await getEntityStoreStart();
@@ -47,10 +51,33 @@ export const getUpdateAssetCriticalityStepDefinition = (
           true
         );
 
+        let message = `Successfully set criticality level to "${criticalityLevel}" for entity ${entityId}`;
+
+        // Risk score recalculation is only available for Entity Store v2 and requires
+        // at least a platinum license, matching the `/internal/risk_score/calculation/entity_v2`
+        // route's own gating.
+        if (recalculateRiskScore && isEntityStoreV2Enabled) {
+          const licensing = await getLicensingStart();
+          const license = await licensing.getLicense();
+
+          if (license.hasAtLeast('platinum')) {
+            await context.contextManager.callKibanaApi({
+              method: 'POST',
+              path: '/internal/risk_score/calculation/entity_v2',
+              body: {
+                identifier: entityId,
+                identifier_type: entityType,
+                entity_id: entityId,
+              },
+            });
+            message += ' and triggered risk score recalculation';
+          }
+        }
+
         return {
           output: {
             success: true,
-            message: `Successfully set criticality level to "${criticalityLevel}" for entity ${entityId}`,
+            message,
           },
         };
       } catch (error) {

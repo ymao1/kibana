@@ -12,20 +12,26 @@ import type {
   WorkflowsExtensionsServerPluginStart,
 } from '@kbn/workflows-extensions/server';
 import type { EntityStoreStartContract } from '@kbn/entity-store/server';
+import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
 
 const fakeRequest = { fake: true };
 
-const createMockContext = (input: Record<string, unknown>, esClient: unknown = {}) => {
+const createMockContext = (
+  input: Record<string, unknown>,
+  esClient: unknown = {},
+  config: Record<string, unknown> = {},
+  callKibanaApi: jest.Mock = jest.fn()
+) => {
   return {
     input,
-    config: {},
+    config,
     rawInput: input,
     contextManager: {
       getContext: jest.fn().mockReturnValue({ workflow: { spaceId: 'default' } }),
       getScopedEsClient: jest.fn().mockReturnValue(esClient),
       renderInputTemplate: jest.fn(),
       getFakeRequest: jest.fn().mockReturnValue(fakeRequest),
-      callKibanaApi: jest.fn(),
+      callKibanaApi,
     },
     logger: {
       debug: jest.fn(),
@@ -55,15 +61,21 @@ describe('updateAssetCriticalityStepDefinition', () => {
         getClient,
       } as unknown as WorkflowsExtensionsServerPluginStart)
   );
+  const getLicense = jest.fn().mockResolvedValue({ hasAtLeast: () => true });
+  const getLicensingStart = jest.fn(async () => ({ getLicense } as unknown as LicensingPluginStart));
 
   const updateAssetCriticalityStepDefinition = getUpdateAssetCriticalityStepDefinition(
     getEntityStoreStart,
-    getWorkflowsExtensionsStart
+    getWorkflowsExtensionsStart,
+    getLicensingStart,
+    true
   );
 
   beforeEach(() => {
     jest.clearAllMocks();
     createCRUDClient.mockReturnValue({ updateEntity });
+    updateEntity.mockResolvedValue(undefined);
+    getLicense.mockResolvedValue({ hasAtLeast: () => true });
   });
 
   describe('handler', () => {
@@ -134,6 +146,106 @@ describe('updateAssetCriticalityStepDefinition', () => {
         entity_id: 'host:my-host',
         criticality_level: 'high_impact',
       });
+
+      await expect(updateAssetCriticalityStepDefinition.handler(mockContext)).rejects.toThrow(
+        ExecutionError
+      );
+    });
+  });
+
+  describe('risk score recalculation', () => {
+    const input = {
+      entity_type: 'host',
+      entity_id: 'host:my-host',
+      criticality_level: 'high_impact',
+    };
+
+    it('triggers recalculation when configured, Entity Store v2 is enabled, and the license is at least platinum', async () => {
+      const callKibanaApi = jest.fn().mockResolvedValue({ status: 200, headers: {}, body: {} });
+      const mockContext = createMockContext(
+        input,
+        {},
+        { 'recalculate-risk-score': true },
+        callKibanaApi
+      );
+
+      const result = await updateAssetCriticalityStepDefinition.handler(mockContext);
+
+      expect(callKibanaApi).toHaveBeenCalledWith({
+        method: 'POST',
+        path: '/internal/risk_score/calculation/entity_v2',
+        body: {
+          identifier: 'host:my-host',
+          identifier_type: 'host',
+          entity_id: 'host:my-host',
+        },
+      });
+      expect(result).toEqual({
+        output: {
+          success: true,
+          message:
+            'Successfully set criticality level to "high_impact" for entity host:my-host and triggered risk score recalculation',
+        },
+      });
+    });
+
+    it('does not trigger recalculation when the config flag is false', async () => {
+      const callKibanaApi = jest.fn();
+      const mockContext = createMockContext(
+        input,
+        {},
+        { 'recalculate-risk-score': false },
+        callKibanaApi
+      );
+
+      await updateAssetCriticalityStepDefinition.handler(mockContext);
+
+      expect(callKibanaApi).not.toHaveBeenCalled();
+    });
+
+    it('does not trigger recalculation when Entity Store v2 is disabled', async () => {
+      const disabledStepDefinition = getUpdateAssetCriticalityStepDefinition(
+        getEntityStoreStart,
+        getWorkflowsExtensionsStart,
+        getLicensingStart,
+        false
+      );
+      const callKibanaApi = jest.fn();
+      const mockContext = createMockContext(
+        input,
+        {},
+        { 'recalculate-risk-score': true },
+        callKibanaApi
+      );
+
+      await disabledStepDefinition.handler(mockContext);
+
+      expect(callKibanaApi).not.toHaveBeenCalled();
+    });
+
+    it('does not trigger recalculation when the license is below platinum', async () => {
+      getLicense.mockResolvedValueOnce({ hasAtLeast: () => false });
+      const callKibanaApi = jest.fn();
+      const mockContext = createMockContext(
+        input,
+        {},
+        { 'recalculate-risk-score': true },
+        callKibanaApi
+      );
+
+      await updateAssetCriticalityStepDefinition.handler(mockContext);
+
+      expect(callKibanaApi).not.toHaveBeenCalled();
+    });
+
+    it('throws ExecutionError if the recalculation call fails', async () => {
+      const callKibanaApi = jest.fn().mockRejectedValue(new Error('risk engine not configured'));
+      const mockContext = createMockContext(
+        input,
+        {},
+        { 'recalculate-risk-score': true },
+        callKibanaApi
+      );
 
       await expect(updateAssetCriticalityStepDefinition.handler(mockContext)).rejects.toThrow(
         ExecutionError

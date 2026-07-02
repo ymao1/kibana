@@ -32,9 +32,20 @@ export const updateAssetCriticalityOutputSchema = z.object({
   message: z.string().max(MAX_WORKFLOW_MESSAGE_LENGTH).optional(),
 });
 
+export const updateAssetCriticalityConfigSchema = z.object({
+  'recalculate-risk-score': z
+    .boolean()
+    .optional()
+    .default(true)
+    .describe(
+      'Whether to trigger a risk score recalculation for the entity after updating its criticality. Defaults to true.'
+    ),
+});
+
 export const updateAssetCriticalityStepCommonDefinition: BaseStepDefinition<
   typeof updateAssetCriticalityInputSchema,
-  typeof updateAssetCriticalityOutputSchema
+  typeof updateAssetCriticalityOutputSchema,
+  typeof updateAssetCriticalityConfigSchema
 > = {
   id: UpdateAssetCriticalityStepId,
   label: i18n.translate('xpack.securitySolution.workflows.steps.updateAssetCriticality.label', {
@@ -49,13 +60,15 @@ export const updateAssetCriticalityStepCommonDefinition: BaseStepDefinition<
   category: StepCategory.KibanaSecurity,
   inputSchema: updateAssetCriticalityInputSchema,
   outputSchema: updateAssetCriticalityOutputSchema,
+  configSchema: updateAssetCriticalityConfigSchema,
   documentation: {
     details: i18n.translate(
       'xpack.securitySolution.workflows.steps.updateAssetCriticality.documentation.details',
       {
         defaultMessage:
           'Sets or updates the asset criticality level for an Entity Store (v2) entity, ' +
-          'identified by its entity type and entity ID (EUID).',
+          'identified by its entity type and entity ID (EUID). By default, also triggers a risk ' +
+          'score recalculation for the entity; set `recalculate-risk-score: false` to skip this.',
       }
     ),
     examples: [
