@@ -25,6 +25,8 @@
     "@kbn/workflows-extensions",
     "@kbn/workflows-management-plugin",
     "@kbn/agent-builder-browser",
-    "@kbn/agent-builder-common"
+    "@kbn/agent-builder-common",
+    "@kbn/agent-builder-server",
+    "@kbn/core-spaces-common"
   ]
 }

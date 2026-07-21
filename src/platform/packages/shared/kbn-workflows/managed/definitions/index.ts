@@ -87,6 +87,15 @@ export {
   PND_WATCH_FLOOR_WORKFLOW_ID,
   PND_WATCH_OFFICER_WORKFLOW_ID,
   PND_WATCH_WORKFLOW_IDS,
+  PND_WATCH_METADATA,
+  PND_WATCH_TEMPLATE_VALUES,
+} from './pnd';
+export type {
+  WatchCallable,
+  WatchSkillCallable,
+  WatchWorkflowCallable,
+  WatchMetadata,
+  WatchWorkflowTemplateValues,
 } from './pnd';
 
 // Registering the AD workflow definitions in the managed-workflows registry is

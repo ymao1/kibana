@@ -1,12 +1,9 @@
 version: "1"
-name: Deep Watch
-description: >
-  Deep Watch skeleton. Specialist, on-demand depth — forensics,
-  hunts, and draft-only conclusions under human review.
+name: __WATCH_NAME__
+description: __WATCH_DESCRIPTION__
 enabled: true
 tags:
-  - watch
-  - watch-deep
+__WATCH_TAGS__
 triggers:
   - type: manual
 steps:
@@ -38,8 +35,7 @@ steps:
           - name: DNS · netflow
             access: full
             label: Read
-        # Capabilities projected from executable steps — see Watch Floor.
-        callables: []
+        __WATCH_CALLABLES__
   - name: specialist_stub
     type: console
     with:

@@ -1,12 +1,9 @@
 version: "1"
-name: Watch Officer
-description: >
-  Tier-2 Security Watch Officer skeleton. Escalates criticals, drafts briefs,
-  and stages gated response proposals for human approval.
+name: __WATCH_NAME__
+description: __WATCH_DESCRIPTION__
 enabled: true
 tags:
-  - watch
-  - watch-officer
+__WATCH_TAGS__
 triggers:
   - type: manual
 steps:
@@ -36,9 +33,7 @@ steps:
           - name: Deploy history
             access: full
             label: Read
-        # Capabilities are projected from executable steps (see Floor). Add
-        # ai.agent skill://… or workflow.execute targets, then optional overrides here.
-        callables: []
+        __WATCH_CALLABLES__
   - name: draft_proposal
     type: data.set
     with:

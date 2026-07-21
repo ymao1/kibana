@@ -1,13 +1,9 @@
 version: "1"
-name: Dark Watch
-description: >
-  Dark Watch skeleton. Overnight / continuous hunt-style sweeps with
-  allow-listed autonomous actions. Scheduled interval is a stand-in until richer
-  window triggers exist.
+name: __WATCH_NAME__
+description: __WATCH_DESCRIPTION__
 enabled: true
 tags:
-  - watch
-  - watch-dark
+__WATCH_TAGS__
 triggers:
   - type: scheduled
     with:
@@ -43,8 +39,7 @@ steps:
           - name: Customer data
             access: denied
             label: No access
-        # Capabilities projected from executable steps — see Watch Floor.
-        callables: []
+        __WATCH_CALLABLES__
   - name: hunt_stub
     type: console
     with:

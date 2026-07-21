@@ -6,7 +6,7 @@
  */
 
 import type { Logger } from '@kbn/logging';
-import { PND_WATCH_WORKFLOW_IDS } from '@kbn/workflows/managed';
+import { PND_WATCH_WORKFLOW_IDS, PND_WATCH_TEMPLATE_VALUES } from '@kbn/workflows/managed';
 import { GLOBAL_WORKFLOW_SPACE_ID } from '@kbn/workflows/server';
 import type { WorkflowsExtensionsServerPluginStart } from '@kbn/workflows-extensions/server';
 
@@ -28,7 +28,10 @@ export const installStatic = async ({
 
   for (const id of PND_WATCH_WORKFLOW_IDS) {
     try {
-      await client.install(id, { spaceId: GLOBAL_WORKFLOW_SPACE_ID });
+      await client.install(id, {
+        spaceId: GLOBAL_WORKFLOW_SPACE_ID,
+        values: PND_WATCH_TEMPLATE_VALUES[id],
+      });
     } catch (error) {
       failedIds.push(id);
       logger.error(

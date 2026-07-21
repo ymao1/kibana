@@ -26,6 +26,7 @@ import type {
 import { registerRoutes } from './routes/register_routes';
 import { registerOwner } from './managed_workflows/register_owner';
 import { installStatic } from './managed_workflows/install_static';
+import { installWatchAgents } from './managed_workflows/install_watch_agents';
 import type { WatchWorkflowProjectionService } from './services/watches/watch_workflow_projection_service';
 import { WatchWorkflowProjectionService as WatchWorkflowProjectionServiceImpl } from './services/watches/watch_workflow_projection_service';
 import { WatchWorkflowsManagementClientImpl } from './services/watches/watch_workflows_management_client';
@@ -112,6 +113,14 @@ export class PndPlugin
         this.logger.warn(
           `PND managed watch install incomplete — failed ids: ${failedIds.join(', ')}`
         );
+      }
+
+      if (plugins.agentBuilder) {
+        await installWatchAgents({
+          enabled: this.config.enabled,
+          agentBuilder: plugins.agentBuilder,
+          logger: this.logger,
+        });
       }
     })();
 
