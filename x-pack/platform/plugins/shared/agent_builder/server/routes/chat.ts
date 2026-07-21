@@ -270,6 +270,17 @@ export const conversePayloadSchema = schema.object({
             { meta: { description: 'Tool selection to enable for this execution.' } }
           )
         ),
+        skill_ids: schema.maybe(
+          schema.arrayOf(
+            schema.string(),
+            {
+              meta: {
+                description:
+                  'Skill IDs to enable for this execution. Replaces the stored skill_ids for this call only.',
+              },
+            }
+          )
+        ),
       },
       {
         meta: {
