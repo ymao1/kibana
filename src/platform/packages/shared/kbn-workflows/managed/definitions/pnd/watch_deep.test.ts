@@ -10,6 +10,8 @@
 import { parse } from 'yaml';
 
 import { PND_WATCH_DEEP_WORKFLOW, PND_WATCH_FLOOR_WORKFLOW, PND_WORKFLOW_TEMPLATE_VALUES } from '.';
+import { buildFieldsZodValidator } from '../../../spec/lib/build_fields_zod_validator';
+import { normalizeFieldsToJsonSchema } from '../../../spec/lib/field_conversion';
 
 interface ParsedInputProperty {
   type?: string;
@@ -27,9 +29,13 @@ interface ParsedTrigger {
   type: string;
 }
 
-interface ParsedOutput {
-  name?: string;
+interface ParsedOutputProperty {
+  items?: { type?: string };
   type?: string;
+}
+
+interface ParsedOutputs {
+  properties?: Record<string, ParsedOutputProperty>;
 }
 
 interface ParsedJsonSchema {
@@ -38,16 +44,29 @@ interface ParsedJsonSchema {
   type?: string;
 }
 
+interface ParsedTermsAggregation {
+  terms?: { field?: string; size?: number };
+}
+
 interface ParsedStepWith {
+  aggregations?: { host_name?: ParsedTermsAggregation; lead_hosts?: ParsedTermsAggregation };
+  configuration_overrides?: {
+    enable_elastic_capabilities?: boolean;
+    skill_ids?: string[];
+  };
   conversation_id?: string;
   headers?: Record<string, string>;
-  isIncident?: string;
+  host_name?: string;
+  index?: string;
+  isIncident?: boolean | string;
+  message?: string;
   method?: string;
   path?: string;
   proposal?: string;
-  query?: { correlationId?: string };
+  query?: { correlationId?: string } & Record<string, unknown>;
   rationale?: string;
-  reasoning?: { summary?: string };
+  reasoning?: { sections?: Array<{ body?: string; title?: string }>; summary?: string };
+  recommendedActions?: string | unknown[];
   schema?: ParsedJsonSchema;
 }
 
@@ -57,7 +76,9 @@ interface ParsedOnFailure {
 }
 
 interface ParsedStep {
+  condition?: string;
   else?: ParsedStep[];
+  if?: string;
   name: string;
   'on-failure'?: ParsedOnFailure;
   status?: string;
@@ -70,7 +91,7 @@ interface ParsedWorkflow {
   consts?: { watch_policy?: { autonomyLevel?: string; mandate?: string } };
   description?: string;
   name?: string;
-  outputs?: ParsedOutput[];
+  outputs?: ParsedOutputs;
   steps?: ParsedStep[];
   tags?: string[];
   triggers?: ParsedTrigger[];
@@ -91,29 +112,29 @@ const getStep = (name: string): ParsedStep => {
   const step = allSteps.find((candidate) => candidate.name === name);
 
   if (step == null) {
-    throw new Error(`No '${name}' step found in Deep Watch`);
+    throw new Error(`No '${name}' step found in Forensic Watch`);
   }
 
   return step;
 };
 
 /**
- * kibana-tjil.7 / B1. Deep Watch stays a catalog watch (alert + manual, VISIBILITY) so standalone
- * use survives, and becomes an invokable investigation worker: inputs, a derived conversation for
- * `triage_alerts`, and a `workflow.output` of `{ isIncident, rationale, proposal }` that `.8` reads
- * via `workflow.execute`.
+ * kibana-tjil.7 / B1. Forensic Watch stays a catalog watch (alert + manual, VISIBILITY) so standalone
+ * use survives, and remains an invokable investigation worker: inputs, a derived conversation for
+ * `forensic_analysis`, and a `workflow.output` of `{ isIncident, rationale, proposal }` that the
+ * Floor reads via `workflow.execute`.
  */
 describe('watch_deep.yaml (catalog identity)', () => {
-  it('keeps the Deep Watch name, so the tier the catalog renders is unchanged', () => {
-    expect(parsed.name).toBe('Deep Watch');
+  it('names itself Forensic Watch', () => {
+    expect(parsed.name).toBe('Forensic Watch');
   });
 
   it('keeps the tier tags, which are what `list_watches` maps a definition to a tier by', () => {
     expect(parsed.tags).toEqual(['watch', 'watch-deep']);
   });
 
-  it('keeps the Deep tier mandate', () => {
-    expect(parsed.consts?.watch_policy?.mandate).toBe('Deep investigation & hunts');
+  it('states the Forensic Watch mandate', () => {
+    expect(parsed.consts?.watch_policy?.mandate).toBe('Endpoint forensics');
   });
 
   it('keeps the Deep tier at manual autonomy', () => {
@@ -163,9 +184,16 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
   it('declares the worker steps and nothing else', () => {
     expect(allSteps.map(({ name }) => name)).toEqual([
       'derive_ids',
-      'triage_alerts',
+      'fetch_alert',
+      'extract_host_from_alerts',
+      'resolve_host',
+      'when_host_known',
+      'forensic_analysis',
+      'verify_lead_hosts',
+      'follow_up_analysis',
       'record_reasoning',
       'emit_result',
+      'emit_no_host',
     ]);
   });
 
@@ -190,11 +218,70 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
   });
 
   it('declares the worker output contract .8 reads', () => {
-    expect(parsed.outputs).toEqual([
-      { name: 'isIncident', type: 'boolean' },
-      { name: 'rationale', type: 'string' },
-      { name: 'proposal', type: 'string' },
-    ]);
+    expect(parsed.outputs?.properties).toEqual({
+      isIncident: { type: 'boolean' },
+      rationale: { type: 'string' },
+      proposal: { type: 'string' },
+      recommendedActions: { type: 'array', items: { type: 'object' } },
+    });
+  });
+
+  // The legacy `- name:/type:` outputs form hardcodes array items to
+  // `anyOf: [string, number, boolean]`, so declaring `recommendedActions` that way made every
+  // action object fail output validation at runtime and killed the run at emit_result.
+  it('declares outputs in JSON Schema form, so recommendedActions can hold objects', () => {
+    expect(Array.isArray(parsed.outputs)).toBe(false);
+    expect(parsed.outputs?.properties?.recommendedActions?.items?.type).toBe('object');
+  });
+
+  describe('the output validator emit_result runs against', () => {
+    const validate = (outputValues: Record<string, unknown>) =>
+      buildFieldsZodValidator(normalizeFieldsToJsonSchema(parsed.outputs)).safeParse(outputValues);
+
+    const recommendedAction = {
+      action_type: 'isolate_host',
+      execution: 'kibana_api',
+      capability_ref: 'endpoint.isolate',
+      title: 'Isolate WKSTN-RECV01',
+      rationale: 'The payload ran and SMB-pivoted to the domain controller.',
+      priority: 'immediate',
+      targets: { hosts: ['WKSTN-RECV01'], users: [], ips: [], alert_ids: ['alert-1'] },
+    };
+
+    it('accepts a populated list of action objects', () => {
+      const result = validate({
+        isIncident: true,
+        rationale: 'Reconstructed the kill chain.',
+        proposal: 'Promote to incident.',
+        recommendedActions: [recommendedAction, { ...recommendedAction, action_type: 'scan_host' }],
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    it('accepts the empty list emit_no_host emits', () => {
+      const result = validate({
+        isIncident: false,
+        rationale: 'No host resolved.',
+        proposal: 'No action.',
+        recommendedActions: [],
+      });
+
+      expect(result.success).toBe(true);
+    });
+
+    // An action can omit fields the agent schema does not mark required, and a run must not die
+    // over an advisory list, so the item schema stays at `object`.
+    it('accepts an action missing optional fields', () => {
+      const result = validate({
+        isIncident: true,
+        rationale: 'Reconstructed the kill chain.',
+        proposal: 'Promote to incident.',
+        recommendedActions: [{ action_type: 'block_indicator', title: 'Block 185.220.101.42' }],
+      });
+
+      expect(result.success).toBe(true);
+    });
   });
 
   describe('derive_ids', () => {
@@ -217,13 +304,58 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
       );
     });
 
-    it('continues on failure, so a standalone alert without an attack-discovery id still triages', () => {
+    it('continues on failure, so a standalone alert without an attack-discovery id still reaches host resolution', () => {
       expect(step()['on-failure']?.continue).toBe(true);
     });
   });
 
-  describe('triage_alerts', () => {
-    const step = () => getStep('triage_alerts');
+  describe('host extraction', () => {
+    it('loads the triggering attack or alert from Attack Discovery and detection-alert indices', () => {
+      expect(getStep('fetch_alert').type).toBe('elasticsearch.search');
+      expect(getStep('fetch_alert').with?.index).toContain(
+        '.alerts-security.attack.discovery.alerts-'
+      );
+      expect(getStep('fetch_alert').with?.index).toContain('.alerts-security.alerts-');
+    });
+
+    it('aggregates host.name from constituent detection alerts when the attack carries alert ids', () => {
+      expect(getStep('extract_host_from_alerts').if).toContain(
+        'kibana.alert.attack_discovery.alert_ids'
+      );
+      expect(getStep('extract_host_from_alerts').with?.aggregations?.host_name?.terms?.field).toBe(
+        'host.name'
+      );
+    });
+
+    it('prefers the event host, then the fetched alert, then the constituent-alert aggregation', () => {
+      expect(getStep('resolve_host').with?.host_name).toContain('event.host.name');
+      expect(getStep('resolve_host').with?.host_name).toContain(
+        'steps.extract_host_from_alerts.output.aggregations.host_name.buckets[0].key'
+      );
+    });
+
+    it('only runs forensics when a host name was resolved', () => {
+      expect(getStep('when_host_known').type).toBe('if');
+      expect(getStep('when_host_known').condition).toBe(
+        '${{ steps.resolve_host.output.host_name != blank }}'
+      );
+    });
+
+    it('emits a non-incident worker result when no host is extractable', () => {
+      expect(getStep('emit_no_host').type).toBe('workflow.output');
+      expect(getStep('emit_no_host').with?.isIncident).toBe(false);
+      expect(getStep('emit_no_host').with?.rationale).toContain('no host.name');
+    });
+
+    // Empty rather than absent: "nothing to contain" is a different claim from "not assessed",
+    // and the card distinguishes them.
+    it('recommends nothing, explicitly, when there was nothing to reconstruct', () => {
+      expect(getStep('emit_no_host').with?.recommendedActions).toEqual([]);
+    });
+  });
+
+  describe('forensic_analysis', () => {
+    const step = () => getStep('forensic_analysis');
 
     it('is an ai.agent step', () => {
       expect(step().type).toBe('ai.agent');
@@ -235,11 +367,35 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
       );
     });
 
-    it('asks the model for the worker contract .8 reads', () => {
+    it('loads the endpoint-forensic-analysis skill and no other elastic capabilities', () => {
+      expect(step().with?.configuration_overrides).toEqual({
+        enable_elastic_capabilities: false,
+        skill_ids: ['endpoint-forensic-analysis'],
+      });
+    });
+
+    it('asks the model with the Black Hat demo forensic prompt, substituting the resolved host', () => {
+      expect(step().with?.message).toContain('skill://endpoint-forensic-analysis');
+      expect(step().with?.message).toContain(
+        'I have a ransomware alert on {{ steps.resolve_host.output.host_name }}.'
+      );
+      expect(step().with?.message).toContain(
+        'Perform forensic analysis and extract all IoCs, then check if other hosts are affected.'
+      );
+    });
+
+    it('forbids response actions and osquery', () => {
+      expect(step().with?.message).toContain('Do not execute Endpoint response actions');
+      expect(step().with?.message).toContain('do not run osquery');
+    });
+
+    it('asks the model for the worker contract the Floor reads', () => {
       expect(Object.keys(step().with?.schema?.properties ?? {}).sort()).toEqual([
+        'followUpHosts',
         'isIncident',
         'proposal',
         'rationale',
+        'recommendedActions',
       ]);
       expect(step().with?.schema?.required?.slice().sort()).toEqual([
         'isIncident',
@@ -248,8 +404,108 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
       ]);
     });
 
+    // Recommendations, not executions: the Floor renders them on the promote gate and
+    // nothing in this repo carries one out, which is why the prompt says so twice.
+    it('asks the model to recommend the containment the evidence justifies', () => {
+      expect(step().with?.message).toContain('`recommendedActions`');
+      expect(step().with?.message).toContain('Nothing executes them');
+      expect(step().with?.schema?.properties?.recommendedActions?.type).toBe('array');
+    });
+
+    it('leaves recommendedActions optional, so a clean reconstruction recommends nothing', () => {
+      expect(step().with?.schema?.required ?? []).not.toContain('recommendedActions');
+    });
+
+    // The generic follow-up signal: residual scope the model declares as data, rather than
+    // a phrase this YAML would have to pattern-match out of the free-text rationale.
+    it('asks the model to declare unexplained hosts as structured leads', () => {
+      expect(step().with?.message).toContain('name them in `followUpHosts`');
+      expect(step().with?.schema?.properties?.followUpHosts?.type).toBe('array');
+    });
+
+    it('leaves followUpHosts optional, so a single-host attack returns no leads', () => {
+      expect(step().with?.schema?.required ?? []).not.toContain('followUpHosts');
+    });
+
     it('does not name an agent-id, so projectWorkers still skips this unowned step', () => {
       expect((step() as { 'agent-id'?: string })['agent-id']).toBeUndefined();
+    });
+  });
+
+  // A lead is followed because the data says the host exists, not because the model named it.
+  describe('verify_lead_hosts', () => {
+    const step = () => getStep('verify_lead_hosts');
+
+    it('only runs when the forensic pass declared leads', () => {
+      expect(step().if).toBe(
+        '${{ steps.forensic_analysis.output.structured_output.followUpHosts != blank }}'
+      );
+    });
+
+    it('checks the declared hosts against endpoint telemetry and security alerts', () => {
+      expect(step().type).toBe('elasticsearch.search');
+      expect(step().with?.index).toContain('logs-endpoint.events.');
+      expect(step().with?.index).toContain('.alerts-security.alerts-');
+    });
+
+    it('keeps only the declared hosts that actually appear in the data', () => {
+      expect(step().with?.aggregations?.lead_hosts?.terms?.field).toBe('host.name');
+    });
+
+    it('continues on failure, so a lookup problem cannot lose the first-pass verdict', () => {
+      expect(step()['on-failure']?.continue).toBe(true);
+    });
+  });
+
+  describe('follow_up_analysis', () => {
+    const step = () => getStep('follow_up_analysis');
+
+    it('runs a second forensic pass only when a lead host was confirmed', () => {
+      expect(step().type).toBe('ai.agent');
+      expect(step().if).toBe(
+        '${{ steps.verify_lead_hosts.output.aggregations.lead_hosts.buckets != blank }}'
+      );
+    });
+
+    it('loads the same forensic skill as the first pass', () => {
+      expect(step().with?.configuration_overrides).toEqual({
+        enable_elastic_capabilities: false,
+        skill_ids: ['endpoint-forensic-analysis'],
+      });
+    });
+
+    it('continues the same investigation conversation rather than opening a new thread', () => {
+      expect(step().with?.conversation_id).toBe(
+        '{{ steps.derive_ids.output.investigationConversationId }}'
+      );
+    });
+
+    it('carries the read-only constraint into the second pass', () => {
+      expect(step().with?.message).toContain('Do not execute Endpoint response actions');
+      expect(step().with?.message).toContain('do not run osquery');
+    });
+
+    // Bounded at one level: leads raised here are never followed, so a sprawling attack
+    // cannot walk the worker across the fleet one pass at a time.
+    it('does not ask the second pass for further leads', () => {
+      expect(Object.keys(step().with?.schema?.properties ?? {}).sort()).toEqual([
+        'isIncident',
+        'proposal',
+        'rationale',
+        'recommendedActions',
+      ]);
+      expect(step().with?.schema?.properties?.followUpHosts).toBeUndefined();
+    });
+
+    // The second pass saw every host, so its list supersedes the first pass's rather
+    // than covering only the leads it was handed.
+    it('asks the second pass to restate the recommendations for the whole attack', () => {
+      expect(step().with?.message).toContain('Restate `recommendedActions` for the whole attack');
+      expect(step().with?.schema?.properties?.recommendedActions?.type).toBe('array');
+    });
+
+    it('asks for a rationale consolidated across every host investigated', () => {
+      expect(step().with?.message).toContain('Return a consolidated `rationale`');
     });
   });
 
@@ -260,8 +516,22 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
 
     it('quotes the model rationale as the reasoning summary', () => {
       expect(getStep('record_reasoning').with?.reasoning?.summary).toContain(
-        'steps.triage_alerts.output.structured_output.rationale'
+        'steps.forensic_analysis.output.structured_output.rationale'
       );
+    });
+
+    it('prefers the consolidated follow-up rationale when a second pass ran', () => {
+      expect(getStep('record_reasoning').with?.reasoning?.summary).toContain(
+        'steps.follow_up_analysis.output.structured_output.rationale'
+      );
+    });
+
+    it('records the recommended containment as its own section', () => {
+      const section = (getStep('record_reasoning').with?.reasoning?.sections ?? []).find(
+        ({ title }) => title === 'Recommended actions'
+      );
+
+      expect(section?.body).toContain('structured_output.recommendedActions');
     });
   });
 
@@ -278,19 +548,33 @@ describe('watch_deep.yaml as an invokable investigation worker (kibana-tjil.7)',
 
     it('returns isIncident as a boolean expression, not a string', () => {
       expect(step().with?.isIncident).toBe(
-        '${{ steps.triage_alerts.output.structured_output.isIncident }}'
+        '${{ steps.follow_up_analysis.output.structured_output.isIncident | default: steps.forensic_analysis.output.structured_output.isIncident }}'
       );
     });
 
     it('returns the model rationale', () => {
       expect(step().with?.rationale).toBe(
-        '{{ steps.triage_alerts.output.structured_output.rationale }}'
+        '{{ steps.follow_up_analysis.output.structured_output.rationale | default: steps.forensic_analysis.output.structured_output.rationale }}'
       );
     });
 
     it('returns the model proposal', () => {
       expect(step().with?.proposal).toBe(
-        '{{ steps.triage_alerts.output.structured_output.proposal }}'
+        '{{ steps.follow_up_analysis.output.structured_output.proposal | default: steps.forensic_analysis.output.structured_output.proposal }}'
+      );
+    });
+
+    // The Floor reads a fixed set of outputs, so an extra investigation pass has to fold back
+    // into them rather than widen the contract.
+    it('falls back to the first pass, so the worker contract is unchanged when no lead ran', () => {
+      expect(step().with?.rationale).toContain(
+        'default: steps.forensic_analysis.output.structured_output.rationale'
+      );
+    });
+
+    it('returns the recommended containment for the Floor to render', () => {
+      expect(step().with?.recommendedActions).toBe(
+        '${{ steps.follow_up_analysis.output.structured_output.recommendedActions | default: steps.forensic_analysis.output.structured_output.recommendedActions }}'
       );
     });
   });

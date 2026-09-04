@@ -652,6 +652,24 @@ describe('watch_floor.yaml self-contained gate prompts (A7)', () => {
       'assessed this as a real incident'
     );
   });
+
+  // A contract with `parse_recommended_actions` in the PND plugin, pinned on both sides with
+  // literals because `@kbn/workflows` is `group: platform` and cannot import the plugin.
+  // Changing the label here alone does not throw — it silently drops every card back to
+  // prose-only, so this assertion is the only thing that fails first.
+  it('anchors the recommended containment behind the label the plugin reads', () => {
+    expect(getStep('reason_promote_incident').with?.reasoning?.summary).toContain(
+      'Recommended response actions JSON: {{ steps.investigate.output.recommendedActions | json }}'
+    );
+  });
+
+  // The recommendations are rendered on an approval card, which otherwise reads as a list of
+  // things about to run.
+  it('says approval executes none of the recommended containment', () => {
+    expect(getStep('reason_promote_incident').with?.reasoning?.summary).toContain(
+      'executes none of it'
+    );
+  });
 });
 
 // D5 / ADR-012: the `[Thread]` conversation paired 1:1 with a HITL proposal is materialised EAGERLY
