@@ -29,9 +29,9 @@ const HOST_COLUMN = i18n.translate(
   'xpack.securitySolution.agentBuilder.investigationTimeline.hostColumn',
   { defaultMessage: 'Host' }
 );
-const COMMENT_COLUMN = i18n.translate(
-  'xpack.securitySolution.agentBuilder.investigationTimeline.commentColumn',
-  { defaultMessage: 'Comment' }
+const DESCRIPTION_COLUMN = i18n.translate(
+  'xpack.securitySolution.agentBuilder.investigationTimeline.descriptionColumn',
+  { defaultMessage: 'Description' }
 );
 
 const isTimelineEvent = (value: unknown): value is InvestigationTimelineEvent => {
@@ -105,7 +105,7 @@ export const InvestigationTimelineInlineContent: React.FC<
       },
       {
         field: 'description',
-        name: COMMENT_COLUMN,
+        name: DESCRIPTION_COLUMN,
         render: (description: string) => (
           <EuiText size="s" css={wrappingCellCss}>
             {description}
