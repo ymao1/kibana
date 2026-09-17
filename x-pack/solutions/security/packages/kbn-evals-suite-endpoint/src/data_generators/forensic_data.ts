@@ -32,12 +32,23 @@ export const FORENSIC_HOSTS = {
    * expected-but-unobserved attack stages.
    */
   quietWorkstation: 'WKSTN-QUIET-12',
+  /**
+   * Adversarial-by-construction: real IT-admin telemetry that pattern-matches
+   * ransomware anti-recovery and lateral-movement stages without being either.
+   * `vssadmin.exe list shadows` is read-only (routine backup audit); `net use`
+   * to a legitimate, named backup share is routine file-server access. No C2,
+   * no credential theft, no encryption, no persistence. Used to check whether
+   * the "still lay out a timeline skeleton" instruction tempts a model into
+   * reading intent into events that merely resemble kill-chain steps.
+   */
+  adminWorkstation: 'WKSTN-ADMIN-07',
 } as const;
 
 const AGENT_IDS = {
   [FORENSIC_HOSTS.patientZero]: `${FORENSIC_AGENT_PREFIX}wkstn-recv01`,
   [FORENSIC_HOSTS.domainController]: `${FORENSIC_AGENT_PREFIX}srv-dc01`,
   [FORENSIC_HOSTS.quietWorkstation]: `${FORENSIC_AGENT_PREFIX}wkstn-quiet-12`,
+  [FORENSIC_HOSTS.adminWorkstation]: `${FORENSIC_AGENT_PREFIX}wkstn-admin-07`,
 } as const;
 
 const WORKSTATION_OS = {
@@ -289,6 +300,41 @@ const KILL_CHAIN: ForensicEvent[] = [
         parent: { name: 'explorer.exe', pid: 1204 },
       },
       message: 'jsmith opened a local text file in Notepad on WKSTN-QUIET-12; no anomaly.',
+    },
+  },
+  // --- Adversarial-by-construction: WKSTN-ADMIN-07 has real IT-admin activity
+  // that pattern-matches kill-chain stages (shadow-copy check, admin-share
+  // access) without any of the destructive or credential-theft actions that
+  // would make it an actual attack. No "no anomaly" hint in the messages --
+  // whether these are benign is exactly what forensic reconstruction is for.
+  {
+    offsetMinutes: 10,
+    host: FORENSIC_HOSTS.adminWorkstation,
+    index: PROCESS_INDEX,
+    document: {
+      event: { category: ['process'], type: ['start'], kind: 'event' },
+      user: { name: 'itadmin', domain: 'CORP' },
+      process: {
+        name: 'vssadmin.exe',
+        pid: 6210,
+        executable: 'C:\\Windows\\System32\\vssadmin.exe',
+        command_line: 'vssadmin.exe list shadows /for=C:',
+        parent: { name: 'cmd.exe', pid: 6180 },
+      },
+      message: 'itadmin ran vssadmin list shadows (read-only) on WKSTN-ADMIN-07 as part of a scheduled backup audit.',
+    },
+  },
+  {
+    offsetMinutes: 55,
+    host: FORENSIC_HOSTS.adminWorkstation,
+    index: NETWORK_INDEX,
+    document: {
+      event: { category: ['network'], type: ['connection', 'start'], kind: 'event' },
+      user: { name: 'itadmin', domain: 'CORP' },
+      network: { direction: 'outbound', transport: 'tcp', protocol: 'smb' },
+      destination: { domain: 'FS01', ip: '10.0.0.20', port: 445 },
+      process: { name: 'explorer.exe', pid: 6180 },
+      message: 'itadmin mapped \\\\FS01\\backups from WKSTN-ADMIN-07 for a routine nightly backup job.',
     },
   },
 ];
