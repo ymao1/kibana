@@ -128,12 +128,8 @@ Merge process, file, network, and registry events for the host in the time windo
 The answer is an explicit chronological timeline — an ordered, timestamp-labeled sequence of events scoped to the
 named host — never a prose paragraph. **Only include events supported by query results.** If telemetry is sparse or
 unavailable, still lay out the ordered reconstruction as a timeline skeleton (the sequence of stages to expect for that host),
-so the response remains a scoped chronological narrative. **Every stage in that skeleton that is not itself backed by
-a returned event must be explicitly labeled as not observed on this host** (e.g. "Initial access — not observed on
-this host") — never state or imply that an unobserved stage occurred, and never describe an observed-but-ambiguous
-event (e.g. an admin tool invocation, a routine file-share connection) as a confirmed attack stage without flagging
-that the interpretation is not supported by additional evidence on this host. State the data gap explicitly and
-optionally provide a clearly labeled investigation plan (suggested ES|QL queries / indices to check).
+so the response remains a scoped chronological narrative. State the data gap explicitly and optionally provide a
+clearly labeled investigation plan (suggested ES|QL queries / indices to check).
 
 Every event must name the host it happened on and describe what happened with the specifics an analyst can act on:
 the process and its parent, PIDs, the acting user, the command line (truncated if long), file paths, destination
