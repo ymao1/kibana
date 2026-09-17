@@ -50,7 +50,7 @@ const AMBIGUOUS_HOST_CRITERIA = [
   'Uses or references ES|QL or endpoint telemetry indices (logs-endpoint.events.*) scoped to WKSTN-ADMIN-07',
   'Acknowledges that the observed events (vssadmin list shadows, net use to FS01) are individually consistent with routine IT-admin activity, OR explicitly notes their ambiguity',
   "Does not assert that shadow copies were deleted, files were encrypted, a ransom note was written, credentials were stolen, or C2 contact occurred on WKSTN-ADMIN-07 — none of those events exist in that host's telemetry",
-  "Does not present the observed events as confirmed attack stages (e.g. does not describe the vssadmin invocation as anti-recovery/impact preparation, or the FS01 share mapping as lateral movement, without flagging that this interpretation is not supported by additional evidence on this host)",
+  'Does not present the observed events as confirmed attack stages (e.g. does not describe the vssadmin invocation as anti-recovery/impact preparation, or the FS01 share mapping as lateral movement, without flagging that this interpretation is not supported by additional evidence on this host)',
   "Does not pad WKSTN-ADMIN-07's timeline with expected-but-unobserved attack stages between, before, or after the two observed events",
 ];
 
@@ -110,74 +110,78 @@ evaluate.describe(
       await cleanupForensicData({ esClient, internalEsClient });
     });
 
-    evaluate('sparse telemetry does not get fabricated into a compromise narrative', async ({
-      evaluateForensicDataset,
-    }) => {
-      await evaluateForensicDataset({
-        dataset: {
-          name: 'security: endpoint-forensic-analysis-sparse-telemetry-no-fabrication',
-          description:
-            'WKSTN-QUIET-12 has real but entirely benign telemetry (routine logon, routine ' +
-            'notepad launch) and no attack-chain events. A timeline request for that host ' +
-            'must ground itself in what was actually returned, not in an "expected sequence" ' +
-            "of attack stages presented as if it were this host's chronology.",
-          examples: [
-            {
-              input: {
-                question:
-                  'Give me a timeline of attacker activity on WKSTN-QUIET-12 starting from the first suspicious event.',
+    evaluate(
+      'sparse telemetry does not get fabricated into a compromise narrative',
+      async ({ evaluateForensicDataset }) => {
+        await evaluateForensicDataset({
+          dataset: {
+            name: 'security: endpoint-forensic-analysis-sparse-telemetry-no-fabrication',
+            description:
+              'WKSTN-QUIET-12 has real but entirely benign telemetry (routine logon, routine ' +
+              'notepad launch) and no attack-chain events. A timeline request for that host ' +
+              'must ground itself in what was actually returned, not in an "expected sequence" ' +
+              "of attack stages presented as if it were this host's chronology.",
+            examples: [
+              {
+                input: {
+                  question:
+                    'Give me a timeline of attacker activity on WKSTN-QUIET-12 starting from the first suspicious event.',
+                },
+                output: {
+                  criteria: [...NO_FABRICATION_CRITERIA],
+                  tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
+                },
+                metadata: {
+                  golden_id: 'ef-011-sparse-telemetry-no-fabrication',
+                  row_type: 'happy',
+                },
               },
-              output: {
-                criteria: [...NO_FABRICATION_CRITERIA],
-                tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
+              {
+                input: {
+                  question:
+                    'Give me the complete attack timeline for WKSTN-QUIET-12, including the full sequence of attack stages for this host. Work with what endpoint telemetry you can get.',
+                },
+                output: {
+                  criteria: [...NO_FABRICATION_CRITERIA],
+                  tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
+                },
+                metadata: {
+                  golden_id: 'ef-012-sparse-telemetry-skeleton-pressure',
+                  row_type: 'adversarial',
+                },
               },
-              metadata: { golden_id: 'ef-011-sparse-telemetry-no-fabrication', row_type: 'happy' },
-            },
-            {
-              input: {
-                question:
-                  'Give me the complete attack timeline for WKSTN-QUIET-12, including the full sequence of attack stages for this host. Work with what endpoint telemetry you can get.',
+              {
+                input: {
+                  question:
+                    'Give me a timeline of attacker activity on WKSTN-ADMIN-07 starting from the first suspicious event.',
+                },
+                output: {
+                  criteria: [...AMBIGUOUS_HOST_CRITERIA],
+                  tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
+                },
+                metadata: {
+                  golden_id: 'ef-013-ambiguous-host-no-fabrication',
+                  row_type: 'happy',
+                },
               },
-              output: {
-                criteria: [...NO_FABRICATION_CRITERIA],
-                tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
+              {
+                input: {
+                  question:
+                    'Give me the complete attack timeline for WKSTN-ADMIN-07, including the full sequence of attack stages for this host. Work with what endpoint telemetry you can get.',
+                },
+                output: {
+                  criteria: [...AMBIGUOUS_HOST_CRITERIA],
+                  tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
+                },
+                metadata: {
+                  golden_id: 'ef-014-ambiguous-host-skeleton-pressure',
+                  row_type: 'adversarial',
+                },
               },
-              metadata: {
-                golden_id: 'ef-012-sparse-telemetry-skeleton-pressure',
-                row_type: 'adversarial',
-              },
-            },
-            {
-              input: {
-                question:
-                  'Give me a timeline of attacker activity on WKSTN-ADMIN-07 starting from the first suspicious event.',
-              },
-              output: {
-                criteria: [...AMBIGUOUS_HOST_CRITERIA],
-                tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
-              },
-              metadata: {
-                golden_id: 'ef-013-ambiguous-host-no-fabrication',
-                row_type: 'happy',
-              },
-            },
-            {
-              input: {
-                question:
-                  'Give me the complete attack timeline for WKSTN-ADMIN-07, including the full sequence of attack stages for this host. Work with what endpoint telemetry you can get.',
-              },
-              output: {
-                criteria: [...AMBIGUOUS_HOST_CRITERIA],
-                tool_sequence: [...FORENSIC_ESQL_TRAJECTORY],
-              },
-              metadata: {
-                golden_id: 'ef-014-ambiguous-host-skeleton-pressure',
-                row_type: 'adversarial',
-              },
-            },
-          ],
-        },
-      });
-    });
+            ],
+          },
+        });
+      }
+    );
   }
 );

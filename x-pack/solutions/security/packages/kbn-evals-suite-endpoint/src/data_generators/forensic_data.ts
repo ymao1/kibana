@@ -321,7 +321,8 @@ const KILL_CHAIN: ForensicEvent[] = [
         command_line: 'vssadmin.exe list shadows /for=C:',
         parent: { name: 'cmd.exe', pid: 6180 },
       },
-      message: 'itadmin ran vssadmin list shadows (read-only) on WKSTN-ADMIN-07 as part of a scheduled backup audit.',
+      message:
+        'itadmin ran vssadmin list shadows (read-only) on WKSTN-ADMIN-07 as part of a scheduled backup audit.',
     },
   },
   {
@@ -334,7 +335,8 @@ const KILL_CHAIN: ForensicEvent[] = [
       network: { direction: 'outbound', transport: 'tcp', protocol: 'smb' },
       destination: { domain: 'FS01', ip: '10.0.0.20', port: 445 },
       process: { name: 'explorer.exe', pid: 6180 },
-      message: 'itadmin mapped \\\\FS01\\backups from WKSTN-ADMIN-07 for a routine nightly backup job.',
+      message:
+        'itadmin mapped \\\\FS01\\backups from WKSTN-ADMIN-07 for a routine nightly backup job.',
     },
   },
 ];
