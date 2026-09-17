@@ -126,10 +126,19 @@ Return earliest host, timestamp, indicator, and delivery-vector hypothesis.
 ### 4. Attack timeline
 Merge process, file, network, and registry events for the host in the time window; sort by \`@timestamp\` ascending.
 The answer is an explicit chronological timeline — an ordered, timestamp-labeled sequence of events scoped to the
-named host — never a prose paragraph. **Only include events supported by query results.** If telemetry is sparse or
-unavailable, still lay out the ordered reconstruction as a timeline skeleton (the sequence of stages to expect for that host),
-so the response remains a scoped chronological narrative. State the data gap explicitly and optionally provide a
-clearly labeled investigation plan (suggested ES|QL queries / indices to check).
+named host — never a prose paragraph. **Only include events supported by query results.**
+
+- If telemetry is sparse or unavailable (no events matching attacker techniques were found for this host), still lay
+  out the ordered reconstruction as a timeline skeleton (the sequence of stages to expect for that host), so the
+  response remains a scoped chronological narrative. Every stage in that skeleton must be explicitly labeled "not
+  observed on this host" — never state or imply that an unobserved stage occurred. State the data gap explicitly and
+  optionally provide a clearly labeled investigation plan (suggested ES|QL queries / indices to check).
+- If telemetry instead contains specific events that pattern-match an attacker technique but also have a plausible
+  benign explanation (e.g. an admin tool invocation, a routine file-share connection), do **not** lay out an
+  attack-stage skeleton around them. Describe only the observed events, explicitly state that this interpretation is
+  not confirmed by additional evidence on this host, and stop there — do not pad the timeline with the further
+  unobserved stages (e.g. encryption, exfiltration) that would complete the attack chain if the ambiguous reading
+  were correct.
 
 Every event must name the host it happened on and describe what happened with the specifics an analyst can act on:
 the process and its parent, PIDs, the acting user, the command line (truncated if long), file paths, destination
