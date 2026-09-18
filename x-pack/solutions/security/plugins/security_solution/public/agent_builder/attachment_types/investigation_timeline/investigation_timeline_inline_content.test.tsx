@@ -53,7 +53,7 @@ describe('InvestigationTimelineInlineContent', () => {
     expect(screen.getByTestId(INVESTIGATION_TIMELINE_ATTACHMENT_TEST_ID)).toBeInTheDocument();
     expect(screen.getByText('Timestamp')).toBeInTheDocument();
     expect(screen.getByText('Host')).toBeInTheDocument();
-    expect(screen.getByText('Comment')).toBeInTheDocument();
+    expect(screen.getByText('Description')).toBeInTheDocument();
     expect(screen.getByText('WKSTN-RECV01')).toBeInTheDocument();
     expect(screen.getByText('SRV-DC01')).toBeInTheDocument();
     expect(screen.getByText('OUTLOOK.EXE spawned powershell.exe')).toBeInTheDocument();
