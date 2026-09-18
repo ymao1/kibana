@@ -89,6 +89,12 @@ evaluate.describe(
   'Endpoint Forensic Analysis — sparse telemetry',
   { tag: tags.stateful.classic },
   () => {
+    // This spec runs all 4 examples x N repetitions inside a single test. The suite default
+    // (30 min, playwright.config.ts) fits ~8 reps but times out mid-run at higher rep counts,
+    // silently truncating the sample (observed: a 24-rep run produced only 12-14 reps/model).
+    // Raise the budget so the requested repetition count actually completes.
+    evaluate.setTimeout(4 * 60 * 60_000);
+
     evaluate.beforeAll(
       async ({ kbnClient, esClient, internalEsClient, agentBuilderClient, log }) => {
         await waitForEndpointPackage(kbnClient, esClient, log);
