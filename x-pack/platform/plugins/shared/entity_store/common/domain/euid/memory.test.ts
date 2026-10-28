@@ -203,6 +203,17 @@ describe('getEuidFromObject', () => {
       ).toBeUndefined();
     });
 
+    it('treats a multi-valued event.kind as IdP when any value is asset, regardless of order', () => {
+      const event = (kind: string[]) => ({
+        user: { email: 'a@b.com' },
+        event: { kind, module: 'okta' },
+      });
+      const user = getBuiltInEntityDefinition('user');
+      expect(getEuidFromObject(user, event(['event', 'asset']))).toBe('user:a@b.com@okta');
+      expect(getEuidFromObject(user, event(['asset', 'event']))).toBe('user:a@b.com@okta');
+      expect(getEuidFromObject(user, event(['event']))).toBeUndefined();
+    });
+
     it('uses non-IDP path when user.name and host.id are present', () => {
       expect(
         getEuidFromObject(getBuiltInEntityDefinition('user'), {

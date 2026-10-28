@@ -53,6 +53,12 @@ export interface PainlessFieldExpressions {
   isPresent: (field: string) => string;
   /** Painless expression yielding the field's value, or null. */
   value: (field: string) => string;
+  /**
+   * Painless boolean: any value of the field equals `escapedValue` (already escaped for a Painless
+   * string literal). Membership over every value, like ES|QL `MV_CONTAINS`, rather than a check on
+   * {@link value}, which is only one value of a multi-valued field.
+   */
+  includes: (field: string, escapedValue: string) => string;
   /** Emitted once at the top of the script, when reading a field needs a helper function. */
   preamble?: string;
   /**
@@ -77,6 +83,10 @@ export const docValuesExpressions: PainlessFieldExpressions = {
     return `doc.containsKey('${escaped}') && doc['${escaped}'].size() > 0`;
   },
   value: (field) => `doc['${escapePainlessField(field)}'].value`,
+  includes: (field, escapedValue) => {
+    const escaped = escapePainlessField(field);
+    return `(doc.containsKey('${escaped}') && doc['${escaped}'].contains("${escapedValue}"))`;
+  },
   rootBinding: { param: 'doc', expression: 'doc' },
 };
 
@@ -85,6 +95,10 @@ export const docValuesExpressions: PainlessFieldExpressions = {
  * field read.
  */
 const SOURCE_READER = '__euid_src';
+/** Resolves a field's raw `_source` value, shared by {@link SOURCE_READER} and the membership check. */
+const SOURCE_RESOLVER = '__euid_src_raw';
+/** The `_source` membership check behind `includes`. */
+const SOURCE_INCLUDES = '__euid_src_has';
 
 /**
  * Mirrors `getFieldValue` in commons.ts, which is what the in-memory implementation uses: try the
@@ -94,7 +108,12 @@ const SOURCE_READER = '__euid_src';
  * Path segments are passed in as a list rather than split at runtime, because Painless regex is
  * disabled by default and the field names are known when the script is generated.
  */
-const SOURCE_READER_PREAMBLE = `def ${SOURCE_READER}(def src, String flat, List path) { if (src == null) { return null; } def v = src.containsKey(flat) ? src[flat] : null; if (v == null) { def cur = src; for (int i = 0; i < path.size(); i++) { if (!(cur instanceof Map)) { return null; } cur = cur[path.get(i)]; if (cur == null) { return null; } } v = cur; } if (v instanceof List) { if (((List)v).isEmpty()) { return null; } v = ((List)v).get(0); } if (v == null || v instanceof Map || v instanceof List) { return null; } String r = String.valueOf(v); return r == "" ? null : r; }`;
+const SOURCE_READER_PREAMBLE = [
+  `def ${SOURCE_RESOLVER}(def src, String flat, List path) { if (src == null) { return null; } def v = src.containsKey(flat) ? src[flat] : null; if (v == null) { def cur = src; for (int i = 0; i < path.size(); i++) { if (!(cur instanceof Map)) { return null; } cur = cur[path.get(i)]; if (cur == null) { return null; } } v = cur; } return v; }`,
+  `def ${SOURCE_READER}(def src, String flat, List path) { def v = ${SOURCE_RESOLVER}(src, flat, path); if (v instanceof List) { if (((List)v).isEmpty()) { return null; } v = ((List)v).get(0); } if (v == null || v instanceof Map || v instanceof List) { return null; } String r = String.valueOf(v); return r == "" ? null : r; }`,
+  // Mirrors `getFieldValues` in commons.ts: every element of an array counts, not just the first.
+  `boolean ${SOURCE_INCLUDES}(def src, String flat, List path, String needle) { def v = ${SOURCE_RESOLVER}(src, flat, path); List vs = v instanceof List ? (List)v : [v]; for (def e : vs) { if (e != null && !(e instanceof Map) && !(e instanceof List) && String.valueOf(e) == needle) { return true; } } return false; }`,
+].join(' ');
 
 /**
  * The `_source` implementation of {@link PainlessFieldExpressions}, for contexts with no
@@ -106,16 +125,18 @@ const SOURCE_READER_PREAMBLE = `def ${SOURCE_READER}(def src, String flat, List 
 export const createSourceExpressions = (rootExpression: string): PainlessFieldExpressions => {
   // Referenced by name so the expression can be passed into a wrapping function; see rootBinding.
   const param = '__euid_root';
-  const value = (field: string) => {
+  const fieldArgs = (field: string) => {
     const flat = escapePainlessField(field);
     const segments = field.split('.').map((segment) => `'${escapePainlessField(segment)}'`);
-    return `${SOURCE_READER}(${param},'${flat}',[${segments.join(',')}])`;
+    return `${param},'${flat}',[${segments.join(',')}]`;
   };
+  const value = (field: string) => `${SOURCE_READER}(${fieldArgs(field)})`;
 
   return {
     isNotEmpty: (field) => `${value(field)} != null`,
     isPresent: (field) => `${value(field)} != null`,
     value,
+    includes: (field, escapedValue) => `${SOURCE_INCLUDES}(${fieldArgs(field)},"${escapedValue}")`,
     preamble: SOURCE_READER_PREAMBLE,
     rootBinding: { param, expression: rootExpression },
   };
@@ -407,6 +428,7 @@ export interface ConditionToPainlessOptions {
 /**
  * Translates a streamlang condition into a Painless boolean, reading fields through `expressions`
  * and/or evaluated locals. Handles and, or, not, and field predicates (eq, neq, exists, includes).
+ * `includes` matches when any value of the field equals the given value.
  *
  * @internal Exported for testing.
  */
@@ -449,8 +471,9 @@ export function conditionToPainless(
           : `(${varName} == null || ${varName} == "")`;
       }
       if ('includes' in c) {
+        // Evaluated vars hold a single value, so membership is equality.
         const val = escapePainlessString(String(c.includes));
-        return `${varName} != null && ${varName} != "" && ${varName}.contains("${val}")`;
+        return `${varName} != null && ${varName} == "${val}"`;
       }
     }
     const nonEmpty = expressions.isNotEmpty(field);
@@ -467,8 +490,7 @@ export function conditionToPainless(
       return c.exists ? nonEmpty : `!(${nonEmpty})`;
     }
     if ('includes' in c) {
-      const val = escapePainlessString(String(c.includes));
-      return `(${nonEmpty} && ${valueExpr}.contains("${val}"))`;
+      return expressions.includes(field, escapePainlessString(String(c.includes)));
     }
   }
   return 'false';
