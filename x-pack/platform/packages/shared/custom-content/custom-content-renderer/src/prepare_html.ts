@@ -47,6 +47,10 @@ export function injectStyleTag(html: string, style: string): string {
  * point here is only that a panel with no CSS of its own does not render as a bare browser
  * document. Everything is a token, so it tracks the theme without reading it.
  *
+ * `html` has a definite height so a short template can fill the frame. The body only has a
+ * min-height, so a card taller than the frame grows and the padding stays after the last content.
+ * A fixed body height would leave that padding behind the overflow and the bottom edge flush.
+ *
  * Two rules are `!important`, both because they are ours rather than the template's: the body
  * background and the reduced-motion guard.
  * Both stay escapable on purpose — redefining the token, or an author `!important`, wins. These
@@ -59,8 +63,8 @@ export function injectStyleTag(html: string, style: string): string {
  * pattern when you control the CSS; overriding CSS we did not write needs the opt-out form.
  */
 const BASE_STYLES = `
-html,body{height:100%}
-body{margin:0;padding:var(--cc-space-l);box-sizing:border-box;font-family:var(--cc-font-family);color:var(--cc-color-text)}
+html{height:100%}
+body{margin:0;min-height:100%;padding:var(--cc-space-l);box-sizing:border-box;font-family:var(--cc-font-family);color:var(--cc-color-text)}
 *,*::before,*::after{box-sizing:inherit}
 body{background:var(--cc-color-background)!important}
 @media screen and (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}

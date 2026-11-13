@@ -183,27 +183,65 @@ export interface GraphNode {
   className: string;
   edgeLabel: string;
   y: number;
+  cx: number;
+  lineX1: number;
+  lineX2: number;
+  labelX: number;
   edgeLabelY: number;
+  plateX: number;
+  plateY: number;
+  plateW: number;
 }
 
-/** The host box sits at the middle of a 340 × 170 box; nodes stack around its center line. */
-const GRAPH_CENTER_Y = 85;
-const GRAPH_ROW = 50;
+/** The host box sits at the middle of a 340 × 230 box; nodes stack around its center line. */
+const GRAPH_CENTER_Y = 100;
+const GRAPH_ROW = 76;
+const NODE_R = 16;
+const HOST_X = 96;
+const HOST_Y = 82;
+const HOST_W = 100;
+const HOST_H = 36;
+const LEFT_CX = 32;
+const RIGHT_CX = 284;
 const MAX_LEFT_NODES = 2;
 const MAX_RIGHT_NODES = 3;
 const MAX_IPS = 2;
 
-const stack = <T extends Omit<GraphNode, 'y' | 'edgeLabelY'>>(nodes: readonly T[]): GraphNode[] => {
+const place = <T extends Omit<GraphNode, 'cx' | 'lineX1' | 'lineX2' | 'labelX' | 'edgeLabelY' | 'plateX' | 'plateY' | 'plateW'>>(
+  node: T,
+  side: 'left' | 'right'
+): GraphNode => {
+  const cx = side === 'left' ? LEFT_CX : RIGHT_CX;
+  const lineX1 = side === 'left' ? cx + NODE_R : HOST_X + HOST_W;
+  const lineX2 = side === 'left' ? HOST_X : cx - NODE_R;
+  const labelX = round((lineX1 + lineX2) / 2);
+  // The word sits above the connector, on a plate, so the line does not run through it.
+  const edgeLabelY = round((node.y + GRAPH_CENTER_Y) / 2 - 24);
+  const plateW = Math.round(node.edgeLabel.length * 6 + 8);
+  return {
+    ...node,
+    cx,
+    lineX1,
+    lineX2,
+    labelX,
+    edgeLabelY,
+    plateX: round(labelX - plateW / 2),
+    plateY: edgeLabelY - 11,
+    plateW,
+  };
+};
+
+const stack = <T extends Omit<GraphNode, 'y' | 'cx' | 'lineX1' | 'lineX2' | 'labelX' | 'edgeLabelY' | 'plateX' | 'plateY' | 'plateW'>>(
+  nodes: readonly T[],
+  side: 'left' | 'right'
+): GraphNode[] => {
   const top = GRAPH_CENTER_Y - ((nodes.length - 1) * GRAPH_ROW) / 2;
-  return nodes.map((node, index) => {
-    const y = top + index * GRAPH_ROW;
-    return { ...node, y, edgeLabelY: (y + GRAPH_CENTER_Y) / 2 - 4 };
-  });
+  return nodes.map((node, index) => place({ ...node, y: top + index * GRAPH_ROW }, side));
 };
 
 /**
  * The host with the identities that ran on it to its left, and the network destinations and other
- * hosts it reached to its right. Class names pick each kind's `--cc-vis-*` color.
+ * hosts it reached to its right. The nodes stay neutral; only the host box is drawn in the primary color.
  */
 export const buildEntityGraph = ({
   host,
@@ -215,7 +253,19 @@ export const buildEntityGraph = ({
   identities: readonly string[];
   ips: readonly string[];
   hosts: readonly string[];
-}): { host: string; left: GraphNode[]; right: GraphNode[]; empty: boolean } => {
+}): {
+  host: string;
+  hostX: number;
+  hostY: number;
+  hostW: number;
+  hostH: number;
+  hostLabelX: number;
+  hostLabelY: number;
+  hostCenterY: number;
+  left: GraphNode[];
+  right: GraphNode[];
+  empty: boolean;
+} => {
   const left = stack(
     identities.slice(0, MAX_LEFT_NODES).map((value) => ({
       value,
@@ -223,7 +273,8 @@ export const buildEntityGraph = ({
       kind: 'USER',
       className: getIocKindClass('compromised_identities'),
       edgeLabel: 'ran as',
-    }))
+    })),
+    'left'
   );
   const right = stack(
     [
@@ -243,10 +294,18 @@ export const buildEntityGraph = ({
           className: getIocKindClass('affected_hosts'),
           edgeLabel: 'reached',
         })),
-    ].slice(0, MAX_RIGHT_NODES)
+    ].slice(0, MAX_RIGHT_NODES),
+    'right'
   );
   return {
     host: host ? truncateText(host, 18) : 'host unknown',
+    hostX: HOST_X,
+    hostY: HOST_Y,
+    hostW: HOST_W,
+    hostH: HOST_H,
+    hostLabelX: HOST_X + HOST_W / 2,
+    hostLabelY: HOST_Y + 22,
+    hostCenterY: GRAPH_CENTER_Y,
     left,
     right,
     empty: left.length === 0 && right.length === 0,
