@@ -15,35 +15,36 @@ import type { ForensicsSummaryViewModel } from './view_model';
 const MARGIN = 16;
 const HEIGHTS = {
   /** The renderer's padding, the header with its line of facts, the KPI tiles, and the Decide heading. */
-  base: 294,
+  base: 278,
   /** The attack's title under the host. */
   subtitle: 20,
-  /** The "What happened" callout with one line, and its second line. */
-  callout: 43,
+  /** The summary under the header rule, one line, and its second line. */
+  callout: 46,
   calloutLine: 21,
   /** The "No endpoint evidence" banner. */
   banner: 73,
   /** The line saying nothing was proposed. */
   noProposals: 18,
-  chain: 63,
+  /** Heading, one row of chain nodes and labels. */
+  chain: 60,
   /** A category's label, a proposal card, its comment line, and the gap under it. */
   group: 18,
   proposal: 52,
   comment: 19,
   cardGap: 5,
-  /** The timeline's heading, its chart, one event's line, and the line counting the rest. */
+  /** The timeline's heading, its chart inside a panel, one step, and the line counting the rest. */
   timeline: 37,
-  timelineChart: 52,
-  event: 18,
+  timelineChart: 108,
+  event: 38,
   moreEvents: 18,
   /** The section gap, the taller of the entity graph's panel and the indicator panel's fixed part, and one indicator bar. */
-  colsGap: 10,
-  graphPanel: 200,
+  colsGap: 8,
+  graphPanel: 270,
   indicatorPanel: 69,
   indicatorBar: 22,
   /** The alerts' summary line, the open section's scale and reach line, one alert's bar, and the line when none is left. */
   alertsSummary: 37,
-  alertsOpen: 49,
+  alertsOpen: 61,
   alertBar: 22,
   noAlertsLine: 18,
 };

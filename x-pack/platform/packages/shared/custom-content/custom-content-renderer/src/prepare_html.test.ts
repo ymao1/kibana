@@ -96,10 +96,13 @@ describe('applyHtmlTheme', () => {
     expect(result.indexOf('--cc-space-l')).toBeLessThan(result.indexOf('body{padding:0}'));
   });
 
-  it('gives the document a definite height so a template can fill the frame', () => {
+  it('lets a short template fill the frame and keeps bottom padding after taller content', () => {
     const result = applyHtmlTheme('<p>hello</p>', 'LIGHT', euiTheme);
 
-    expect(result).toContain('html,body{height:100%}');
+    expect(result).toContain('html{height:100%}');
+    expect(result).toContain('min-height:100%');
+    expect(result).not.toContain('html,body{height:100%}');
+    expect(result).not.toContain('body{height:100%}');
   });
 
   // Everything else in the baseline is a floor the template can override. These two are not, so

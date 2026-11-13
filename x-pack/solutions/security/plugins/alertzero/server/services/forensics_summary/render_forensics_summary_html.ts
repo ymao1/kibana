@@ -44,7 +44,7 @@ const loadFiles = once(() => {
 const escapeHtml = (text: unknown): string => escape(String(text)).replace(/\{/g, '&#123;');
 
 const VERDICTS: Record<ForensicsVerdict, { label: string; className: string }> = {
-  confirmed_incident: { label: 'Confirmed incident', className: 'danger' },
+  confirmed_incident: { label: 'Confirmed incident', className: 'warning' },
   not_an_incident: { label: 'Not an incident', className: 'success' },
   unclear: { label: 'Unclear', className: 'warning' },
 };
@@ -175,7 +175,7 @@ const buildKpis = (viewModel: ForensicsSummaryViewModel) => {
       label: `${openDecisions} of ${proposalCount} proposals need a decision`,
       segments: buildDonutSegments(decisionParts),
       value: proposalCount === 0 ? '–' : openDecisions,
-      suffix: openDecisions > 0 ? 'to decide' : proposalCount > 0 ? 'decided' : 'proposals',
+      suffix: openDecisions > 0 ? 'awaiting decisions' : proposalCount > 0 ? 'decided' : 'proposals',
       legend: DECISION_PARTS.filter(({ group }) => decisions[group] > 0).map(
         ({ group, label, className }) => ({ className, label: `${decisions[group]} ${label}` })
       ),
@@ -197,7 +197,14 @@ const buildKpis = (viewModel: ForensicsSummaryViewModel) => {
       value: scope.hosts,
       suffix: scope.hosts === 1 ? 'host' : 'hosts',
       split: buildSplit(scopeParts),
-      text: `${countOf(scope.identities, 'identity', 'identities')} · ${scope.network} network`,
+      text:
+        [
+          scope.hosts > 0 ? countOf(scope.hosts, 'host', 'hosts') : undefined,
+          scope.identities > 0 ? countOf(scope.identities, 'identity', 'identities') : undefined,
+          scope.network > 0 ? `${scope.network} network` : undefined,
+        ]
+          .filter((part) => part !== undefined)
+          .join(' · ') || 'no indicators',
     },
   };
 };

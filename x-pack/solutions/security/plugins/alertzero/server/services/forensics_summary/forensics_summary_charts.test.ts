@@ -113,11 +113,11 @@ describe('buildEntityGraph', () => {
       ips: ['203.0.113.7', '198.51.100.20', '192.0.2.1'],
       hosts: ['win-fin-07', 'fs01.corp.local', 'dc01.corp.local'],
     });
-    expect(graph.left.map(({ value, y }) => [value, y])).toEqual([['FIN\\jdoe', 85]]);
+    expect(graph.left.map(({ value, y }) => [value, y])).toEqual([['FIN\\jdoe', 100]]);
     expect(graph.right.map(({ value, kind, label, y }) => [value, kind, label, y])).toEqual([
-      ['203.0.113.7', 'IP', '203.0.113.7', 35],
-      ['198.51.100.20', 'IP', '198.51.100.20', 85],
-      ['fs01.corp.local', 'HOST', 'fs01', 135],
+      ['203.0.113.7', 'IP', '203.0.113.7', 24],
+      ['198.51.100.20', 'IP', '198.51.100.20', 100],
+      ['fs01.corp.local', 'HOST', 'fs01', 176],
     ]);
     expect(graph.empty).toBe(false);
   });
@@ -125,6 +125,13 @@ describe('buildEntityGraph', () => {
   it('says the host is unknown and has nothing to link when nothing was extracted', () => {
     expect(buildEntityGraph({ identities: [], ips: [], hosts: [] })).toEqual({
       host: 'host unknown',
+      hostX: 96,
+      hostY: 82,
+      hostW: 100,
+      hostH: 36,
+      hostLabelX: 146,
+      hostLabelY: 104,
+      hostCenterY: 100,
       left: [],
       right: [],
       empty: true,
